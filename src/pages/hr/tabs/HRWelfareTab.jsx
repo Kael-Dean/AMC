@@ -1,6 +1,6 @@
 // src/pages/hr/tabs/HRWelfareTab.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// สวัสดิการ (3P) — คำขอเบิกค่ารักษาพยาบาล / ตรวจสุขภาพ / ค่าการศึกษาบุตร
+// สวัสดิการ (3P) — คำขอเบิกค่ารักษาพยาบาล / ตรวจสุขภาพ / ค่าเล่าเรียนบุตร
 // เปิดจาก /hr/dashboard?tab=welfare และ /hr/welfare (HRWelfare.jsx)
 //
 //   GET  /hr/welfare/claims?claim_type=&cap_year=&user_id=     (hr.welfare.view) — โหลดครั้งเดียวแล้วแบ่งแท็บย่อย
@@ -9,7 +9,7 @@
 //   POST …/{id}/board                                           (hr.welfare.board — เมื่อ board_required)
 //   POST …/{id}/mark-paid                                       (hr.welfare.submit — จ่ายแยกเท่านั้น)
 //   GET  /hr/welfare/settings                                   payout_route / board_required ปัจจุบัน
-//   GET  /hr/welfare/education-rates                            เพดานค่าการศึกษาในฟอร์ม
+//   GET  /hr/welfare/education-rates                            เพดานค่าเล่าเรียนในฟอร์ม
 //   PDF  /hr/reports/welfare/claims?fiscal_year= · /hr/reports/welfare/dependants   (hr.reports.welfare)
 //
 // แท็บย่อย (?sub=): queue = รอผู้จัดการอนุมัติ · topay = อนุมัติแล้วรอจ่าย · all = ทั้งหมด
@@ -120,7 +120,7 @@ export default function HRWelfareTab() {
     return () => { alive = false }
   }, [canView])
 
-  // ตารางเพดานค่าการศึกษา — โหลดเมื่อเปิดฟอร์มครั้งแรก
+  // ตารางเพดานค่าเล่าเรียน — โหลดเมื่อเปิดฟอร์มครั้งแรก
   useEffect(() => {
     if (!entryOpen || rates.length) return
     let alive = true
@@ -247,7 +247,7 @@ export default function HRWelfareTab() {
             onChange={(e) => setYear(e.target.value.replace(/\D/g, ""))}
             aria-invalid={!yearOk || undefined} aria-describedby={`${uid}-year-hint`}
             className={cx(fieldCls, "tabular-nums", !yearOk && "!border-red-500 dark:!border-red-400")} />
-          <span id={`${uid}-year-hint`} className="sr-only">ค่ารักษานับตามปีงบประมาณ เม.ย.–มี.ค. ค่าการศึกษานับตามปีการศึกษา เว้นว่างเพื่อดูทุกปี</span>
+          <span id={`${uid}-year-hint`} className="sr-only">ค่ารักษานับตามปีงบประมาณ เม.ย.–มี.ค. ค่าเล่าเรียนนับตามปีการศึกษา เว้นว่างเพื่อดูทุกปี</span>
         </div>
         <div className="w-full sm:w-64">
           <span id={`${uid}-person-l`} className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">เจ้าหน้าที่</span>

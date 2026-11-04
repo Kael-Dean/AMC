@@ -1,6 +1,6 @@
 // src/lib/welfare.js
 // ─────────────────────────────────────────────────────────────────────────────
-// สวัสดิการ (3P) — ระเบียบ 13 ค่ารักษาพยาบาล (+ ตรวจสุขภาพประจำปี) · ระเบียบ 14 ค่าการศึกษาบุตร
+// สวัสดิการ (3P) — ระเบียบ 13 ค่ารักษาพยาบาล (+ ตรวจสุขภาพประจำปี) · ระเบียบ 14 ค่าเล่าเรียนบุตร
 // ป้าย/สถานะ/enum + ตัวช่วยประกอบ body คำขอเบิก ใช้ร่วมกัน:
 //   HRWelfareTab · HRWelfareSettingsTab · PersonnelDependantsTab · MyWelfare · components/hr/welfare/*
 //
@@ -18,7 +18,7 @@ export { money } from "./payroll"
 export const CLAIM_TYPES = [
   { value: "medical", label: "ค่ารักษาพยาบาล" },
   { value: "checkup", label: "ตรวจสุขภาพประจำปี" },
-  { value: "education", label: "ค่าการศึกษาบุตร" },
+  { value: "education", label: "ค่าเล่าเรียนบุตร" },
 ]
 export const CLAIM_TYPE_LABEL = Object.fromEntries(CLAIM_TYPES.map((t) => [t.value, t.label]))
 
@@ -233,7 +233,7 @@ export function validateClaim(f) {
     if (!isBEYear(f.academic_year)) e.academic_year = "กรอกปีการศึกษาเป็น พ.ศ. 4 หลัก"
     if (!f.institution_type) e.institution_type = "เลือกประเภทสถานศึกษา"
     if (!f.education_level) e.education_level = "เลือกระดับการศึกษา"
-    money("education_amount", "ค่าการศึกษา")
+    money("education_amount", "ค่าเล่าเรียน")
     if (Number(f.education_level) === 6 && !f.first_degree) e.first_degree = "เบิกได้เฉพาะปริญญาตรีใบแรก"
   }
   return e
@@ -301,7 +301,7 @@ export function payoutNote(c, boardRequired) {
   return ""
 }
 
-// ─── อัตราค่าการศึกษา — ชื่อ key ใน row ไม่ผูกตายตัว (รองรับหลายแบบ) ──────────
+// ─── อัตราค่าเล่าเรียน — ชื่อ key ใน row ไม่ผูกตายตัว (รองรับหลายแบบ) ──────────
 
 const AMOUNT_KEYS = ["cap", "amount", "rate", "max_amount", "cap_amount"]
 const INST_KEYS = ["institution_type", "school_type", "type"]

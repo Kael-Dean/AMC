@@ -52,7 +52,7 @@ export default function MyWelfare() {
 
       <p className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
         <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
-        ยื่นเบิกค่ารักษาพยาบาล ตรวจสุขภาพ หรือค่าการศึกษาบุตร ด้วยแบบฟอร์มพร้อมใบเสร็จที่ฝ่ายบุคคล — หน้านี้ใช้ติดตามสถานะและดูสิทธิ์คงเหลือ
+        ยื่นเบิกค่ารักษาพยาบาล ตรวจสุขภาพ หรือค่าเล่าเรียนบุตร ด้วยแบบฟอร์มพร้อมใบเสร็จที่ฝ่ายบุคคล — หน้านี้ใช้ติดตามสถานะและดูสิทธิ์คงเหลือ
       </p>
 
       {error ? (

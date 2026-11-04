@@ -85,7 +85,7 @@ export function WelfareBalanceView({ balance, compact = false, className = "" })
       {edu.length > 0 && (
         <div className="space-y-2 border-t border-gray-100 pt-3 dark:border-line">
           <p className="text-sm text-gray-700 dark:text-gray-300">
-            ค่าการศึกษาบุตร <span className="text-xs text-gray-500 dark:text-gray-400">ปีการศึกษา {edu[0]?.academic_year ?? "—"}</span>
+            ค่าเล่าเรียนบุตร <span className="text-xs text-gray-500 dark:text-gray-400">ปีการศึกษา {edu[0]?.academic_year ?? "—"}</span>
           </p>
           <ul className="divide-y divide-gray-100 dark:divide-line">
             {edu.map((e) => (

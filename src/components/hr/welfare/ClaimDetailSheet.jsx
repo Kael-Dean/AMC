@@ -130,7 +130,7 @@ export default function ClaimDetailSheet({ claim: initial, personName, patientNa
               <Row label="ปีการศึกษา">{c.academic_year ? String(c.academic_year) : null}</Row>
               <Row label="สถานศึกษา">{[c.institution_name, INSTITUTION_LABEL[c.institution_type]].filter(Boolean).join(" · ")}</Row>
               <Row label="ระดับ">{c.education_level ? educationLevelLabel(c.education_level) : null}</Row>
-              <Row label="ค่าการศึกษา">{c.education_amount != null ? <span className="tabular-nums">{money(c.education_amount)}</span> : null}</Row>
+              <Row label="ค่าเล่าเรียน">{c.education_amount != null ? <span className="tabular-nums">{money(c.education_amount)}</span> : null}</Row>
             </>
           )}
           <Row label="ใบเสร็จ">{[c.receipt_no ? `เลขที่ ${c.receipt_no}` : null, c.receipt_date ? thaiDate(c.receipt_date) : null].filter(Boolean).join(" · ")}</Row>

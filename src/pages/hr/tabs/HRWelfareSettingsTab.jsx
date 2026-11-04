@@ -198,7 +198,7 @@ function SettingsSection({ canEdit }) {
   )
 }
 
-// ─── อัตราค่าการศึกษาบุตร ────────────────────────────────────────────────────
+// ─── อัตราค่าเล่าเรียนบุตร ────────────────────────────────────────────────────
 
 function RatesSection({ canEdit }) {
   const uid = useId()
@@ -221,7 +221,7 @@ function RatesSection({ canEdit }) {
       const d = await apiAuth("/hr/welfare/education-rates")
       fill(Array.isArray(d) ? d : d?.items ?? d?.rates ?? [])
     } catch (err) {
-      setError(apiDetail(err) || "โหลดอัตราค่าการศึกษาไม่สำเร็จ")
+      setError(apiDetail(err) || "โหลดอัตราค่าเล่าเรียนไม่สำเร็จ")
     } finally {
       setLoading(false)
     }
@@ -250,7 +250,7 @@ function RatesSection({ canEdit }) {
     try {
       const d = await apiAuth("/hr/welfare/education-rates", { method: "PUT", body })
       fill(Array.isArray(d) && d.length ? d : body)
-      toast.success("บันทึกอัตราค่าการศึกษาแล้ว")
+      toast.success("บันทึกอัตราค่าเล่าเรียนแล้ว")
     } catch (err) {
       setMsg({ tone: "error", text: apiDetail(err) || "บันทึกไม่สำเร็จ" })
     } finally {
@@ -273,7 +273,7 @@ function RatesSection({ canEdit }) {
   return (
     <section aria-labelledby={`${uid}-h`} className="space-y-4">
       <div>
-        <h2 id={`${uid}-h`} className="text-base font-semibold text-gray-900 dark:text-gray-100">อัตราค่าการศึกษาบุตร</h2>
+        <h2 id={`${uid}-h`} className="text-base font-semibold text-gray-900 dark:text-gray-100">อัตราค่าเล่าเรียนบุตร</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">ระเบียบ 14 (2561) — เพดานต่อบุตร 1 คน ต่อปีการศึกษา (บาท)</p>
       </div>
       {error ? <ErrorState message={error} onRetry={load} /> : loading ? <SkeletonText lines={6} /> : rows.length === 0 ? (
