@@ -85,7 +85,7 @@ export default function RelocationHistoryList({ userId, refreshKey = 0 }) {
             <th scope="col" className="px-2 py-2 font-medium">จากสาขา</th>
             <th scope="col" className="px-2 py-2 font-medium">ไปสาขา</th>
             <th scope="col" className="px-2 py-2 font-medium">เหตุผล</th>
-            <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">ผู้สั่งย้าย</th>
+            <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">ผู้บันทึก</th>
           </tr>
         </thead>
         <tbody>
