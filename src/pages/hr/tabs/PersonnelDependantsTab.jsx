@@ -105,7 +105,7 @@ export default function PersonnelDependantsTab({ employeeId, employeeName }) {
           <h2 id="pd-dependants-h" className="text-sm font-semibold text-gray-900 dark:text-gray-100">ผู้มีสิทธิ์รับสวัสดิการ</h2>
           {!loading && rows.length > 0 && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              ระบบตรวจสิทธิ์ตามระเบียบ 13 (ค่ารักษา) และ 14 (ค่าการศึกษาบุตร) ให้อัตโนมัติ
+              ระบบตรวจสิทธิ์ตามระเบียบ 13 (ค่ารักษา) และ 14 (ค่าเล่าเรียนบุตร) ให้อัตโนมัติ
             </p>
           )}
         </div>
@@ -126,7 +126,7 @@ export default function PersonnelDependantsTab({ employeeId, employeeName }) {
           className="!py-8"
           title="ยังไม่มีผู้มีสิทธิ์"
           description={canEdit
-            ? "เพิ่มบิดา มารดา คู่สมรส และบุตร เพื่อให้เบิกค่ารักษาพยาบาลและค่าการศึกษาบุตรได้"
+            ? "เพิ่มบิดา มารดา คู่สมรส และบุตร เพื่อให้เบิกค่ารักษาพยาบาลและค่าเล่าเรียนบุตรได้"
             : "ยังไม่ได้บันทึกบิดา มารดา คู่สมรส หรือบุตรของเจ้าหน้าที่คนนี้"}
         />
       ) : (

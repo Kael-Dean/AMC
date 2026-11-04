@@ -45,7 +45,7 @@ export default function DependantsList({ items, actions, className = "", freshId
       <div className={cx("hidden border-b border-gray-100 pb-2 text-xs font-semibold text-gray-500 dark:border-line dark:text-gray-400", COLS)} aria-hidden="true">
         <span>ชื่อ / ความสัมพันธ์</span>
         <span>ค่ารักษาพยาบาล</span>
-        <span>ค่าการศึกษาบุตร</span>
+        <span>ค่าเล่าเรียนบุตร</span>
         <span className="w-px" />
       </div>
       <ul className="divide-y divide-gray-100 dark:divide-line">
@@ -71,7 +71,7 @@ export default function DependantsList({ items, actions, className = "", freshId
                   {actions && <div className="shrink-0 md:hidden">{actions(d)}</div>}
                 </div>
                 <Eligibility label="ค่ารักษาพยาบาล" eligible={d.medical_eligible} reason={d.medical_reason} />
-                <Eligibility label="ค่าการศึกษาบุตร" eligible={d.education_eligible} reason={d.education_reason} notApplicable={!child} />
+                <Eligibility label="ค่าเล่าเรียนบุตร" eligible={d.education_eligible} reason={d.education_reason} notApplicable={!child} />
                 {actions ? <div className="hidden md:block">{actions(d)}</div> : <span className="hidden md:block md:w-px" />}
               </div>
             </li>

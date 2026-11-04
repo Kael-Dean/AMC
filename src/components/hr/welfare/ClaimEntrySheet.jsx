@@ -194,7 +194,7 @@ export default function ClaimEntrySheet({ open, onClose, onSaved, initialUserId 
   const pickedDep = depRows.find((d) => String(d.id) === String(form.dependant_id))
   const pickedReason = pickedDep && (t === "medical" ? (!pickedDep.medical_eligible && pickedDep.medical_reason) : (!pickedDep.education_eligible && pickedDep.education_reason))
 
-  // อัตราเพดานค่าการศึกษาของระดับ/ประเภทที่เลือก (ถ้าโหลดตารางมาแล้ว)
+  // อัตราเพดานค่าเล่าเรียนของระดับ/ประเภทที่เลือก (ถ้าโหลดตารางมาแล้ว)
   const levelOptions = useMemo(() => {
     const seen = new Map()
     for (const r of educationRates) if (r?.level != null && !seen.has(Number(r.level))) seen.set(Number(r.level), r.level_label)
@@ -336,7 +336,7 @@ export default function ClaimEntrySheet({ open, onClose, onSaved, initialUserId 
             </div>
           )}
 
-          {/* ค่าการศึกษาบุตร */}
+          {/* ค่าเล่าเรียนบุตร */}
           {t === "education" && (
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -365,7 +365,7 @@ export default function ClaimEntrySheet({ open, onClose, onSaved, initialUserId 
                     error={!!err("education_level")} placeholder="เลือกระดับ" />
                   {errP("education_level")}
                 </div>
-                <MoneyField id={id("education_amount")} label="ค่าการศึกษาตามใบเสร็จ (บาท)" required value={form.education_amount} onChange={set("education_amount")}
+                <MoneyField id={id("education_amount")} label="ค่าเล่าเรียนตามใบเสร็จ (บาท)" required value={form.education_amount} onChange={set("education_amount")}
                   error={err("education_amount")} hint={rateCap != null ? `เพดานระดับนี้ ${money(rateCap)} บาท ต่อปีการศึกษา` : undefined} />
               </div>
               {Number(form.education_level) === 6 && (
