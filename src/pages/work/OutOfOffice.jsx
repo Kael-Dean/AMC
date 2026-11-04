@@ -131,9 +131,9 @@ const FIELD_ORDER = [
   "place", "reason", "transport", "transport_other", "vehicle_plate", "distance_km",
 ]
 
-/** Files can be added to pending or approved requests only (409 otherwise). */
+/** Files can be added to pending or approved work requests only (409 otherwise); personal trips need none. */
 const canAttach = (r) =>
-  !!r && (isPendingStatus(r.status) || r.status === "approved") &&
+  !!r && r.request_type === "work" && (isPendingStatus(r.status) || r.status === "approved") &&
   (Array.isArray(r.attachments) ? r.attachments.length : 0) < FILE_MAX_COUNT
 
 /** Two-option pill radio group (same look as ประเภท). */
@@ -393,7 +393,7 @@ export default function OutOfOffice() {
       document.getElementById(`ooo-${first}`)?.focus()
       return
     }
-    if (uploads.busy) return
+    if (isWork && uploads.busy) return
     setSubmitting(true)
     setSubmitError("")
     setSubmitted(null)
@@ -414,12 +414,14 @@ export default function OutOfOffice() {
       body.vehicle_plate = form.vehicle_plate.trim() || null
       body.distance_km = form.distance_km.trim() ? Number(form.distance_km) : null
     }
-    if (uploads.ids.length) body.attachment_ids = uploads.ids
+    if (isWork && uploads.ids.length) body.attachment_ids = uploads.ids
     try {
       const res = await apiAuth("/personnel/me/out-of-office", { method: "POST", body })
       setSubmitted(res || null)
       setForm(EMPTY_FORM)
-      uploads.reset()
+      // personal: files picked before switching type were never sent — delete them
+      if (isWork) uploads.reset()
+      else uploads.discard()
       // jump the list to the request's month so the new row is visible
       const p = parseISODate(res?.request_date)
       if (p && (String(p.y) !== year || (month && String(p.m) !== month))) {
@@ -706,11 +708,13 @@ export default function OutOfOffice() {
               </>
             )}
 
-            <FileUploader
-              uploads={uploads}
-              disabled={submitting}
-              hint={isWork ? "เช่น รายงานการประชุม แบบสำรวจ — แนบเพิ่มภายหลังได้" : "แนบเพิ่มภายหลังได้"}
-            />
+            {isWork && (
+              <FileUploader
+                uploads={uploads}
+                disabled={submitting}
+                hint="เช่น รายงานการประชุม แบบสำรวจ — แนบเพิ่มภายหลังได้"
+              />
+            )}
 
             {submitError && (
               <p role="alert" className="rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-300">
@@ -732,11 +736,11 @@ export default function OutOfOffice() {
 
             <button
               type="submit"
-              disabled={submitting || uploads.busy}
+              disabled={submitting || (isWork && uploads.busy)}
               className={`w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-sm transition-colors duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${focusRing} focus-visible:ring-indigo-500`}
             >
               {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />}
-              {submitting ? "กำลังส่ง..." : uploads.busy ? "กำลังอัปโหลดไฟล์..." : "ส่งคำขอ"}
+              {submitting ? "กำลังส่ง..." : isWork && uploads.busy ? "กำลังอัปโหลดไฟล์..." : "ส่งคำขอ"}
             </button>
           </form>
 
