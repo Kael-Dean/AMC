@@ -9,7 +9,9 @@ import BranchLockNote from "../../components/BranchLockNote"
 import useBranchLock, { scopedBranchId } from "../../hooks/useBranchLock"
 import { toast } from "../../components/ui"
 import DateInput from "../../components/ThaiDateField"
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import PageTitle from "../../components/PageTitle"
+import { canGoBack, useDrill } from "../../lib/drill"
 import SelectDropdown from "../../components/SelectDropdown"
 import { STATUS, STATUS_LABEL } from "../../lib/approval"
 
@@ -676,7 +678,15 @@ const PHASE1_MEMBER_KEYS = new Set([
 ])
 const isPhase1Member = (r) => PHASE1_MEMBER_KEYS.has(r.key)
 
+const REPORT_PARAM_KEYS = ["report", "report_code", "reportCode"]
+
 function Documents() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { drillParams } = useDrill()
+  const reportCode = pickQS(searchParams, REPORT_PARAM_KEYS)
+
   const [mode, setMode] = useState(() => {
     const qs = safeQS()
     const m = (pickQS(qs, ["mode", "view", "tab"]) || "").toLowerCase()
@@ -787,36 +797,32 @@ function Documents() {
     const planYear = pickQS(qs, ["plan_year", "year"])
     if (planYear) patch.planYear = planYear
 
-    // open report by code
-    const code = pickQS(qs, ["report", "report_code", "reportCode"])
-
     if (Object.keys(patch).length) {
       setFilters((p) => ({ ...p, ...patch }))
     }
 
-    if (code) {
-      // ลิงก์เก่า (?report=sell-by-day ฯลฯ) → รายงานที่ใช้แทน
-      const key = LEGACY_REPORT_KEYS[code] || code
-      const foundPlan = PLAN_REPORTS.find((r) => r.key === key)
-      const foundPhase1 = allowedPhase1Reports().find((r) => r.key === key)
-      const foundTrade = allowedTradeReports().find((r) => r.key === key)
-      const foundHr = allowedHrReports().find((r) => r.key === key)
-
-      if (foundPlan) {
-        setMode("plan")
-        setActiveReport(foundPlan.key)
-      } else if (foundPhase1) {
-        setMode("phase1")
-        setActiveReport(foundPhase1.key)
-      } else if (foundTrade) {
-        setMode("trade")
-        setActiveReport(foundTrade.key)
-      } else if (foundHr) {
-        setMode("hr")
-        setActiveReport(foundHr.key)
-      }
-    }
   }, [])
+
+  /** รายงานที่เปิดอยู่ตาม URL (?report=) — ปุ่มย้อนกลับ/ลิงก์แชร์จึงกลับมาหน้าเดิมได้ */
+  useEffect(() => {
+    setPreviewJson(null)
+    setErrors({})
+    if (!reportCode) {
+      setActiveReport(null)
+      return
+    }
+    // ลิงก์เก่า (?report=sell-by-day ฯลฯ) → รายงานที่ใช้แทน
+    const key = LEGACY_REPORT_KEYS[reportCode] || reportCode
+    const groups = [
+      ["plan", PLAN_REPORTS],
+      ["phase1", allowedPhase1Reports()],
+      ["trade", allowedTradeReports()],
+      ["hr", allowedHrReports()],
+    ]
+    const group = groups.find(([, reports]) => reports.some((r) => r.key === key))
+    if (group) setMode(group[0])
+    setActiveReport(group ? key : null)
+  }, [reportCode])
 
   /** โหลดตัวเลือกพื้นฐาน (product, branch) */
   useEffect(() => {
@@ -1676,6 +1682,27 @@ function Documents() {
 
   const reportObj = REPORTS.find((r) => r.key === activeReport)
 
+  const openReport = (key) => {
+    drillParams((p) => {
+      REPORT_PARAM_KEYS.forEach((k) => p.delete(k))
+      p.set("report", key)
+      return p
+    }, "คลังเอกสาร & รายงาน")
+  }
+
+  const backToPicker = () => {
+    if (location.state?.backLabel && canGoBack()) {
+      navigate(-1)
+      return
+    }
+    // เปิดจากลิงก์ตรง ไม่มีหน้าเลือกรายงานใน history
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev)
+      REPORT_PARAM_KEYS.forEach((k) => p.delete(k))
+      return p
+    }, { replace: true })
+  }
+
   return (
     <div className="min-h-screen bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base documents-page">
       <style>{`
@@ -1726,12 +1753,7 @@ function Documents() {
                   placeholder="คลิกเพื่อเลือกรายงาน..."
                   title="รายงานซื้อขายข้าว"
                   value={null}
-                  onChange={(v) => {
-                    setMode("phase1")
-                    setActiveReport(v)
-                    setPreviewJson(null)
-                    setErrors({})
-                  }}
+                  onChange={openReport}
                 />
               </div>
             </div>
@@ -1757,12 +1779,7 @@ function Documents() {
                   placeholder="คลิกเพื่อเลือกรายงาน..."
                   title="รายงานสมาชิก"
                   value={null}
-                  onChange={(v) => {
-                    setMode("phase1")
-                    setActiveReport(v)
-                    setPreviewJson(null)
-                    setErrors({})
-                  }}
+                  onChange={openReport}
                 />
               </div>
             </div>
@@ -1788,7 +1805,7 @@ function Documents() {
                   placeholder="คลิกเพื่อเลือกรายงาน..."
                   title="รายงานซื้อขาย (Excel)"
                   value={null}
-                  onChange={(v) => { setMode("trade"); setActiveReport(v); setPreviewJson(null); setErrors({}) }}
+                  onChange={openReport}
                 />
               </div>
             </div>
@@ -1815,7 +1832,7 @@ function Documents() {
                   title="รายงานฝ่ายบุคคล"
                   searchable
                   value={null}
-                  onChange={(v) => { setMode("hr"); setActiveReport(v); setPreviewJson(null); setErrors({}) }}
+                  onChange={openReport}
                 />
               </div>
             </div>
@@ -1839,12 +1856,7 @@ function Documents() {
                   options={PLAN_REPORTS.map((r) => ({ ...r, id: r.key, label: r.title }))}
                   placeholder="คลิกเพื่อเลือกรูปแบบ..."
                   value={null}
-                  onChange={(v) => {
-                    setMode("plan")
-                    setActiveReport(v)
-                    setPreviewJson(null)
-                    setErrors({})
-                  }}
+                  onChange={openReport}
                 />
               </div>
             </div>
@@ -1869,11 +1881,7 @@ function Documents() {
 
               <button
                 type="button"
-                onClick={() => {
-                  setActiveReport(null)
-                  setPreviewJson(null)
-                  setErrors({})
-                }}
+                onClick={backToPicker}
                 className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 md:px-5 py-3 text-base font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-100 hover:shadow-md hover:scale-[1.02] active:scale-[.98] dark:border-slate-600 dark:bg-slate-700/60 dark:text-white dark:hover:bg-slate-700/50 cursor-pointer"
                 title="กลับไปหน้าเลือกรายงาน"
               >
