@@ -1,5 +1,5 @@
 // src/pages/Documents.jsx
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { apiAuth, apiDownload } from "../../lib/api"   // helper แนบ token + BASE URL
 import { cx, baseField, labelCls, helpTextCls, errorTextCls, secondaryBtnCls } from "../../lib/styles"
 import ExcelDownloadButton from "../../components/ExcelDownloadButton"
@@ -714,6 +714,11 @@ function Documents() {
   const [specOptions, setSpecOptions] = useState([]) 
   const [branchOptions, setBranchOptions] = useState([])
   const [klangOptions, setKlangOptions] = useState([])
+  const [loadingKlangs, setLoadingKlangs] = useState(false)
+  const [branchLoadFailed, setBranchLoadFailed] = useState(false)
+  const [specLoadFailed, setSpecLoadFailed] = useState(false)
+  const [klangLoadFailed, setKlangLoadFailed] = useState(false)
+  const [klangReload, setKlangReload] = useState(0)
 
   const [, setPreviewJson] = useState(null)
 
@@ -825,49 +830,51 @@ function Documents() {
   }, [reportCode])
 
   /** โหลดตัวเลือกพื้นฐาน (product, branch) */
-  useEffect(() => {
-    const loadOptions = async () => {
-      try {
-        setLoadingOptions(true)
-        const branches = await apiAuth("/order/branch/search").catch(() => [])
-        setBranchOptions(
-          (branches || [])
-            .map((b) => ({ id: String(b.id), label: b.branch_name }))
-            .filter((o) => o.id && o.label)
-        )
-      } catch (err) {
-        console.error("loadOptions error:", err)
-        setBranchOptions([])
-      } finally {
-        setLoadingOptions(false)
-      }
+  const loadBranches = useCallback(async () => {
+    setLoadingOptions(true)
+    setBranchLoadFailed(false)
+    try {
+      const branches = await apiAuth("/order/branch/search")
+      setBranchOptions(
+        (branches || [])
+          .map((b) => ({ id: String(b.id), label: b.branch_name }))
+          .filter((o) => o.id && o.label)
+      )
+    } catch (err) {
+      console.error("load branches error:", err)
+      setBranchOptions([])
+      setBranchLoadFailed(true)
+    } finally {
+      setLoadingOptions(false)
     }
-    loadOptions()
   }, [])
 
+  useEffect(() => { loadBranches() }, [loadBranches])
+
   /** โหลด “รายการสำเร็จรูป (spec)” แบบหน้า buy: /order/form/search */
-  useEffect(() => {
-    const loadSpecs = async () => {
-      try {
-        setLoadingSpecs(true)
-        const rows = await apiAuth("/order/form/search").catch(() => [])
-        const opts = (rows || [])
+  const loadSpecs = useCallback(async () => {
+    setLoadingSpecs(true)
+    setSpecLoadFailed(false)
+    try {
+      const rows = await apiAuth("/order/form/search")
+      setSpecOptions(
+        (rows || [])
           .map((r) => ({
             id: String(r.id),
             label: String(r.prod_name || r.name || r.spec_name || "").trim(),
           }))
           .filter((o) => o.id && o.label)
-
-        setSpecOptions(opts)
-      } catch (err) {
-        console.error("loadSpecs error:", err)
-        setSpecOptions([])
-      } finally {
-        setLoadingSpecs(false)
-      }
+      )
+    } catch (err) {
+      console.error("loadSpecs error:", err)
+      setSpecOptions([])
+      setSpecLoadFailed(true)
+    } finally {
+      setLoadingSpecs(false)
     }
-    loadSpecs()
   }, [])
+
+  useEffect(() => { loadSpecs() }, [loadSpecs])
 
   /** ล็อกสาขา (รวมถึงลิงก์แชร์ที่ระบุ branch_id อื่น) → บังคับเป็นสาขาที่ใช้งานอยู่ */
   useEffect(() => {
@@ -878,25 +885,33 @@ function Documents() {
   /** branch → klang */
   useEffect(() => {
     const bId = filters.branchId
+    setKlangLoadFailed(false)
     if (!bId) {
       setKlangOptions([])
+      setLoadingKlangs(false)
       setFilters((p) => ({ ...p, klangId: "" }))
       return
     }
-    ;(async () => {
-      try {
-        const arr = (await apiAuth(`/order/klang/search?branch_id=${encodeURIComponent(bId)}`)) || []
+    let alive = true
+    setLoadingKlangs(true)
+    apiAuth(`/order/klang/search?branch_id=${encodeURIComponent(bId)}`)
+      .then((arr) => {
+        if (!alive) return
         setKlangOptions(
-          arr
+          (arr || [])
             .map((x) => ({ id: String(x.id), label: x.klang_name }))
             .filter((o) => o.id && o.label)
         )
-      } catch (err) {
+      })
+      .catch((err) => {
+        if (!alive) return
         console.error("load klang error:", err)
         setKlangOptions([])
-      }
-    })()
-  }, [filters.branchId])
+        setKlangLoadFailed(true)
+      })
+      .finally(() => { if (alive) setLoadingKlangs(false) })
+    return () => { alive = false }
+  }, [filters.branchId, klangReload])
 
   /** ปีแผน → BusinessPlan.id จริง: GET /unit-prices/{year}/plan → {exists, plan:{id, fiscal_year}} */
   const [planInfo, setPlanInfo] = useState({ status: "idle", id: "", year: "" })
@@ -946,11 +961,6 @@ function Documents() {
       const ok = typeof v === "string" ? v.trim() !== "" : Boolean(v)
       if (!ok) e[field] = field === "specId" ? "กรุณาเลือกสินค้า" : "จำเป็นต้องระบุ"
     }
-    // spec_id ต้องเป็นตัวเลข (กรณีรายการไม่ขึ้นแล้วพิมพ์รหัสเอง) — กัน 422
-    if ((report.require.includes("specId") || (report.optional || []).includes("specId")) && String(filters.specId || "").trim() && !/^\d+$/.test(String(filters.specId).trim())) {
-      e.specId = "รหัสสินค้าต้องเป็นตัวเลข"
-    }
-
     const niceField = (f) => {
       if (f === "memberId") return "เลขสมาชิก"
       if (f === "assoId") return "รหัสลูกค้าทั่วไป"
@@ -1206,6 +1216,13 @@ function Documents() {
     })
 
   /** ---------- UI helpers ---------- */
+  const LoadRetry = ({ message, onRetry }) => (
+    <p role="alert" className={errorTextCls}>
+      {message}{" "}
+      <button type="button" onClick={onRetry} className="cursor-pointer font-semibold underline">ลองใหม่</button>
+    </p>
+  )
+
   const FieldError = ({ name }) => (errors[name] ? <div className={errorTextCls}>{errors[name]}</div> : null)
 
   const withEmpty = (opts, emptyLabel = "— เลือก —") => [{ id: "", label: emptyLabel }, ...opts]
@@ -1294,35 +1311,23 @@ function Documents() {
         รายการสินค้า{requiredSpec ? <span className="text-red-500"> *</span> : " (ไม่บังคับ)"}
       </label>
 
-      {specOptions.length > 0 ? (
-        <ComboBox
-          options={requiredSpec ? specOptions : withEmpty(specOptions, "— ทุกสินค้า —")}
-          searchable
-          value={filters.specId}
-          onChange={(v) => setFilter("specId", v)}
-          placeholder={loadingSpecs ? "— กำลังโหลด… —" : requiredSpec ? "— เลือกสินค้า —" : "— ทุกสินค้า —"}
-          disabled={loadingSpecs || specOptions.length === 0}
-          error={!!(requiredSpec && errors.specId)}
-          title="รายการสินค้า"
-          ariaLabel="รายการสินค้า"
-        />
-      ) : (
-        <input
-          className={cx(baseField, requiredSpec && errors.specId && "!border-red-400 ring-2 ring-red-300/70")}
-          placeholder="รหัสสเปค (ตัวเลข)"
-          inputMode="numeric"
-          aria-label="รหัสสเปค"
-          aria-invalid={requiredSpec && errors.specId ? true : undefined}
-          value={filters.specId}
-          onChange={(e) => setFilter("specId", e.target.value)}
-        />
-      )}
+      <ComboBox
+        options={requiredSpec ? specOptions : withEmpty(specOptions, "— ทุกสินค้า —")}
+        searchable
+        value={filters.specId}
+        onChange={(v) => setFilter("specId", v)}
+        placeholder={requiredSpec ? "— เลือกสินค้า —" : "— ทุกสินค้า —"}
+        loading={loadingSpecs}
+        disabled={specLoadFailed}
+        error={!!(requiredSpec && errors.specId)}
+        title="รายการสินค้า"
+        ariaLabel="รายการสินค้า"
+      />
 
       {requiredSpec && <FieldError name="specId" />}
-      <p className={helpTextCls}>{note || (requiredSpec ? "ต้องเลือก 1 รายการ" : "ไม่เลือก = ทุกสินค้า")}</p>
-      {specOptions.length === 0 && !loadingSpecs && (
-        <p className={helpTextCls}>รายการไม่ขึ้น พิมพ์รหัสสเปคเป็นตัวเลขแทนได้</p>
-      )}
+      {specLoadFailed
+        ? <LoadRetry message="โหลดรายการสินค้าไม่สำเร็จ" onRetry={loadSpecs} />
+        : <p className={helpTextCls}>{note || (requiredSpec ? "ต้องเลือก 1 รายการ" : "ไม่เลือก = ทุกสินค้า")}</p>}
     </div>
   )
 
@@ -1333,50 +1338,41 @@ function Documents() {
           สาขา{requireBranch && <span className="text-red-500"> *</span>}
         </label>
 
-        {branchOptions.length > 0 ? (
-          <ComboBox
-            options={withEmpty(branchOptions, allBranches && !branchLock.locked ? "— ทุกสาขา —" : "— เลือก —")}
-            value={filters.branchId}
-            onChange={(v) => setFilter("branchId", v)}
-            placeholder={allBranches && !branchLock.locked ? "— ทุกสาขา —" : "— เลือก —"}
-            error={!!(requireBranch && errors.branchId)}
-            disabled={branchLock.locked}
-          />
-        ) : (
-          <input
-            className={cx(baseField, requireBranch && errors.branchId && "border-red-400 ring-2 ring-red-300/70")}
-            placeholder="รหัสสาขา (ตัวเลข)"
-            value={filters.branchId}
-            onChange={(e) => setFilter("branchId", e.target.value)}
-            readOnly={branchLock.locked}
-            aria-readonly={branchLock.locked || undefined}
-          />
-        )}
+        <ComboBox
+          options={withEmpty(branchOptions, allBranches && !branchLock.locked ? "— ทุกสาขา —" : "— เลือก —")}
+          value={filters.branchId}
+          onChange={(v) => setFilters((p) => ({ ...p, branchId: v, klangId: "" }))}
+          placeholder={allBranches && !branchLock.locked ? "— ทุกสาขา —" : "— เลือก —"}
+          loading={loadingOptions}
+          error={!!(requireBranch && errors.branchId)}
+          disabled={branchLock.locked || branchLoadFailed}
+          title="สาขา"
+          ariaLabel="สาขา"
+        />
 
         {requireBranch && <FieldError name="branchId" />}
-        {branchLock.locked ? <BranchLockNote /> : allBranches && !filters.branchId && <p className={helpTextCls}>ไม่เลือก = ทุกสาขา</p>}
+        {branchLoadFailed && <LoadRetry message="โหลดรายชื่อสาขาไม่สำเร็จ" onRetry={loadBranches} />}
+        {branchLock.locked ? <BranchLockNote /> : allBranches && !filters.branchId && !branchLoadFailed && <p className={helpTextCls}>ไม่เลือก = ทุกสาขา</p>}
       </div>
 
       {showKlang ? (
         <div>
           <label className={labelCls}>คลัง (ไม่บังคับ)</label>
 
-          {klangOptions.length > 0 ? (
-            <ComboBox
-              options={withEmpty(klangOptions, "— ทั้งหมด —")}
-              value={filters.klangId}
-              onChange={(v) => setFilter("klangId", v)}
-              placeholder="— ทั้งหมด —"
-              disabled={!filters.branchId || klangOptions.length === 0}
-            />
-          ) : (
-            <input
-              className={baseField}
-              placeholder="รหัสคลัง (ตัวเลข)"
-              value={filters.klangId}
-              onChange={(e) => setFilter("klangId", e.target.value)}
-            />
-          )}
+          <ComboBox
+            options={withEmpty(klangOptions, "— ทั้งหมด —")}
+            value={filters.klangId}
+            onChange={(v) => setFilter("klangId", v)}
+            placeholder="— ทั้งหมด —"
+            loading={loadingKlangs}
+            disabled={!filters.branchId || klangLoadFailed}
+            title="คลัง"
+            ariaLabel="คลัง"
+          />
+
+          {klangLoadFailed
+            ? <LoadRetry message="โหลดรายชื่อคลังไม่สำเร็จ" onRetry={() => setKlangReload((n) => n + 1)} />
+            : !filters.branchId && <p className={helpTextCls}>เลือกสาขาก่อนจึงเลือกคลังได้</p>}
         </div>
       ) : null}
     </>
@@ -1722,7 +1718,7 @@ function Documents() {
         {/* Header - เอาปุ่มเลือก Mode ทั้ง 3 อันด้านบนออกไปแล้ว */}
         <div className="mb-8 flex items-center gap-3">
           <PageTitle title="คลังเอกสาร & รายงาน" />
-          {!loadingOptions && !loadingSpecs && (
+          {!loadingOptions && !loadingSpecs && !branchLoadFailed && !specLoadFailed && (
             <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-700/60">
               พร้อมใช้งาน
             </span>
