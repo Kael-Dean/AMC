@@ -153,13 +153,13 @@ export function LoanEligibilityPanel({ userId }) {
         <>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
             <Info label="อายุงาน">{tenureText(data)}</Info>
-            <Info label="เพดานตามอายุงาน"><span className="tabular-nums">{money(data.service_cap)}</span></Info>
-            <Info label="เพดานตามเงินเดือน">
-              <span className="tabular-nums">{money(incomeCap)}</span>
+            <Info label="เพดานตามอายุงาน">
+              <span className="tabular-nums">{money(data.service_cap)}</span>
               {data.multiple != null && salary != null && (
                 <span className="block text-xs font-normal text-gray-500 dark:text-gray-400 tabular-nums">{money(salary)} × {data.multiple}</span>
               )}
             </Info>
+            <Info label="เพดานตามระเบียบ"><span className="tabular-nums">{money(incomeCap)}</span></Info>
             <Info label="เงินได้สุทธิล่าสุด"><span className="tabular-nums">{money(data.latest_net_pay)}</span></Info>
             <Info label="วันเกษียณ">{thaiDate(data.retirement_date, { long: true })}</Info>
           </dl>
