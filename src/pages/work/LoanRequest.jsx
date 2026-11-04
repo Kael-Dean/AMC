@@ -80,7 +80,41 @@ function Stat({ label, children, hint, strong }) {
 
 // ─── สิทธิ์กู้ ───────────────────────────────────────────────────────────────
 
-function EligibilityCard({ data, loading, error, onRetry }) {
+/** เงินต้นคงเหลือของสัญญาที่กำลังผ่อน: ยอดกู้ − เงินต้นงวดที่ชำระแล้ว (สูตรเดียวกับ outstanding_principal ของ backend) */
+function useOutstandingLoans() {
+  const [state, setState] = useState({ loading: true, error: false, count: 0, total: 0 })
+
+  useEffect(() => {
+    let cancelled = false
+    apiAuth("/personnel/me/loans")
+      .then(async (d) => {
+        const active = asList(d).filter((l) => l.status === "active")
+        const balances = await Promise.all(active.map(async (l) => {
+          const rows = asList(await apiAuth(`/personnel/me/loans/${l.id}/schedule`))
+          const paid = rows.reduce((sum, r) => sum + (r.paid ? Number(r.principal) || 0 : 0), 0)
+          return (Number(l.amount) || 0) - paid
+        }))
+        if (cancelled) return
+        setState({ loading: false, error: false, count: active.length, total: balances.reduce((a, b) => a + b, 0) })
+      })
+      .catch(() => {
+        if (!cancelled) setState({ loading: false, error: true, count: 0, total: 0 })
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  return state
+}
+
+function OutstandingStat({ loading, error, count, total }) {
+  const label = "สัญญาเงินกู้คงเหลือปัจจุบัน"
+  if (loading) return <Stat label={label}><span className="font-normal text-gray-500 dark:text-gray-400">กำลังโหลด…</span></Stat>
+  if (error) return <Stat label={label} hint="โหลดข้อมูลไม่สำเร็จ">—</Stat>
+  if (count === 0) return <Stat label={label}>ไม่มี</Stat>
+  return <Stat label={label} hint={`เงินต้น จาก ${count} สัญญา`}>{money(total)}</Stat>
+}
+
+function EligibilityCard({ data, loading, error, onRetry, outstanding }) {
   if (loading) return <Skeleton className="h-36" rounded="rounded-2xl" />
   if (error) return <ErrorState message={`ตรวจสิทธิ์กู้ไม่สำเร็จ: ${error}`} onRetry={onRetry} />
   if (!data) return null
@@ -96,10 +130,11 @@ function EligibilityCard({ data, loading, error, onRetry }) {
       </div>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
         <Stat label="อายุงาน">{data.service_months != null ? `${data.service_months} เดือน` : "—"}</Stat>
-        <Stat label="เพดานตามอายุงาน">{money(data.service_cap)}</Stat>
-        <Stat label="เพดานตามเงินเดือน" hint={data.multiple != null && data.salary != null ? `${money(data.salary)} × ${data.multiple}` : undefined}>{money(data.income_cap)}</Stat>
+        <Stat label="เพดานตามอายุงาน" hint={data.multiple != null && data.salary != null ? `${money(data.salary)} × ${data.multiple}` : undefined}>{money(data.service_cap)}</Stat>
+        <Stat label="เพดานตามระเบียบ">{money(data.income_cap)}</Stat>
         <Stat label="เงินได้สุทธิล่าสุด">{money(data.latest_net_pay)}</Stat>
         {data.retirement_date && <Stat label="วันเกษียณ">{thaiDate(data.retirement_date, { long: true })}</Stat>}
+        <OutstandingStat {...outstanding} />
       </dl>
       <Warnings items={warningList(data)} />
       {blocked && !warningList(data).length && (
@@ -264,6 +299,8 @@ export default function LoanRequest() {
   const [history, setHistory] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyError, setHistoryError] = useState("")
+
+  const outstanding = useOutstandingLoans()
 
   const loadElig = useCallback(() => {
     setEligLoading(true)
@@ -460,7 +497,7 @@ export default function LoanRequest() {
         {tab === "form" && !loanUnavailable && (
           <>
             <div data-tour="loan">
-              <EligibilityCard data={elig} loading={eligLoading} error={eligErr} onRetry={loadElig} />
+              <EligibilityCard data={elig} loading={eligLoading} error={eligErr} onRetry={loadElig} outstanding={outstanding} />
             </div>
 
             {formError && <ErrorState message={formError} />}
