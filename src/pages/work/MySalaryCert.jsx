@@ -27,7 +27,8 @@ import {
 } from "../../lib/salaryCert"
 import { fmtDateTimeTh } from "../../lib/approvalActions"
 
-const MAX_COPIES = 10
+// ออกหนังสือให้ครั้งละ 1 ฉบับเท่านั้น
+const COPIES_PER_REQUEST = 1
 
 const PURPOSE_OPTIONS = Object.freeze([
   { value: "document",       label: "เพื่อใช้เป็นหลักฐาน",     hint: "ยื่นประกอบเอกสาร เช่น ขอวีซ่า เช่าที่อยู่" },
@@ -40,7 +41,6 @@ const fieldCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm")
 const errBorder = "!border-red-500 dark:!border-red-400"
 
 const EMPTY_FORM = {
-  copies_count: "1",
   purpose_type: "",
   purpose_detail: "",
   recipient_name: "",
@@ -57,7 +57,7 @@ const FIELDS_BY_PURPOSE = {
   loan_self:      ["loan_bank", "loan_branch_name", "loan_purpose", "loan_amount"],
   loan_guarantee: ["guarantor_for_name", "loan_bank", "loan_branch_name", "loan_amount"],
 }
-const FIELD_ORDER = ["copies_count", "purpose_type", "purpose_detail", "guarantor_for_name", "loan_bank", "loan_amount"]
+const FIELD_ORDER = ["purpose_type", "purpose_detail", "guarantor_for_name", "loan_bank", "loan_amount"]
 
 const num = (v) => {
   const s = String(v ?? "").replace(/,/g, "").trim()
@@ -189,15 +189,12 @@ export default function MySalaryCert() {
     setFormError("")
   }
 
-  const copies = num(form.copies_count)
   const loanAmount = num(form.loan_amount)
   const purpose = form.purpose_type
   const usesField = (k) => (FIELDS_BY_PURPOSE[purpose] ?? []).includes(k)
 
   const validate = () => {
     const e = {}
-    if (!(copies >= 1) || !Number.isInteger(copies)) e.copies_count = "ระบุจำนวนฉบับเป็นจำนวนเต็ม"
-    else if (copies > MAX_COPIES) e.copies_count = `ขอได้ไม่เกิน ${MAX_COPIES} ฉบับต่อครั้ง`
     if (!FIELDS_BY_PURPOSE[purpose]) e.purpose_type = "เลือกวัตถุประสงค์"
     if (purpose === "document" && !form.purpose_detail.trim()) e.purpose_detail = "ระบุว่าจะนำไปใช้ทำอะไร"
     if (purpose === "loan_guarantee" && !form.guarantor_for_name.trim()) e.guarantor_for_name = "ระบุชื่อผู้กู้ที่คุณค้ำประกันให้"
@@ -213,7 +210,7 @@ export default function MySalaryCert() {
   }
 
   const buildBody = () => {
-    const body = { copies_count: copies, purpose_type: purpose }
+    const body = { copies_count: COPIES_PER_REQUEST, purpose_type: purpose }
     for (const k of FIELDS_BY_PURPOSE[purpose]) {
       if (k === "loan_amount") {
         if (loanAmount > 0) body.loan_amount = loanAmount.toFixed(2)
@@ -356,13 +353,7 @@ export default function MySalaryCert() {
             </div>
           )}
 
-          <div className="max-w-[10rem]">
-            <label htmlFor={`${uid}-copies_count`} className={labelCls}>จำนวน (ฉบับ){req}</label>
-            <input {...fieldProps("copies_count")} type="number" inputMode="numeric" min={1} max={MAX_COPIES} step={1}
-              value={form.copies_count} onChange={(e) => setField("copies_count", e.target.value)} aria-required="true"
-              className={cx(fieldCls, "tabular-nums", errors.copies_count && errBorder)} />
-            {errMsg("copies_count")}
-          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-300">ออกให้ครั้งละ {COPIES_PER_REQUEST} ฉบับ</p>
 
           {formError && <ErrorState message={formError} />}
 
