@@ -14,6 +14,9 @@ import {
   statusTone,
   isPendingStatus,
   hhmm,
+  oooDateText,
+  oooTimeText,
+  oooDayCount,
 } from "../../lib/approval"
 import Portal from "../../components/Portal"
 import SelectDropdown from "../../components/SelectDropdown"
@@ -32,10 +35,6 @@ const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
   "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
 ]
-const THAI_MONTHS_SHORT = [
-  "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
-  "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
-]
 const THAI_WEEKDAYS = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
 
 /** "YYYY-MM-DD" → parts (no timezone shift) */
@@ -44,13 +43,6 @@ function parseISODate(iso) {
   const [y, m, d] = iso.slice(0, 10).split("-").map(Number)
   if (!y || !m || !d) return null
   return { y, m, d }
-}
-
-/** "2026-11-02" → "2 พ.ย. 2569" */
-function fmtThaiShort(iso) {
-  const p = parseISODate(iso)
-  if (!p) return "—"
-  return `${p.d} ${THAI_MONTHS_SHORT[p.m - 1]} ${p.y + 543}`
 }
 
 /** "2026-11-02" → "วันจันทร์ที่ 2 พฤศจิกายน 2569" */
@@ -107,6 +99,7 @@ const focusRing =
 const EMPTY_FORM = {
   request_type: "work",
   request_date: "",
+  return_date: "", // work only — empty = back the same day
   time_out: "",
   time_back: "",
   place: "",
@@ -127,9 +120,11 @@ const TRANSPORT_SELECT_OPTIONS = [
   { value: TRANSPORT_OTHER, label: "อื่นๆ (ระบุ)" },
 ]
 const FIELD_ORDER = [
-  "request_type", "request_date", "time_out", "time_back", "work_area", "plan_status", "plan_name",
+  "request_type", "request_date", "return_date", "time_out", "time_back", "work_area", "plan_status", "plan_name",
   "place", "reason", "transport", "transport_other", "vehicle_plate", "distance_km",
 ]
+// These decide whether the request is multi-day, so errors comparing dates/times may no longer hold
+const MULTI_DAY_INPUTS = ["request_type", "request_date", "return_date"]
 
 /** Files can be added to pending or approved work requests only (409 otherwise); personal trips need none. */
 const canAttach = (r) =>
@@ -303,11 +298,15 @@ export default function OutOfOffice() {
   const set = (k) => (e) => {
     const v = e?.target ? e.target.value : e
     setForm((f) => ({ ...f, [k]: v }))
-    if (errors[k]) setErrors((er) => ({ ...er, [k]: undefined }))
+    const stale = MULTI_DAY_INPUTS.includes(k) ? [k, "return_date", "time_back"] : [k]
+    if (stale.some((s) => errors[s])) {
+      setErrors((er) => ({ ...er, ...Object.fromEntries(stale.map((s) => [s, undefined])) }))
+    }
     setSubmitError("")
   }
 
   const isWork = form.request_type === "work"
+  const isMultiDay = isWork && !!form.request_date && !!form.return_date && form.return_date > form.request_date
 
   const openAttach = (r) => {
     laterUploads.discard()
@@ -367,12 +366,16 @@ export default function OutOfOffice() {
     if (!form.request_date) er.request_date = "กรุณาเลือกวันที่"
     if (!form.time_out) er.time_out = "กรุณาระบุเวลาออก"
     if (!form.time_back) er.time_back = "กรุณาระบุเวลากลับ"
-    if (form.time_out && form.time_back && toMin(form.time_back) <= toMin(form.time_out)) {
+    // Multi-day: time_back is on another day, so it may be earlier in the day than time_out
+    if (!isMultiDay && form.time_out && form.time_back && toMin(form.time_back) <= toMin(form.time_out)) {
       er.time_back = "เวลากลับต้องหลังเวลาออก"
     }
     if (!form.place.trim()) er.place = "กรุณาระบุสถานที่"
     if (!form.reason.trim()) er.reason = "กรุณาระบุเหตุผล"
     if (isWork) {
+      if (form.request_date && form.return_date && form.return_date < form.request_date) {
+        er.return_date = "วันกลับต้องไม่ก่อนวันที่ออก"
+      }
       if (!form.work_area) er.work_area = "กรุณาเลือกพื้นที่"
       if (!form.plan_status) er.plan_status = "กรุณาเลือกว่าตามแผนหรือปรับแผน"
       if (!form.plan_name.trim()) er.plan_name = "กรุณาระบุชื่อแผนงาน"
@@ -405,6 +408,7 @@ export default function OutOfOffice() {
       place: form.place.trim(),
       reason: form.reason.trim(),
     }
+    if (isMultiDay) body.return_date = form.return_date
     // personal: never send the work keys (backend 422s on any of them)
     if (isWork) {
       body.work_area = form.work_area
@@ -553,8 +557,28 @@ export default function OutOfOffice() {
               />
             </Field>
 
+            {isWork && (
+              <Field
+                id="ooo-return_date"
+                label="วันกลับ"
+                error={errors.return_date}
+                hint={isMultiDay ? fmtThaiLong(form.return_date) : "ไม่บังคับ — เว้นว่างถ้ากลับวันเดียวกัน"}
+              >
+                <input
+                  id="ooo-return_date"
+                  type="date"
+                  className={`${inputCls} ${errors.return_date ? inputErrCls : ""}`}
+                  value={form.return_date}
+                  min={form.request_date || undefined}
+                  onChange={set("return_date")}
+                  {...errProps("return_date")}
+                  aria-describedby={errors.return_date ? "ooo-return_date-err" : "ooo-return_date-hint"}
+                />
+              </Field>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
-              <Field id="ooo-time_out" label="เวลาออก (น.)" required error={errors.time_out}>
+              <Field id="ooo-time_out" label={isMultiDay ? "เวลาออก (วันแรก)" : "เวลาออก (น.)"} required error={errors.time_out}>
                 <input
                   id="ooo-time_out"
                   type="time"
@@ -564,13 +588,13 @@ export default function OutOfOffice() {
                   {...errProps("time_out")}
                 />
               </Field>
-              <Field id="ooo-time_back" label="เวลากลับ (น.)" required error={errors.time_back}>
+              <Field id="ooo-time_back" label={isMultiDay ? "เวลากลับ (วันกลับ)" : "เวลากลับ (น.)"} required error={errors.time_back}>
                 <input
                   id="ooo-time_back"
                   type="time"
                   className={`${inputCls} tabular-nums ${errors.time_back ? inputErrCls : ""}`}
                   value={form.time_back}
-                  min={form.time_out || undefined}
+                  min={isMultiDay ? undefined : form.time_out || undefined}
                   onChange={set("time_back")}
                   {...errProps("time_back")}
                 />
@@ -579,13 +603,15 @@ export default function OutOfOffice() {
 
             <div className="-mt-1 space-y-1">
               <p className="text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
-                {durationMin
-                  ? <>รวม <span className="font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{fmtDuration(durationMin)}</span></>
-                  : settings
-                    ? <>เวลาทำงาน <span className="tabular-nums">{hhmm(settings.work_start)}–{hhmm(settings.work_end)} น.</span> · ไม่เกิน <span className="tabular-nums">{settings.half_day_hours}</span> ชม.</>
-                    : "ระบุเวลาออกและเวลากลับ"}
+                {isMultiDay
+                  ? <>ไปกลับ <span className="font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{oooDayCount(form)} วัน</span> · <span className="tabular-nums">{oooDateText(form)}</span></>
+                  : durationMin
+                    ? <>รวม <span className="font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{fmtDuration(durationMin)}</span></>
+                    : settings
+                      ? <>เวลาทำงาน <span className="tabular-nums">{hhmm(settings.work_start)}–{hhmm(settings.work_end)} น.</span> · ไม่เกิน <span className="tabular-nums">{settings.half_day_hours}</span> ชม.</>
+                      : "ระบุเวลาออกและเวลากลับ"}
               </p>
-              {settings && <WorkdayStrip settings={settings} timeOut={form.time_out} timeBack={form.time_back} />}
+              {settings && !isMultiDay && <WorkdayStrip settings={settings} timeOut={form.time_out} timeBack={form.time_back} />}
             </div>
 
             {isWork && (
@@ -787,9 +813,9 @@ export default function OutOfOffice() {
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                           <p className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
-                            {fmtThaiShort(r.request_date)}
+                            {oooDateText(r)}
                             <span className="ml-2 font-normal text-gray-600 dark:text-gray-300">
-                              {hhmm(r.time_out)}–{hhmm(r.time_back)} น.
+                              {oooTimeText(r)}
                             </span>
                           </p>
                           <div className="flex flex-wrap items-center gap-1">
@@ -826,7 +852,7 @@ export default function OutOfOffice() {
                           type="button"
                           onClick={() => openAttach(r)}
                           className={`inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 min-h-touch md:min-h-0 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 cursor-pointer ${focusRing} focus-visible:ring-indigo-500`}
-                          aria-label={`แนบไฟล์ให้คำขอวันที่ ${fmtThaiShort(r.request_date)} เวลา ${hhmm(r.time_out)}`}
+                          aria-label={`แนบไฟล์ให้คำขอวันที่ ${oooDateText(r)} ${oooTimeText(r)}`}
                         >
                           <Paperclip className="size-4" aria-hidden="true" />
                           แนบไฟล์
@@ -837,7 +863,7 @@ export default function OutOfOffice() {
                           type="button"
                           onClick={() => openCancel(r)}
                           className={`shrink-0 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:hover:border-red-700 dark:hover:bg-red-900/20 dark:hover:text-red-300 transition-colors duration-200 cursor-pointer ${focusRing} focus-visible:ring-red-500`}
-                          aria-label={`ยกเลิกคำขอวันที่ ${fmtThaiShort(r.request_date)} เวลา ${hhmm(r.time_out)}`}
+                          aria-label={`ยกเลิกคำขอวันที่ ${oooDateText(r)} ${oooTimeText(r)}`}
                         >
                           ยกเลิก
                         </button>
@@ -860,7 +886,7 @@ export default function OutOfOffice() {
         busy={attaching}
         size="sm"
         title="แนบไฟล์เพิ่ม"
-        subtitle={attachTarget ? `${fmtThaiShort(attachTarget.request_date)} ${hhmm(attachTarget.time_out)}–${hhmm(attachTarget.time_back)} น. · ${attachTarget.place || ""}` : undefined}
+        subtitle={attachTarget ? `${oooDateText(attachTarget)} ${oooTimeText(attachTarget)} · ${attachTarget.place || ""}` : undefined}
         footer={
           <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
             <button type="button" onClick={closeAttach} disabled={attaching} className={neutralBtnCls}>ยกเลิก</button>
@@ -916,7 +942,7 @@ export default function OutOfOffice() {
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 คำขอออกนอกสถานที่วันที่{" "}
                 <span className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
-                  {fmtThaiShort(cancelTarget.request_date)} {hhmm(cancelTarget.time_out)}–{hhmm(cancelTarget.time_back)} น.
+                  {oooDateText(cancelTarget)} {oooTimeText(cancelTarget)}
                 </span>{" "}
                 ({cancelTarget.place}) จะถูกยกเลิก และเปิดใหม่ไม่ได้
               </p>

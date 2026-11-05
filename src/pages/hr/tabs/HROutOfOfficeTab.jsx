@@ -11,6 +11,8 @@ import {
   STATUS,
   STATUS_LABEL,
   hhmm,
+  oooDateText,
+  oooTimeText,
 } from "../../../lib/approval"
 import { KIND, requestNotificationsRefresh } from "../../../lib/approvalActions"
 import DecisionModal from "../../../components/DecisionModal"
@@ -29,19 +31,7 @@ const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
   "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
 ]
-const THAI_MONTHS_SHORT = [
-  "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
-  "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
-]
 const TYPE_SHORT = { work: "ปฏิบัติงาน", personal: "ธุระส่วนตัว" }
-
-/** "2026-11-02" → "2 พ.ย. 2569" (no timezone shift) */
-function fmtThaiShort(iso) {
-  if (typeof iso !== "string") return "—"
-  const [y, m, d] = iso.slice(0, 10).split("-").map(Number)
-  if (!y || !m || !d) return "—"
-  return `${d} ${THAI_MONTHS_SHORT[m - 1]} ${y + 543}`
-}
 
 function toMin(t) {
   if (typeof t !== "string" || t.length < 4) return null
@@ -281,7 +271,7 @@ function RequestsPanel({ branchOptions, branchName }) {
                   </div>
                 </div>
                 <p className="text-sm text-gray-800 dark:text-gray-200 tabular-nums">
-                  {fmtThaiShort(r.request_date)} · {hhmm(r.time_out)}–{hhmm(r.time_back)} น.
+                  {oooDateText(r)} · {oooTimeText(r)}
                   <span className="text-gray-500 dark:text-gray-400"> · {TYPE_SHORT[r.request_type] || r.request_type}</span>
                 </p>
                 <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{r.place}</p>
@@ -323,8 +313,8 @@ function RequestsPanel({ branchOptions, branchName }) {
                       <p className="text-xs text-gray-500 dark:text-gray-400">{branchName(r.branch_id) || "ไม่ระบุสาขา"}</p>
                     </td>
                     <td className={`${tdCls} whitespace-nowrap tabular-nums`}>
-                      <p>{fmtThaiShort(r.request_date)}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{hhmm(r.time_out)}–{hhmm(r.time_back)} น.</p>
+                      <p>{oooDateText(r)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{oooTimeText(r)}</p>
                     </td>
                     <td className={`${tdCls} whitespace-nowrap`} title={OOO_TYPE_LABEL[r.request_type]}>
                       {TYPE_SHORT[r.request_type] || r.request_type}
@@ -371,7 +361,7 @@ function RequestsPanel({ branchOptions, branchName }) {
           kind={KIND.OOO}
           req={decision.req}
           title={`${requesterName(decision.req)} — ${OOO_TYPE_LABEL[decision.req.request_type] || "ขอออกนอกสถานที่"}`}
-          summary={`${fmtThaiShort(decision.req.request_date)} ${hhmm(decision.req.time_out)}–${hhmm(decision.req.time_back)} น. · ${decision.req.place || ""}`}
+          summary={`${oooDateText(decision.req)} ${oooTimeText(decision.req)} · ${decision.req.place || ""}`}
           onClose={() => setDecision(null)}
           onDone={onDecisionDone}
           onConflict={onDecisionConflict}

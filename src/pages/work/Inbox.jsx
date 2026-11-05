@@ -26,6 +26,8 @@ import {
   OOO_TYPE_LABEL,
   oooWorkRows,
   hhmm,
+  oooDateText,
+  oooTimeText,
   isApproverRole,
   stageOf,
 } from "../../lib/approval"
@@ -105,7 +107,7 @@ function toItem(kind, r) {
       req: r,
       name: requesterName(r),
       title: OOO_TYPE_LABEL[r.request_type] || "ขอออกนอกสถานที่",
-      when: `${fmtDateTh(r.request_date)} เวลา ${hhmm(r.time_out)}–${hhmm(r.time_back)} น.`,
+      when: `${oooDateText(r)} · ${oooTimeText(r)}`,
       place: r.place,
       reason: r.reason,
       submittedAt: r.created_at,
