@@ -591,7 +591,7 @@ export default function FacilityReport() {
   ]
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5 pb-12">
+    <div className="space-y-5 pb-12">
       {/* Page title */}
       <PageTitle title="รายได้-ค่าใช้จ่ายศูนย์เรียนรู้และพัฒนาผลิตภัณฑ์" />
 

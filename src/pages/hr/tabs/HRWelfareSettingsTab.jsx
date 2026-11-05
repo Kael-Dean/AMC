@@ -280,7 +280,7 @@ function RatesSection({ canEdit }) {
         <p className="text-sm text-gray-500 dark:text-gray-400">ยังไม่มีอัตราในระบบ</p>
       ) : (
         <div className="space-y-4">
-          <div className="max-w-2xl overflow-x-auto rounded-xl ring-1 ring-gray-200/70 dark:ring-line">
+          <div className="overflow-x-auto rounded-xl ring-1 ring-gray-200/70 dark:ring-line">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500 dark:border-line dark:bg-white/[.03] dark:text-gray-400">

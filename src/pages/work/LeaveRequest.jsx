@@ -696,7 +696,7 @@ export default function LeaveRequest() {
       {/* Hidden print document (always in DOM after first render) */}
       <PrintDocument form={form} totalDays={totalDays} />
 
-      <div className="max-w-2xl mx-auto space-y-5 pb-12 no-print">
+      <div className="space-y-5 pb-12 no-print">
         {/* Page title */}
         <PageTitle title="ใบลา" />
 

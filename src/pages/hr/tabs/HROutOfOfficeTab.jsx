@@ -594,7 +594,7 @@ function SettingsPanel() {
 
   if (loading) {
     return (
-      <div className={`${cardCls} p-5 space-y-4 max-w-2xl`} aria-busy="true" aria-label="กำลังโหลดการตั้งค่า">
+      <div className={`${cardCls} p-5 space-y-4`} aria-busy="true" aria-label="กำลังโหลดการตั้งค่า">
         {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-10" />)}
       </div>
     )
@@ -614,7 +614,7 @@ function SettingsPanel() {
       : hint ? <p id={`ooo-s-${k}-hint`} className="text-xs text-gray-500 dark:text-gray-400">{hint}</p> : null
 
   return (
-    <form onSubmit={handleSave} noValidate className="max-w-2xl space-y-4">
+    <form onSubmit={handleSave} noValidate className="space-y-4">
       <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 ring-1 ring-amber-200 dark:ring-amber-800/50 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
         ค่าตั้งต้นเหล่านี้ FRD กำหนดไว้ชั่วคราวและยังรอ AMC ยืนยัน ฝ่ายบุคคลแก้ไขให้ตรงระเบียบได้ที่หน้านี้
       </div>

@@ -392,7 +392,7 @@ export default function HRStaffSignup() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5 pb-10">
+    <div className="space-y-5 pb-10">
       <PageTitle title="ลงทะเบียนเจ้าหน้าที่ใหม่" />
 
       {error && (
