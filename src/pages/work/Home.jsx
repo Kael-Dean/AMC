@@ -21,20 +21,21 @@ const SELF_SERVICE_GROUP = "งานบุคคล"
 const PINNED_PATHS = ["/Buy", "/sales", "/stock", "/order"]
 const TRADING_GROUP_NAME = "ธุรกิจรวบรวมผลผลิต"
 
-/* Function tiles (desktop card, phone tile, shortcut) share one surface.
-   Boundary reaches 3:1 (WCAG 1.4.11) against the tile and whatever sits behind it:
-   light gray-500/80 → 3.28 on white · 3.14 on the gray-50 canvas;
-   dark line-field → 3.43 on surface · 3.17 on raised · 3.67 on canvas. */
+/* Function tiles (desktop card, phone tile, shortcut) share one surface: a hairline
+   plus a soft layered shadow, Apple-style. The dark semibold label and the icon are
+   what identify the control, so the hairline stays quiet on purpose. */
 const tileMotionCls =
-  "group cursor-pointer transition-[background-color,border-color,box-shadow,transform] duration-150 motion-safe:active:translate-y-px"
+  "group cursor-pointer transition-[background-color,border-color,box-shadow,transform] duration-200 motion-safe:active:translate-y-px"
 const tileSurfaceCls =
-  "border border-gray-500/80 bg-white shadow-sm hover:border-indigo-500 hover:bg-indigo-50 hover:shadow-md active:bg-indigo-100 active:shadow-sm " +
-  "dark:border-line-field dark:bg-raised dark:hover:border-indigo-400 dark:hover:bg-indigo-500/15 dark:active:bg-indigo-500/25"
+  "border border-black/[.08] bg-white shadow-[0_1px_2px_rgb(0_0_0/0.05),0_2px_8px_rgb(0_0_0/0.05)] " +
+  "hover:border-indigo-500/40 hover:bg-indigo-50/50 hover:shadow-[0_2px_4px_rgb(0_0_0/0.05),0_8px_20px_rgb(0_0_0/0.08)] " +
+  "active:bg-indigo-50 active:shadow-[0_1px_2px_rgb(0_0_0/0.05)] " +
+  "dark:border-line-strong dark:bg-raised dark:shadow-none dark:hover:border-indigo-400/60 dark:hover:bg-indigo-500/15 dark:hover:shadow-none dark:active:bg-indigo-500/25 dark:active:shadow-none"
 /* Locked = dashed, flat and recessed, so it never reads as colour alone. Only the icon
    is dimmed: opacity on the whole tile took the label to 4.06:1 and faded the chip. */
 const tileLockedCls =
-  "border border-dashed border-gray-500/80 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 " +
-  "dark:border-line-field dark:bg-transparent dark:hover:bg-white/[.04] dark:active:bg-white/[.08]"
+  "border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 " +
+  "dark:border-line-strong dark:bg-transparent dark:hover:bg-white/[.04] dark:active:bg-white/[.08]"
 const tileLabelCls =
   "text-gray-800 transition-colors duration-150 group-hover:text-indigo-700 dark:text-gray-100 dark:group-hover:text-indigo-200"
 const tileLabelLockedCls = "text-gray-600 dark:text-gray-400"
