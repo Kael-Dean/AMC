@@ -229,7 +229,7 @@ function StepHistory() {
 export default function MyFinancial() {
   const { can } = useCan()
   return (
-    <div className="mx-auto max-w-4xl space-y-8 pb-10">
+    <div className="space-y-8 pb-10">
       <PageTitle title="ข้อมูลการเงินของฉัน" />
 
       <OnFileCard />

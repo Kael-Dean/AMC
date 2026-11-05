@@ -209,7 +209,7 @@ export default function HRPersonnelDetail() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl pb-10">
+      <div className="pb-10">
         <PageLoader variant="cards" rows={4} message="กำลังโหลดข้อมูลเจ้าหน้าที่…" />
       </div>
     )
@@ -217,7 +217,7 @@ export default function HRPersonnelDetail() {
 
   if (error) {
     return (
-      <div className="max-w-4xl">
+      <div>
         <ErrorState message={error} onRetry={fetchDetail} />
       </div>
     )
@@ -239,7 +239,7 @@ export default function HRPersonnelDetail() {
   const parentsList = data.parents ?? []
 
   return (
-    <div className="space-y-5 pb-10 max-w-4xl">
+    <div className="space-y-5 pb-10">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">

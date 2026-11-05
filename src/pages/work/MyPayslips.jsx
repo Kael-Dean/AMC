@@ -10,7 +10,7 @@ import { backState } from "../../lib/drill"
 
 export default function MyPayslips() {
   return (
-    <div className="mx-auto max-w-4xl space-y-5 pb-10">
+    <div className="space-y-5 pb-10">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <PageTitle title="สลิปเงินเดือนของฉัน" />
         <Link

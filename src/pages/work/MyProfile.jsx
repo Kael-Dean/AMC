@@ -203,7 +203,7 @@ export default function MyProfile() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto pb-10">
+      <div className="pb-10">
         <PageLoader variant="cards" rows={4} message="กำลังโหลดข้อมูลโปรไฟล์…" />
       </div>
     )
@@ -301,7 +301,7 @@ export default function MyProfile() {
   const isFinOther = reportForm.field_name === FINANCIAL_OTHER
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5 pb-10">
+    <div className="space-y-5 pb-10">
       <div className="flex items-start justify-end gap-3 flex-wrap">
         <PageTitle title="ข้อมูลส่วนตัว" />
         <button
@@ -338,164 +338,171 @@ export default function MyProfile() {
 
       {error && <ErrorState message={error} onRetry={loadProfile} />}
 
-      {/* ข้อมูลบัญชี */}
-      <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
-        <SectionTitle>ข้อมูลบัญชี</SectionTitle>
-        <InfoRow label="Username" value={profile?.username ?? localUser.username} mono />
-        <InfoRow label="รหัสเจ้าหน้าที่" value={profile?.id ?? localUser.id} />
-        <InfoRow label="ชื่อ-นามสกุล" value={displayName !== localUser.username ? displayName : null} />
-        <InfoRow label="Email" value={profile?.email} />
-        <InfoRow label="ตำแหน่งงาน" value={positionName} />
-        <InfoRow label="สาขา" value={branchName} />
-        <InfoRow label="สิทธิ์ผู้ใช้" value={roleLabel} />
-        <InfoRow label="สถานะบัญชี" value={profile?.account_status} />
-      </div>
+      {/* จอกว้าง: 2 คอลัมน์ให้ใช้พื้นที่เต็มจอ · มือถือ/จอแคบ: เรียงต่อกันตามเดิม */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-start">
+        <div className="min-w-0 space-y-5">
+          {/* ข้อมูลบัญชี */}
+          <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
+            <SectionTitle>ข้อมูลบัญชี</SectionTitle>
+            <InfoRow label="Username" value={profile?.username ?? localUser.username} mono />
+            <InfoRow label="รหัสเจ้าหน้าที่" value={profile?.id ?? localUser.id} />
+            <InfoRow label="ชื่อ-นามสกุล" value={displayName !== localUser.username ? displayName : null} />
+            <InfoRow label="Email" value={profile?.email} />
+            <InfoRow label="ตำแหน่งงาน" value={positionName} />
+            <InfoRow label="สาขา" value={branchName} />
+            <InfoRow label="สิทธิ์ผู้ใช้" value={roleLabel} />
+            <InfoRow label="สถานะบัญชี" value={profile?.account_status} />
+          </div>
 
-      {/* สาขาที่เข้าถึงได้ — แสดงเฉพาะผู้ใช้ที่มีสาขาเพิ่มเติม */}
-      {myBranches?.extra_branches?.length > 0 && (
-        <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
-          <SectionTitle>สาขาที่เข้าถึงได้</SectionTitle>
-          <div className="flex flex-wrap gap-2">
-            {myBranches.home_branch && (
-              <span className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3 py-1.5 text-sm font-semibold text-indigo-700 ring-1 ring-indigo-200/70 dark:bg-indigo-900/30 dark:text-indigo-300 dark:ring-indigo-800/50">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                {myBranches.home_branch.branch_name}
-                <span className="text-[11px] font-normal text-indigo-400 dark:text-indigo-300/70">สาขาหลัก</span>
-              </span>
+          {/* สาขาที่เข้าถึงได้ — แสดงเฉพาะผู้ใช้ที่มีสาขาเพิ่มเติม */}
+          {myBranches?.extra_branches?.length > 0 && (
+            <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
+              <SectionTitle>สาขาที่เข้าถึงได้</SectionTitle>
+              <div className="flex flex-wrap gap-2">
+                {myBranches.home_branch && (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3 py-1.5 text-sm font-semibold text-indigo-700 ring-1 ring-indigo-200/70 dark:bg-indigo-900/30 dark:text-indigo-300 dark:ring-indigo-800/50">
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    {myBranches.home_branch.branch_name}
+                    <span className="text-[11px] font-normal text-indigo-400 dark:text-indigo-300/70">สาขาหลัก</span>
+                  </span>
+                )}
+                {myBranches.extra_branches.map((b) => (
+                  <span key={b.id} className="inline-flex items-center rounded-xl bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 ring-1 ring-gray-200 dark:bg-gray-700/50 dark:text-gray-200 dark:ring-gray-600">
+                    {b.branch_name}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
+                สลับสาขาที่กำลังดูได้จากเมนูสาขาด้านบนขวา
+              </p>
+            </div>
+          )}
+
+          {/* ข้อมูลส่วนบุคคล */}
+          <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
+            <SectionTitle>ข้อมูลส่วนบุคคล</SectionTitle>
+            <InfoRow label="วันที่เริ่มงาน" value={fmtDate(pi.hired)} />
+            <InfoRow label="อายุงาน" value={getTenure(profile) ? tenureText(profile) : null} />
+            <InfoRow label="เลขบัตรประชาชน" value={pi.cid ? maskCID(pi.cid) : null} mono />
+            <InfoRow label="วันเกิด" value={fmtDate(pi.birthday)} />
+            <InfoRow label="อายุ" value={pi.age != null ? `${pi.age} ปี` : null} />
+            <InfoRow label="เพศ" value={GENDER_LABEL[pi.gender] ?? pi.gender} />
+            <InfoRow label="สถานภาพสมรส" value={MARITAL_LABEL[pi.m_status] ?? pi.m_status} />
+            <InfoRow label="จำนวนบุตร" value={pi.children_number != null ? `${pi.children_number} คน` : null} />
+            <InfoRow label="เบอร์โทรศัพท์" value={pi.p_number} />
+            <InfoRow label={<span className="flex items-center gap-1"><img src={lineIcon} alt="LINE" className="h-3.5 w-3.5 object-contain" />Line ID</span>} value={pi.line_id} />
+            <InfoRow label="เบอร์ฉุกเฉิน" value={pi.e_contact} />
+            <InfoRow label="เลขบัญชีธนาคาร" value={pi.bank_no} mono />
+            <InfoRow label="เลขบัญชีค้ำประกัน" value={pi.guarantee_bank_no} mono />
+            <InfoRow label="โรคประจำตัว" value={pi.underlying_disease} />
+            {!pi.hired && !pi.cid && !pi.p_number && (
+              <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-3 italic">ยังไม่มีข้อมูลส่วนบุคคล — กรุณาติดต่อฝ่าย HR</p>
             )}
-            {myBranches.extra_branches.map((b) => (
-              <span key={b.id} className="inline-flex items-center rounded-xl bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 ring-1 ring-gray-200 dark:bg-gray-700/50 dark:text-gray-200 dark:ring-gray-600">
-                {b.branch_name}
-              </span>
-            ))}
           </div>
-          <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
-            สลับสาขาที่กำลังดูได้จากเมนูสาขาด้านบนขวา
-          </p>
+
+          {/* ที่อยู่ */}
+          <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
+            <SectionTitle>ที่อยู่</SectionTitle>
+            {addressParts
+              ? <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{addressParts}</p>
+              : <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-3 italic">ยังไม่มีข้อมูลที่อยู่</p>
+            }
+          </div>
         </div>
-      )}
 
-      {/* ข้อมูลส่วนบุคคล */}
-      <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
-        <SectionTitle>ข้อมูลส่วนบุคคล</SectionTitle>
-        <InfoRow label="วันที่เริ่มงาน" value={fmtDate(pi.hired)} />
-        <InfoRow label="อายุงาน" value={getTenure(profile) ? tenureText(profile) : null} />
-        <InfoRow label="เลขบัตรประชาชน" value={pi.cid ? maskCID(pi.cid) : null} mono />
-        <InfoRow label="วันเกิด" value={fmtDate(pi.birthday)} />
-        <InfoRow label="อายุ" value={pi.age != null ? `${pi.age} ปี` : null} />
-        <InfoRow label="เพศ" value={GENDER_LABEL[pi.gender] ?? pi.gender} />
-        <InfoRow label="สถานภาพสมรส" value={MARITAL_LABEL[pi.m_status] ?? pi.m_status} />
-        <InfoRow label="จำนวนบุตร" value={pi.children_number != null ? `${pi.children_number} คน` : null} />
-        <InfoRow label="เบอร์โทรศัพท์" value={pi.p_number} />
-        <InfoRow label={<span className="flex items-center gap-1"><img src={lineIcon} alt="LINE" className="h-3.5 w-3.5 object-contain" />Line ID</span>} value={pi.line_id} />
-        <InfoRow label="เบอร์ฉุกเฉิน" value={pi.e_contact} />
-        <InfoRow label="เลขบัญชีธนาคาร" value={pi.bank_no} mono />
-        <InfoRow label="เลขบัญชีค้ำประกัน" value={pi.guarantee_bank_no} mono />
-        <InfoRow label="โรคประจำตัว" value={pi.underlying_disease} />
-        {!pi.hired && !pi.cid && !pi.p_number && (
-          <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-3 italic">ยังไม่มีข้อมูลส่วนบุคคล — กรุณาติดต่อฝ่าย HR</p>
-        )}
-      </div>
-
-      {/* ที่อยู่ */}
-      <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
-        <SectionTitle>ที่อยู่</SectionTitle>
-        {addressParts
-          ? <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{addressParts}</p>
-          : <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-3 italic">ยังไม่มีข้อมูลที่อยู่</p>
-        }
-      </div>
-
-      {/* ประวัติการศึกษา */}
-      <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
-        <SectionTitle>ประวัติการศึกษา</SectionTitle>
-        {edu.length > 0 ? (
-          <div className="space-y-3">
-            {edu.map((e, i) => (
-              <div key={i} className="rounded-xl bg-gray-50 dark:bg-gray-700/40 p-3 text-sm space-y-0.5">
-                <p className="font-semibold text-gray-800 dark:text-gray-200">{e.ed_level ?? "—"}</p>
-                {e.inst_name && <p className="text-gray-600 dark:text-gray-400">{e.inst_name}</p>}
-                {(e.from_date || e.to_date) && (
-                  <p className="text-xs text-gray-500">{fmtDate(e.from_date)} – {e.to_date ? fmtDate(e.to_date) : "ปัจจุบัน"}</p>
-                )}
+        <div className="min-w-0 space-y-5">
+          {/* ประวัติการศึกษา */}
+          <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
+            <SectionTitle>ประวัติการศึกษา</SectionTitle>
+            {edu.length > 0 ? (
+              <div className="space-y-3">
+                {edu.map((e, i) => (
+                  <div key={i} className="rounded-xl bg-gray-50 dark:bg-gray-700/40 p-3 text-sm space-y-0.5">
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">{e.ed_level ?? "—"}</p>
+                    {e.inst_name && <p className="text-gray-600 dark:text-gray-400">{e.inst_name}</p>}
+                    {(e.from_date || e.to_date) && (
+                      <p className="text-xs text-gray-500">{fmtDate(e.from_date)} – {e.to_date ? fmtDate(e.to_date) : "ปัจจุบัน"}</p>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-3 italic">ยังไม่มีข้อมูลการศึกษา</p>
+            )}
           </div>
-        ) : (
-          <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-3 italic">ยังไม่มีข้อมูลการศึกษา</p>
-        )}
-      </div>
 
-      {/* ประวัติการทำงาน */}
-      <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
-        <SectionTitle>ประวัติการทำงาน</SectionTitle>
-        {workExp.length > 0 ? (
-          <div className="space-y-3">
-            {workExp.map((w, i) => (
-              <div key={i} className="rounded-xl bg-gray-50 dark:bg-gray-700/40 p-3 text-sm space-y-0.5">
-                <p className="font-semibold text-gray-800 dark:text-gray-200">{w.company_name ?? "—"}</p>
-                {w.position && <p className="text-gray-600 dark:text-gray-400">ตำแหน่ง: {w.position}</p>}
-                {(w.from_date || w.to_date) && (
-                  <p className="text-xs text-gray-500">{fmtSpanDate(w.from_date, "start")} – {w.to_date ? fmtSpanDate(w.to_date, "end") : "ปัจจุบัน"}</p>
-                )}
+          {/* ประวัติการทำงาน */}
+          <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
+            <SectionTitle>ประวัติการทำงาน</SectionTitle>
+            {workExp.length > 0 ? (
+              <div className="space-y-3">
+                {workExp.map((w, i) => (
+                  <div key={i} className="rounded-xl bg-gray-50 dark:bg-gray-700/40 p-3 text-sm space-y-0.5">
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">{w.company_name ?? "—"}</p>
+                    {w.position && <p className="text-gray-600 dark:text-gray-400">ตำแหน่ง: {w.position}</p>}
+                    {(w.from_date || w.to_date) && (
+                      <p className="text-xs text-gray-500">{fmtSpanDate(w.from_date, "start")} – {w.to_date ? fmtSpanDate(w.to_date, "end") : "ปัจจุบัน"}</p>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-3 italic">ยังไม่มีข้อมูลประวัติการทำงาน</p>
+            )}
           </div>
-        ) : (
-          <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-3 italic">ยังไม่มีข้อมูลประวัติการทำงาน</p>
-        )}
-      </div>
 
-      {/* ประวัติอาชญากรรม */}
-      <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
-        <SectionTitle>ประวัติอาชญากรรม</SectionTitle>
-        {crimeRec.length > 0 ? (
-          <div className="space-y-3">
-            {crimeRec.map((c, i) => (
-              <div key={i} className="rounded-xl bg-gray-50 dark:bg-gray-700/40 p-3 text-sm space-y-0.5">
-                <p className="font-semibold text-gray-800 dark:text-gray-200">{c.charge ?? "—"}</p>
-                {c.court && <p className="text-gray-600 dark:text-gray-400">ศาล: {c.court}</p>}
-                {c.case_date && <p className="text-xs text-gray-500">วันที่คดี: {fmtDate(c.case_date)}</p>}
-                {c.outcome && <p className="text-gray-600 dark:text-gray-400">ผล: {c.outcome}</p>}
+          {/* ประวัติอาชญากรรม */}
+          <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
+            <SectionTitle>ประวัติอาชญากรรม</SectionTitle>
+            {crimeRec.length > 0 ? (
+              <div className="space-y-3">
+                {crimeRec.map((c, i) => (
+                  <div key={i} className="rounded-xl bg-gray-50 dark:bg-gray-700/40 p-3 text-sm space-y-0.5">
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">{c.charge ?? "—"}</p>
+                    {c.court && <p className="text-gray-600 dark:text-gray-400">ศาล: {c.court}</p>}
+                    {c.case_date && <p className="text-xs text-gray-500">วันที่คดี: {fmtDate(c.case_date)}</p>}
+                    {c.outcome && <p className="text-gray-600 dark:text-gray-400">ผล: {c.outcome}</p>}
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-3 italic">ไม่มีประวัติอาชญากรรม</p>
+            )}
           </div>
-        ) : (
-          <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-3 italic">ไม่มีประวัติอาชญากรรม</p>
-        )}
-      </div>
 
-      {/* ใบขับขี่ — แก้เองได้ตลอด แม้ onboarding เสร็จแล้ว (PUT /personnel/me/onboarding/license) */}
-      {onboarding.data && (
-        <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
-          <SectionTitle>ใบขับขี่</SectionTitle>
-          <p className="-mt-1 mb-3 text-xs text-gray-500 dark:text-gray-400">ต่ออายุหรือได้ใบใหม่ แก้ที่นี่ได้เลย ไม่ต้องแจ้ง HR</p>
-          <RowsStep sectionKey="license" data={onboarding.data} embedded />
-        </div>
-      )}
+          {/* ใบขับขี่ — แก้เองได้ตลอด แม้ onboarding เสร็จแล้ว (PUT /personnel/me/onboarding/license) */}
+          {onboarding.data && (
+            <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
+              <SectionTitle>ใบขับขี่</SectionTitle>
+              <p className="-mt-1 mb-3 text-xs text-gray-500 dark:text-gray-400">ต่ออายุหรือได้ใบใหม่ แก้ที่นี่ได้เลย ไม่ต้องแจ้ง HR</p>
+              <RowsStep sectionKey="license" data={onboarding.data} embedded />
+            </div>
+          )}
 
-      {/* ประวัติกิจกรรม — ประชุม / สัมมนา / ฝึกอบรม / สอบ (3G) */}
-      {can("self.history.view") && <MyActivitiesSection />}
+          {/* ประวัติกิจกรรม — ประชุม / สัมมนา / ฝึกอบรม / สอบ (3G) */}
+          {can("self.history.view") && <MyActivitiesSection />}
 
-      {/* ข้อมูลการเงิน */}
-      {financial && (
-        <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
-          <SectionTitle>ข้อมูลทางการเงิน</SectionTitle>
-          {/* รายการหักทั้งหมด / สลิป / ประวัติเลื่อนขั้น อยู่ที่ /my-financial ที่เดียว — ที่นี่แสดงแค่สรุป */}
-          <InfoRow label="เงินเดือนปัจจุบัน" value={fmtMoney(fin.current_salary)} />
-          {can("self.payroll.view") && (
-            <Link
-              to="/my-financial"
-              state={backState("ข้อมูลส่วนตัว")}
-              className="mt-3 inline-flex min-h-touch md:min-h-0 items-center gap-1 rounded text-sm font-medium text-indigo-700 hover:underline dark:text-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            >
-              ดูรายการหัก สลิปเงินเดือน และประวัติการเลื่อนขั้น <ChevronRight aria-hidden="true" className="size-4" />
-            </Link>
+          {/* ข้อมูลการเงิน */}
+          {financial && (
+            <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5">
+              <SectionTitle>ข้อมูลทางการเงิน</SectionTitle>
+              {/* รายการหักทั้งหมด / สลิป / ประวัติเลื่อนขั้น อยู่ที่ /my-financial ที่เดียว — ที่นี่แสดงแค่สรุป */}
+              <InfoRow label="เงินเดือนปัจจุบัน" value={fmtMoney(fin.current_salary)} />
+              {can("self.payroll.view") && (
+                <Link
+                  to="/my-financial"
+                  state={backState("ข้อมูลส่วนตัว")}
+                  className="mt-3 inline-flex min-h-touch md:min-h-0 items-center gap-1 rounded text-sm font-medium text-indigo-700 hover:underline dark:text-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                >
+                  ดูรายการหัก สลิปเงินเดือน และประวัติการเลื่อนขั้น <ChevronRight aria-hidden="true" className="size-4" />
+                </Link>
+              )}
+            </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* สิทธิ์การลา — LeaveQuotaOut (backend v1.1.0) */}
       {financial && Object.keys(quota).length > 0 && (
@@ -528,7 +535,7 @@ export default function MyProfile() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-2">
             {QUOTA_ROWS.map((q) => (
               <div key={q.key} className="rounded-xl bg-gray-50 dark:bg-gray-700/40 p-3 text-center">
                 <p className="text-xs text-gray-500 dark:text-gray-400">{q.label}</p>

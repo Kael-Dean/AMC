@@ -118,7 +118,7 @@ function HistoryByEmployee({ onGoToPositions, initialEmployeeId = "", onEmployee
   const info = useEmployeeSalary(empId, 0, byId, emp)
 
   return (
-    <div className="max-w-4xl space-y-4">
+    <div className="space-y-4">
       <EmployeePicker
         id="hist-emp"
         value={empId}

@@ -480,7 +480,7 @@ export default function LoanRequest() {
   const tabs = [{ value: "form", label: "ยื่นคำขอ" }, { value: "history", label: "ประวัติคำขอ" }]
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5 pb-10">
+    <div className="space-y-5 pb-10">
       <PageTitle title="ขอกู้เงินกองทุนสงเคราะห์" />
 
       <Tabs items={tabs} value={tab} onChange={setTab} ariaLabel="ขอกู้เงิน" idBase={ID_BASE} />
