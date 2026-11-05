@@ -82,7 +82,7 @@ function Stat({ label, children, hint, strong }) {
 
 /** เงินต้นคงเหลือของสัญญาที่กำลังผ่อน: ยอดกู้ − เงินต้นงวดที่ชำระแล้ว (สูตรเดียวกับ outstanding_principal ของ backend) */
 function useOutstandingLoans() {
-  const [state, setState] = useState({ loading: true, error: false, count: 0, total: 0 })
+  const [state, setState] = useState({ loading: true, error: false, count: 0, total: 0, ids: [] })
 
   useEffect(() => {
     let cancelled = false
@@ -95,10 +95,10 @@ function useOutstandingLoans() {
           return (Number(l.amount) || 0) - paid
         }))
         if (cancelled) return
-        setState({ loading: false, error: false, count: active.length, total: balances.reduce((a, b) => a + b, 0) })
+        setState({ loading: false, error: false, count: active.length, total: balances.reduce((a, b) => a + b, 0), ids: active.map((l) => l.id) })
       })
       .catch(() => {
-        if (!cancelled) setState({ loading: false, error: true, count: 0, total: 0 })
+        if (!cancelled) setState({ loading: false, error: true, count: 0, total: 0, ids: [] })
       })
     return () => { cancelled = true }
   }, [])
@@ -112,6 +112,15 @@ function OutstandingStat({ loading, error, count, total }) {
   if (error) return <Stat label={label} hint="โหลดข้อมูลไม่สำเร็จ">—</Stat>
   if (count === 0) return <Stat label={label}>ไม่มี</Stat>
   return <Stat label={label} hint={`เงินต้น จาก ${count} สัญญา`}>{money(total)}</Stat>
+}
+
+/** เลขที่สัญญาที่กำลังผ่อน — ใช้รหัสสัญญา (#id) แบบเดียวกับหน้าฝ่ายบุคคลและหน้าเอกสาร */
+function ContractNoStat({ loading, error, ids }) {
+  const label = "เลขที่สัญญา"
+  if (loading) return <Stat label={label}><span className="font-normal text-gray-500 dark:text-gray-400">กำลังโหลด…</span></Stat>
+  if (error) return <Stat label={label} hint="โหลดข้อมูลไม่สำเร็จ">—</Stat>
+  if (ids.length === 0) return <Stat label={label}>—</Stat>
+  return <Stat label={label}>{ids.map((id) => `#${id}`).join(", ")}</Stat>
 }
 
 function EligibilityCard({ data, loading, error, onRetry, outstanding }) {
@@ -134,6 +143,7 @@ function EligibilityCard({ data, loading, error, onRetry, outstanding }) {
         <Stat label="เพดานตามระเบียบ">{money(data.income_cap)}</Stat>
         <Stat label="เงินได้สุทธิล่าสุด">{money(data.latest_net_pay)}</Stat>
         {data.retirement_date && <Stat label="วันเกษียณ">{thaiDate(data.retirement_date, { long: true })}</Stat>}
+        <ContractNoStat {...outstanding} />
         <OutstandingStat {...outstanding} />
       </dl>
       <Warnings items={warningList(data)} />
