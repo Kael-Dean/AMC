@@ -4,6 +4,7 @@ import { apiAuth, apiDownload } from "../../lib/api"   // helper แนบ token
 import { cx, baseField, labelCls, helpTextCls, errorTextCls, secondaryBtnCls } from "../../lib/styles"
 import ExcelDownloadButton from "../../components/ExcelDownloadButton"
 import { can } from "../../lib/permissions"
+import { checkDocumentReports } from "../../lib/functionCatalogue"
 import ComboBox from "../../components/ComboBox"
 import BranchLockNote from "../../components/BranchLockNote"
 import useBranchLock, { scopedBranchId } from "../../hooks/useBranchLock"
@@ -668,6 +669,16 @@ function allowedPhase1Reports() {
 }
 const allowedTradeReports = () => TRADE_REPORTS.filter((r) => can(r.perm))
 const allowedHrReports = () => HR_REPORTS.filter((r) => can(r.perm))
+
+// ช่องค้นหาฟังก์ชันใน Topbar มีสำเนาชื่อ/คีย์รายงาน (lib/functionCatalogue.js → DOCUMENT_REPORTS) — เพิ่มรายงานที่นี่ต้องเพิ่มที่นั่นด้วย
+if (import.meta.env.DEV) {
+  checkDocumentReports([
+    ...PLAN_REPORTS,
+    ...PHASE1_REPORTS.map((r) => ({ ...r, perm: phase1Perm(r.key) })),
+    ...TRADE_REPORTS,
+    ...HR_REPORTS,
+  ])
+}
 const isPdfType = (t) => t === "pdf" || t === "phase1_pdf" || t === "hr_pdf"
 
 // Phase 1 split for the landing cards: member/share registry vs rice buy/sell.
