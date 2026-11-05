@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useRef } from "react"
 import ComboBox from "../../../components/ComboBox"
+import CompanySearchStatus from "../../../components/CompanySearchStatus"
 import Badge from "../../../components/ui/Badge"
 import {
   cx, baseField, fieldDisabled, labelCls, helpTextCls, errorTextCls, cardCls,
@@ -487,6 +488,7 @@ export function CompanyNameField({ form }) {
           })}
         </div>
       )}
+      <CompanySearchStatus form={form} />
     </>
   )
 }

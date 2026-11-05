@@ -9,6 +9,7 @@
 import { useEffect, useRef } from "react"
 import { ChevronDown } from "lucide-react"
 import ComboBox from "../../../components/ComboBox"
+import CompanySearchStatus from "../../../components/CompanySearchStatus"
 import { Badge, SearchResults } from "../../../components/ui"
 import {
   cx, baseField, labelCls, helpTextCls, errorTextCls, cardCls,
@@ -304,7 +305,6 @@ function PhoneCustomerSection({ form }) {
               onHighlight={setCompanyHighlighted}
               onPick={(r) => pickCompanyResult(r)}
               loading={loadingCustomer}
-              emptyText="ไม่พบ กรอกข้อมูลเองได้"
               ariaLabel="ผลค้นหาบริษัท"
               renderResult={(r) => (
                 <div>
@@ -313,6 +313,7 @@ function PhoneCustomerSection({ form }) {
                 </div>
               )}
             />
+            <CompanySearchStatus form={form} />
           </div>
 
           {field("taxId", "เลขผู้เสียภาษี", { inputMode: "numeric", maxLength: 13, digits: true, placeholder: "13 หลัก" }, !errors.taxId && <p className={helpTextCls}>13 หลัก</p>)}
@@ -768,6 +769,7 @@ function DesktopCustomerSection({ form }) {
                 })}
               </div>
             )}
+            <CompanySearchStatus form={form} />
           </div>
 
           {textField("taxId", "เลขประจำตัวผู้เสียภาษี", {

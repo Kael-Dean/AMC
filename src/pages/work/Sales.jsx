@@ -81,7 +81,10 @@ function Sales() {
   const [showCompanyList, setShowCompanyList] = useState(false)
   const companyBoxRef = useRef(null)
   const companyInputRef = useRef(null)
-  const companySuppressSearchRef = useRef(false)
+  // ชื่อบริษัทที่เพิ่งเลือก — ข้ามการค้นหาเฉพาะเมื่อข้อความตรงกับชื่อนี้ (null = ไม่ข้าม)
+  const companySuppressSearchRef = useRef(null)
+  // ผลการค้นหาชื่อบริษัทล่าสุด: { query, failed } — null ระหว่างรอผล/ยังไม่ได้ค้น
+  const [companySearchOutcome, setCompanySearchOutcome] = useState(null)
   const [companyHighlighted, setCompanyHighlighted] = useState(-1)
   const companyItemRefs = useRef([])
 
@@ -855,7 +858,11 @@ function Sales() {
       if (!companyBoxRef.current.contains(e.target)) { setShowCompanyList(false); setCompanyHighlighted(-1) }
     }
     document.addEventListener("click", onClick)
-    return () => document.removeEventListener("click", onClick)
+    document.addEventListener("focusin", onClick) // Tab / Enter ไปช่องอื่น
+    return () => {
+      document.removeEventListener("click", onClick)
+      document.removeEventListener("focusin", onClick)
+    }
   }, [])
   const mapCompanyToUI = (r = {}) => {
     const S = (v) => (v == null ? "" : String(v))
@@ -872,8 +879,10 @@ function Sales() {
     }
   }
   const pickCompanyResult = async (rec) => {
-    companySuppressSearchRef.current = true
     const data = mapCompanyToUI(rec)
+    const pickedName = (data.companyName || "").trim()
+    if (pickedName) companySuppressSearchRef.current = pickedName
+    setCompanySearchOutcome(null)
     setCustomer((prev) => ({
       ...prev,
       companyName: data.companyName || prev.companyName,
@@ -888,33 +897,45 @@ function Sales() {
     setMemberMeta({ type: "company", assoId: data.assoId ?? null, memberId: "" })
     setShowCompanyList(false); setCompanyResults([]); setCompanyHighlighted(-1)
   }
+  const liveCompanyName = customer.companyName.trim()
   useEffect(() => {
-    if (!autoSearchEnabled) { setShowCompanyList(false); setCompanyResults([]); setCompanyHighlighted(-1); return }
-    if (buyerType !== "company") { setShowCompanyList(false); setCompanyResults([]); setCompanyHighlighted(-1); return }
+    if (!autoSearchEnabled) { setShowCompanyList(false); setCompanyResults([]); setCompanyHighlighted(-1); setCompanySearchOutcome(null); return }
+    if (buyerType !== "company") { setShowCompanyList(false); setCompanyResults([]); setCompanyHighlighted(-1); setCompanySearchOutcome(null); return }
     const q = (debouncedCompanyName || "").trim()
-    if (companySuppressSearchRef.current) {
-      companySuppressSearchRef.current = false; setShowCompanyList(false); setCompanyResults([]); setCompanyHighlighted(-1); return
+    // ค่า debounce ยังตามช่องจริงไม่ทัน (เช่น รีเซ็ตแล้วเริ่มพิมพ์ใหม่ทันที): ห้ามค้นจากค่าเก่า รอรอบถัดไป
+    if (q !== liveCompanyName) return
+    if (companySuppressSearchRef.current !== null) {
+      if (q === companySuppressSearchRef.current) {
+        setShowCompanyList(false); setCompanyResults([]); setCompanyHighlighted(-1); setCompanySearchOutcome(null); return
+      }
+      companySuppressSearchRef.current = null
     }
+    setCompanySearchOutcome(null)
     if (q.length < 2) { setCompanyResults([]); setShowCompanyList(false); setCompanyHighlighted(-1); return }
+    let cancelled = false
     const __epoch = searchEpochRef.current
     const searchCompany = async () => {
       try {
         setLoadingCustomer(true)
         const items = (await apiAuth(`/order/companies/search?q=${encodeURIComponent(q)}`)) || []
-        if (__epoch !== searchEpochRef.current) return
+        if (cancelled || __epoch !== searchEpochRef.current) return
         setCompanyResults(items)
+        setCompanySearchOutcome({ query: q, failed: false })
         if (document.activeElement === companyInputRef.current) {
-          if (__epoch !== searchEpochRef.current) return
           setShowCompanyList(true); setCompanyHighlighted(items.length > 0 ? 0 : -1)
         }
       } catch (err) {
-        console.error(err); setCompanyResults([]); setShowCompanyList(false); setCompanyHighlighted(-1)
+        if (cancelled || __epoch !== searchEpochRef.current) return
+        console.error(err); setCompanyResults([]); setCompanyHighlighted(-1)
+        setCompanySearchOutcome({ query: q, failed: true })
+        if (document.activeElement === companyInputRef.current) setShowCompanyList(true)
       } finally {
-        if (__epoch === searchEpochRef.current) setLoadingCustomer(false)
+        if (!cancelled) setLoadingCustomer(false)
       }
     }
     searchCompany()
-  }, [debouncedCompanyName, buyerType, autoSearchEnabled])
+    return () => { cancelled = true; setLoadingCustomer(false) }
+  }, [debouncedCompanyName, liveCompanyName, buyerType, autoSearchEnabled])
   useEffect(() => {
     if (!autoSearchEnabled) return
     if (buyerType !== "company") return
@@ -932,7 +953,7 @@ function Sales() {
     searchByTax()
   }, [debouncedTaxId, buyerType, autoSearchEnabled])
   const handleCompanyKeyDown = async (e) => {
-    if (!showCompanyList || companyResults.length === 0) return
+    if (!showCompanyList || (companyResults.length === 0 && e.key !== "Escape")) return
     if (e.key === "ArrowDown") { e.preventDefault(); const next = companyHighlighted < companyResults.length - 1 ? companyHighlighted + 1 : 0; setCompanyHighlighted(next); requestAnimationFrame(() => { try { companyItemRefs.current[next]?.scrollIntoView({ block: "nearest" }) } catch { /* ignore */ } }) }
     else if (e.key === "ArrowUp") { e.preventDefault(); const prev = companyHighlighted > 0 ? companyHighlighted - 1 : companyResults.length - 1; setCompanyHighlighted(prev); requestAnimationFrame(() => { try { companyItemRefs.current[prev]?.scrollIntoView({ block: "nearest" }) } catch { /* ignore */ } }) }
     else if (e.key === "Enter") { e.preventDefault(); if (companyHighlighted >= 0 && companyHighlighted < companyResults.length) await pickCompanyResult(companyResults[companyHighlighted]) }
@@ -1058,6 +1079,9 @@ function Sales() {
     // ปิด auto-search ชั่วคราว + ยกเลิกผล async ค้าง
     setAutoSearchEnabled(false)
     bumpSearchEpoch()
+    // ลืมชื่อที่เลือกไว้ ไม่งั้นพิมพ์ชื่อเดิมซ้ำหลังรีเซ็ตจะไม่ค้นหา
+    // (ค่า debounce เก่าถูกกันไว้ที่ effect ค้นหาชื่อบริษัท: ต้องตรงกับช่องจริงจึงจะค้น)
+    companySuppressSearchRef.current = null
 
     setErrors({}); setMissingHints({})
     setCustomer({
@@ -1352,7 +1376,7 @@ function Sales() {
     nameBoxRef, nameInputRef, listContainerRef, itemRefs, showNameList, setShowNameList, nameResults, highlightedIndex, setHighlightedIndex,
     pickNameResult, scrollHighlightedIntoView2, handleFullNameKeyDown, focusKlangOrBranchOrTrailer, focusAfterCustomer,
     companyBoxRef, companyInputRef, companyItemRefs, showCompanyList, setShowCompanyList, companyResults, companyHighlighted, setCompanyHighlighted,
-    pickCompanyResult, handleCompanyKeyDown,
+    pickCompanyResult, handleCompanyKeyDown, companySearchOutcome,
     // handlers
     updateCustomer, updateOrder, updateTrailer, clearError, clearHint, hasRed, redFieldCls, redHintCls,
     isCreditPayment, resolvePaymentId, handleSubmit, handleReset, scrollToPageTop,

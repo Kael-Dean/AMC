@@ -72,7 +72,10 @@ const Buy = () => {
   const [showCompanyList, setShowCompanyList] = useState(false)
   const companyBoxRef = useRef(null)
   const companyInputRef = useRef(null)
-  const companySuppressSearchRef = useRef(false)
+  /** ชื่อบริษัทที่เพิ่งเลือก — ข้ามการค้นหาเฉพาะเมื่อข้อความตรงกับชื่อนี้ (null = ไม่ข้าม) */
+  const companySuppressSearchRef = useRef(null)
+  /** ผลการค้นหาชื่อบริษัทล่าสุด: { query, failed } — null ระหว่างรอผล/ยังไม่ได้ค้น */
+  const [companySearchOutcome, setCompanySearchOutcome] = useState(null)
   const [companyHighlighted, setCompanyHighlighted] = useState(-1)
   const companyItemRefs = useRef([])
 
@@ -487,8 +490,10 @@ const { onEnter, focusNext } = useEnterNavigation(refs, buyerType, order)
   }
 
   const pickCompanyResult = async (rec) => {
-    companySuppressSearchRef.current = true
     const data = mapCompanyToUI(rec)
+    const pickedName = (data.companyName || "").trim()
+    if (pickedName) companySuppressSearchRef.current = pickedName
+    setCompanySearchOutcome(null)
     setCustomer((prev) => ({
       ...prev,
       companyName: data.companyName || prev.companyName,
@@ -705,27 +710,39 @@ const { onEnter, focusNext } = useEnterNavigation(refs, buyerType, order)
       }
     }
     document.addEventListener("click", onClick)
-    return () => document.removeEventListener("click", onClick)
+    document.addEventListener("focusin", onClick) // Tab / Enter ไปช่องอื่น
+    return () => {
+      document.removeEventListener("click", onClick)
+      document.removeEventListener("focusin", onClick)
+    }
   }, [])
 
   // trigger ค้นหาจากชื่อบริษัท
+  const liveCompanyName = customer.companyName.trim()
   useEffect(() => {
-    if (!autoSearchEnabled) { setShowCompanyList(false); setCompanyResults([]); setCompanyHighlighted(-1); return }
+    if (!autoSearchEnabled) { setShowCompanyList(false); setCompanyResults([]); setCompanyHighlighted(-1); setCompanySearchOutcome(null); return }
     if (buyerType !== "company") {
       setShowCompanyList(false)
       setCompanyResults([])
       setCompanyHighlighted(-1)
+      setCompanySearchOutcome(null)
       return
     }
 
     const q = (debouncedCompanyName || "").trim()
-    if (companySuppressSearchRef.current) {
-      companySuppressSearchRef.current = false
-      setShowCompanyList(false)
-      setCompanyResults([])
-      setCompanyHighlighted(-1)
-      return
+    // ค่า debounce ยังตามช่องจริงไม่ทัน (เช่น รีเซ็ตแล้วเริ่มพิมพ์ใหม่ทันที): ห้ามค้นจากค่าเก่า รอรอบถัดไป
+    if (q !== liveCompanyName) return
+    if (companySuppressSearchRef.current !== null) {
+      if (q === companySuppressSearchRef.current) {
+        setShowCompanyList(false)
+        setCompanyResults([])
+        setCompanyHighlighted(-1)
+        setCompanySearchOutcome(null)
+        return
+      }
+      companySuppressSearchRef.current = null
     }
+    setCompanySearchOutcome(null)
     if (q.length < 2) {
       setCompanyResults([])
       setShowCompanyList(false)
@@ -733,30 +750,36 @@ const { onEnter, focusNext } = useEnterNavigation(refs, buyerType, order)
       return
     }
 
+    let cancelled = false
     const searchCompany = async () => {
       const __epoch = searchEpochRef.current
       try {
         setLoadingCustomer(true)
         const items = (await apiAuth(`/order/companies/search?q=${encodeURIComponent(q)}`)) || []
-        if (__epoch !== searchEpochRef.current) return
+        if (cancelled || __epoch !== searchEpochRef.current) return
         setCompanyResults(items)
+        setCompanySearchOutcome({ query: q, failed: false })
         if (document.activeElement === companyInputRef.current) {
-          if (__epoch !== searchEpochRef.current) return
           setShowCompanyList(true)
-          if (__epoch !== searchEpochRef.current) return
           setCompanyHighlighted(items.length > 0 ? 0 : -1)
         }
       } catch (err) {
+        if (cancelled || __epoch !== searchEpochRef.current) return
         console.error(err)
         setCompanyResults([])
-        setShowCompanyList(false)
         setCompanyHighlighted(-1)
+        setCompanySearchOutcome({ query: q, failed: true })
+        if (document.activeElement === companyInputRef.current) setShowCompanyList(true)
       } finally {
-        setLoadingCustomer(false)
+        if (!cancelled) setLoadingCustomer(false)
       }
     }
     searchCompany()
-  }, [debouncedCompanyName, buyerType, autoSearchEnabled])
+    return () => {
+      cancelled = true
+      setLoadingCustomer(false)
+    }
+  }, [debouncedCompanyName, liveCompanyName, buyerType, autoSearchEnabled])
 
   // ค้นหาจากเลขภาษี
   useEffect(() => {
@@ -784,7 +807,7 @@ const { onEnter, focusNext } = useEnterNavigation(refs, buyerType, order)
 
   // คีย์บอร์ดนำทางลิสต์บริษัท
   const handleCompanyKeyDown = async (e) => {
-    if (!showCompanyList || companyResults.length === 0) return
+    if (!showCompanyList || (companyResults.length === 0 && e.key !== "Escape")) return
     if (e.key === "ArrowDown") {
       e.preventDefault()
       const next = companyHighlighted < companyResults.length - 1 ? companyHighlighted + 1 : 0
@@ -1718,12 +1741,13 @@ if (buyerType === "person") {
   // ปิดระบบ auto-search ชั่วคราวระหว่างรีเซ็ตเพื่อไม่ให้มี auto-fill
   setAutoSearchEnabled(false)
   try { suppressNameSearchRef.current = true; } catch { /* ignore */ }
-  try { companySuppressSearchRef.current = true; } catch { /* ignore */ }
+  // ลืมชื่อที่เลือกไว้ ไม่งั้นพิมพ์ชื่อเดิมซ้ำหลังรีเซ็ตจะไม่ค้นหา
+  // (ค่า debounce เก่าถูกกันไว้ที่ effect ค้นหาชื่อบริษัท: ต้องตรงกับช่องจริงจึงจะค้น)
+  companySuppressSearchRef.current = null
 
   // ปิดออโต้ฟิลและยกเลิกผล async เก่าทันที
   bumpSearchEpoch()
   try { suppressNameSearchRef.current = true } catch { /* ignore */ }
-  try { companySuppressSearchRef.current = true } catch { /* ignore */ }
   setErrors({})
   setMissingHints({})
   setCustomerFound(null)
@@ -1869,7 +1893,7 @@ if (buyerType === "person") {
     handleNameKeyDown, pickNameResult, scrollHighlightedIntoView2,
     // company search
     showCompanyList, setShowCompanyList, companyResults, companyHighlighted, setCompanyHighlighted,
-    handleCompanyKeyDown, pickCompanyResult,
+    handleCompanyKeyDown, pickCompanyResult, companySearchOutcome,
     // actions
     handleSubmit, handleReset, scrollToPageTop, resolvePaymentId, setErrors, focusKlangOrBranchOrEntry,
     // phone stepper plumbing
