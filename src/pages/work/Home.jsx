@@ -21,6 +21,25 @@ const SELF_SERVICE_GROUP = "งานบุคคล"
 const PINNED_PATHS = ["/Buy", "/sales", "/stock", "/order"]
 const TRADING_GROUP_NAME = "ธุรกิจรวบรวมผลผลิต"
 
+/* Function tiles (desktop card, phone tile, shortcut) share one surface.
+   Boundary reaches 3:1 (WCAG 1.4.11) against the tile and whatever sits behind it:
+   light gray-500/80 → 3.28 on white · 3.14 on the gray-50 canvas;
+   dark line-field → 3.43 on surface · 3.17 on raised · 3.67 on canvas. */
+const tileMotionCls =
+  "group cursor-pointer transition-[background-color,border-color,box-shadow,transform] duration-150 motion-safe:active:translate-y-px"
+const tileSurfaceCls =
+  "border border-gray-500/80 bg-white shadow-sm hover:border-indigo-500 hover:bg-indigo-50 hover:shadow-md active:bg-indigo-100 active:shadow-sm " +
+  "dark:border-line-field dark:bg-raised dark:hover:border-indigo-400 dark:hover:bg-indigo-500/15 dark:active:bg-indigo-500/25"
+/* Locked = dashed, flat and recessed, so it never reads as colour alone. Only the icon
+   is dimmed: opacity on the whole tile took the label to 4.06:1 and faded the chip. */
+const tileLockedCls =
+  "border border-dashed border-gray-500/80 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 " +
+  "dark:border-line-field dark:bg-transparent dark:hover:bg-white/[.04] dark:active:bg-white/[.08]"
+const tileLabelCls =
+  "text-gray-800 transition-colors duration-150 group-hover:text-indigo-700 dark:text-gray-100 dark:group-hover:text-indigo-200"
+const tileLabelLockedCls = "text-gray-600 dark:text-gray-400"
+const groupHeadingCls = "text-base font-bold leading-relaxed text-gray-900 dark:text-gray-100"
+
 /** Lucide icon in a soft square (same anatomy as PageSection's icon chip) */
 function IconChip({ path, className = "" }) {
   const Icon = lucideFor(path)
@@ -28,11 +47,11 @@ function IconChip({ path, className = "" }) {
     <span
       aria-hidden="true"
       className={cx(
-        "flex size-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 dark:bg-gray-700/60 dark:text-gray-200",
+        "flex size-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 dark:bg-gray-700/60 dark:text-gray-200",
         className,
       )}
     >
-      <Icon className="size-5" strokeWidth={1.75} />
+      <Icon className="size-6" strokeWidth={1.75} />
     </span>
   )
 }
@@ -56,7 +75,7 @@ function ShortcutStrip({ roleId, permVersion, onOpen }) {
 
   return (
     <nav aria-labelledby="home-shortcuts-title" className="md:hidden">
-      <h2 id="home-shortcuts-title" className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+      <h2 id="home-shortcuts-title" className={cx("mb-2", groupHeadingCls)}>
         ทางลัด
         <span className="sr-only"> ไปฟังก์ชันที่ใช้บ่อย</span>
       </h2>
@@ -68,13 +87,16 @@ function ShortcutStrip({ roleId, permVersion, onOpen }) {
               onClick={() => onOpen(item.path)}
               aria-label={hasBoth ? `${item.label} (${item.kind === "pinned" ? "ปักหมุด" : "ใช้ล่าสุด"})` : item.label}
               className={cx(
-                "flex h-full min-h-touch w-[4.75rem] cursor-pointer flex-col items-center gap-1.5 rounded-2xl bg-white px-1.5 py-2.5 ring-1 ring-gray-200/70 shadow-sm",
-                "transition-colors duration-150 active:bg-gray-50 dark:bg-gray-800 dark:ring-gray-700/70 dark:active:bg-gray-700/60",
+                "flex h-full min-h-touch w-[5.5rem] flex-col items-center gap-1.5 rounded-xl px-1.5 py-2.5",
+                tileMotionCls,
+                tileSurfaceCls,
                 focusRingCls,
               )}
             >
               <IconChip path={item.path} />
-              <span className="text-center text-xs font-medium leading-snug text-balance text-gray-700 dark:text-gray-200">{item.label}</span>
+              <span className={cx("w-full text-center text-[13px] font-semibold leading-relaxed text-balance [overflow-wrap:anywhere]", tileLabelCls)}>
+                {item.label}
+              </span>
             </button>
           </li>
         ))}
@@ -83,23 +105,24 @@ function ShortcutStrip({ roleId, permVersion, onOpen }) {
   )
 }
 
-/** Phone tile — trading group: 2 columns, icon left, label left-aligned (14px).
- *  Other groups: 3 columns, icon on top, label 12px. */
-/** Small lock chip for self-service items that open after onboarding (PR 59). */
+/** Small lock chip for self-service items that open after onboarding (PR 59).
+ *  Sits in the tile's flow rather than over it, so it cannot cover the icon or label. */
 function LockChip({ className = "" }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-0.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 dark:bg-white/[.08] dark:text-gray-300",
+        "inline-flex shrink-0 items-center gap-1 rounded-full bg-gray-200/70 px-2 py-0.5 text-xs font-semibold leading-normal text-gray-700 dark:bg-white/[.08] dark:text-gray-300",
         className,
       )}
     >
-      <Lock aria-hidden="true" className="size-2.5" strokeWidth={2.5} />
+      <Lock aria-hidden="true" className="size-3" strokeWidth={2.5} />
       ล็อก
     </span>
   )
 }
 
+/** Phone tile — trading group: 2 columns, icon left, label left-aligned (14px).
+ *  Other groups: 3 columns, icon on top, label 13px. */
 function PhoneTile({ item, onClick, wide, locked }) {
   return (
     <button
@@ -108,23 +131,24 @@ function PhoneTile({ item, onClick, wide, locked }) {
       aria-disabled={locked || undefined}
       aria-label={locked ? `${item.label} (ล็อกไว้จนกว่าจะกรอกข้อมูลเริ่มต้นครบ)` : undefined}
       className={cx(
-        "relative flex min-h-touch w-full cursor-pointer rounded-2xl bg-white ring-1 ring-gray-200/70 shadow-sm",
-        locked && "opacity-60",
-        "transition-colors duration-150 active:bg-gray-50 dark:bg-gray-800 dark:ring-gray-700/70 dark:active:bg-gray-700/60",
+        "flex min-h-touch w-full rounded-xl",
+        tileMotionCls,
+        locked ? tileLockedCls : tileSurfaceCls,
         wide ? "items-center gap-3 p-3 text-left" : "flex-col items-center gap-1.5 px-1.5 py-3 text-center",
         focusRingCls,
       )}
     >
-      <IconChip path={item.path} />
+      <IconChip path={item.path} className={locked ? "opacity-60" : ""} />
       <span
         className={cx(
-          "font-medium text-gray-800 dark:text-gray-100",
-          wide ? "min-w-0 text-sm leading-relaxed" : "text-xs leading-snug text-balance",
+          "font-semibold [overflow-wrap:anywhere]",
+          locked ? tileLabelLockedCls : tileLabelCls,
+          wide ? "min-w-0 flex-1 text-sm leading-relaxed" : "w-full text-[13px] leading-relaxed text-balance",
         )}
       >
         {item.label}
       </span>
-      {locked && <LockChip className="absolute right-1.5 top-1.5" />}
+      {locked && <LockChip />}
     </button>
   )
 }
@@ -172,23 +196,31 @@ function FunctionCard({ item, onClick, locked }) {
       aria-disabled={locked || undefined}
       aria-label={locked ? `${item.label} (ล็อกไว้จนกว่าจะกรอกข้อมูลเริ่มต้นครบ)` : undefined}
       className={cx(
-        "group relative flex min-h-[78px] flex-col items-center justify-center gap-2 rounded-xl bg-gray-50 p-3 ring-1 ring-gray-200/60 transition-all duration-150 hover:bg-indigo-50 hover:shadow-sm hover:ring-indigo-200 hover:scale-[1.03] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:bg-gray-800/60 dark:ring-gray-700/60 dark:hover:bg-indigo-900/25 dark:hover:ring-indigo-700/60 cursor-pointer",
-        locked && "opacity-60",
+        "flex min-h-[78px] flex-col items-center gap-2 rounded-xl p-3",
+        tileMotionCls,
+        locked ? tileLockedCls : tileSurfaceCls,
+        focusRingCls,
       )}
     >
       <span
         aria-hidden="true"
         className={cx(
-          "flex size-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-150 group-hover:scale-110 group-active:scale-100",
+          "flex size-10 shrink-0 items-center justify-center rounded-xl",
           iconToneFor(item.path),
+          locked && "opacity-60",
         )}
       >
-        <Icon strokeWidth={1.75} className="size-[18px]" />
+        <Icon strokeWidth={1.75} className="size-6" />
       </span>
-      <span className="text-center text-[11px] font-medium leading-tight text-gray-600 transition-colors duration-150 group-hover:text-indigo-700 dark:text-gray-400 dark:group-hover:text-indigo-300">
+      <span
+        className={cx(
+          "w-full text-center text-sm font-semibold leading-relaxed text-balance [overflow-wrap:anywhere]",
+          locked ? tileLabelLockedCls : tileLabelCls,
+        )}
+      >
         {item.label}
       </span>
-      {locked && <LockChip className="absolute right-1.5 top-1.5" />}
+      {locked && <LockChip />}
     </button>
   )
 }
@@ -254,7 +286,7 @@ export default function Home() {
         {/* Shortcut strip skeleton (phone only) */}
         <div aria-hidden="true" className="flex gap-2 overflow-hidden md:hidden">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-[4.5rem] w-[4.75rem] shrink-0" rounded="rounded-2xl" />
+            <Skeleton key={i} className="h-[5.75rem] w-[5.5rem] shrink-0" rounded="rounded-xl" />
           ))}
         </div>
         {/* Group skeletons */}
@@ -323,7 +355,7 @@ export default function Home() {
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
               <GroupIcon group={group.group} className="h-4 w-4" />
             </span>
-            <h2 className="text-[13px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{group.group}</h2>
+            <h2 className={groupHeadingCls}>{group.group}</h2>
           </div>
           {isPhone ? (
             <div className={cx("grid gap-2.5", group.group === TRADING_GROUP_NAME ? "grid-cols-2" : "grid-cols-3")}>
