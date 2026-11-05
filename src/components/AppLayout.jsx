@@ -11,6 +11,7 @@ import { ALL_ITEMS } from "../lib/homeFunctions"
 import { ONBOARDING_REQUIRED_EVENT } from "../lib/api"
 import { ONBOARDING_PROMPTED_KEY, loadOnboarding, useOnboarding } from "../lib/onboarding"
 import TourOverlay from "./onboarding/TourOverlay"
+import SearchIntroGate from "./onboarding/SearchIntroGate"
 import { useAppUpdateCheck } from "../lib/appUpdate"
 import { TOUR_SIDEBAR_EVENT } from "../lib/tourState"
 
@@ -172,6 +173,8 @@ const AppLayout = () => {
       <Toaster />
       {/* Self-service tour (onboarding) — overlays the real pages, mounts only while a tour runs */}
       <TourOverlay />
+      {/* One-time intro of the header search — its overlay is a lazy chunk */}
+      <SearchIntroGate />
     </div>
   )
 }
