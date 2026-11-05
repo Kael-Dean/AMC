@@ -74,6 +74,8 @@ const Buy = () => {
   const companyInputRef = useRef(null)
   /** ชื่อบริษัทที่เพิ่งเลือก — ข้ามการค้นหาเฉพาะเมื่อข้อความตรงกับชื่อนี้ (null = ไม่ข้าม) */
   const companySuppressSearchRef = useRef(null)
+  /** ข้อมูลบริษัทในฟอร์มมาจากการเลือก (ลิสต์/เลขภาษี): { name, taxId } — null = ผู้ใช้กรอกเอง */
+  const companyPickRef = useRef(null)
   /** ผลการค้นหาชื่อบริษัทล่าสุด: { query, failed } — null ระหว่างรอผล/ยังไม่ได้ค้น */
   const [companySearchOutcome, setCompanySearchOutcome] = useState(null)
   const [companyHighlighted, setCompanyHighlighted] = useState(-1)
@@ -493,6 +495,11 @@ const { onEnter, focusNext } = useEnterNavigation(refs, buyerType, order)
     const data = mapCompanyToUI(rec)
     const pickedName = (data.companyName || "").trim()
     if (pickedName) companySuppressSearchRef.current = pickedName
+    // เรคอร์ดไม่มีชื่อ = ชื่อในช่องยังเป็นค่าเดิม
+    companyPickRef.current = {
+      name: pickedName || (companyInputRef.current?.value ?? customer.companyName).trim(),
+      taxId: data.taxId,
+    }
     setCompanySearchOutcome(null)
     setCustomer((prev) => ({
       ...prev,
@@ -782,28 +789,37 @@ const { onEnter, focusNext } = useEnterNavigation(refs, buyerType, order)
   }, [debouncedCompanyName, liveCompanyName, buyerType, autoSearchEnabled])
 
   // ค้นหาจากเลขภาษี
+  const liveTaxId = onlyDigits(customer.taxId)
   useEffect(() => {
     if (!autoSearchEnabled) return
     if (buyerType !== "company") return
     const tid = onlyDigits(debouncedTaxId)
     if (tid.length !== 13) return
+    // ค่า debounce ไม่ตรงกับช่องจริง (เช่น แก้ชื่อแล้วเลขภาษีถูกล้าง): ห้ามค้น/เติมจากเลขเก่า
+    if (tid !== liveTaxId) return
+    let cancelled = false
     const searchByTax = async () => {
       const __epoch = searchEpochRef.current
       try {
         setLoadingCustomer(true)
         const items = (await apiAuth(`/order/companies/search?q=${encodeURIComponent(tid)}`)) || []
+        if (cancelled) return // เลขภาษีในฟอร์มเปลี่ยนแล้ว ทิ้งผลนี้
         if (items.length > 0) {
           if (__epoch !== searchEpochRef.current) return
           await pickCompanyResult(items[0]) // auto-fill เมื่อภาษีตรง
         }
       } catch (e) {
-        console.error(e)
+        if (!cancelled) console.error(e)
       } finally {
-        setLoadingCustomer(false)
+        if (!cancelled) setLoadingCustomer(false)
       }
     }
     searchByTax()
-  }, [debouncedTaxId, buyerType, autoSearchEnabled])
+    return () => {
+      cancelled = true
+      setLoadingCustomer(false)
+    }
+  }, [debouncedTaxId, liveTaxId, buyerType, autoSearchEnabled])
 
   // คีย์บอร์ดนำทางลิสต์บริษัท
   const handleCompanyKeyDown = async (e) => {
@@ -1383,6 +1399,25 @@ const pickNameResult = async (rec) => {
     // ผู้ใช้เริ่มพิมพ์ใหม่ => อนุญาตให้ระบบค้นหาอีกครั้ง
     setAutoSearchEnabled(true)
     if (String(v).trim() !== "") clearHint(k)
+    const pick = companyPickRef.current
+    if (pick && k === "companyName" && String(v).trim() !== pick.name) {
+      // แก้ชื่อหลังเลือกบริษัท: ล้างข้อมูลบริษัทเดิม ไม่งั้นออเดอร์จะไปเข้าบริษัทเดิมตาม tax_id
+      // (เลขภาษีที่ผู้ใช้แก้เองหลังเลือกไม่ใช่ของบริษัทเดิม จึงคงไว้)
+      companyPickRef.current = null
+      companySuppressSearchRef.current = null
+      setMemberMeta({ type: "unknown", assoId: null, memberId: null })
+      setCustomer((prev) => ({
+        ...prev,
+        companyName: v,
+        taxId: prev.taxId === pick.taxId ? "" : prev.taxId,
+        companyPhone: "",
+        hqHouseNo: "", hqMoo: "", hqSubdistrict: "", hqDistrict: "", hqProvince: "", hqPostalCode: "",
+        brHouseNo: "", brMoo: "", brSubdistrict: "", brDistrict: "", brProvince: "", brPostalCode: "",
+      }))
+      return
+    }
+    // แก้เลขภาษีหลังเลือกบริษัท: เลิกผูก asso_id ของบริษัทเดิม
+    if (pick && k === "taxId" && v !== pick.taxId) setMemberMeta((m) => ({ ...m, assoId: null }))
     setCustomer((prev) => ({ ...prev, [k]: v }))
   }
   const updateOrder = (k, v) => {
@@ -1744,6 +1779,7 @@ if (buyerType === "person") {
   // ลืมชื่อที่เลือกไว้ ไม่งั้นพิมพ์ชื่อเดิมซ้ำหลังรีเซ็ตจะไม่ค้นหา
   // (ค่า debounce เก่าถูกกันไว้ที่ effect ค้นหาชื่อบริษัท: ต้องตรงกับช่องจริงจึงจะค้น)
   companySuppressSearchRef.current = null
+  companyPickRef.current = null
 
   // ปิดออโต้ฟิลและยกเลิกผล async เก่าทันที
   bumpSearchEpoch()
