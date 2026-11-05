@@ -374,6 +374,15 @@ export function searchIndex(index, text, { limit = 8, isVisible } = {}) {
   return ranked.sort(byRank).slice(0, limit)
 }
 
+const LONG_KEYWORD = 24 // a longer match is a sentence: show what the user typed instead
+
+/** A result row's second line: the group, plus why it matched when the label itself didn't. */
+export function hitSecondaryLine(hit, query) {
+  if (hit.ranges) return hit.entry.group
+  const word = hit.keyword && hit.keyword.length <= LONG_KEYWORD ? hit.keyword : query
+  return `คำค้น: ${word} · ${hit.entry.group}`
+}
+
 /** Splits `display` into [{ text, match }] for rendering a highlight. */
 export function highlightParts(display, ranges) {
   if (!ranges?.length) return [{ text: display, match: false }]

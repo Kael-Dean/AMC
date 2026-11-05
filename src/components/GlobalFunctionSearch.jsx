@@ -18,7 +18,7 @@ import { backState } from "../lib/drill"
 import useAnchoredPanel from "../lib/useAnchoredPanel"
 import { useIsPhone } from "../hooks/useMediaQuery"
 import { getFunctionSearchIndex, visibleFunctionIds } from "../lib/functionCatalogue"
-import { highlightParts, searchIndex } from "../lib/functionSearch"
+import { highlightParts, hitSecondaryLine, searchIndex } from "../lib/functionSearch"
 
 const PANEL_Z = 10050
 const PANEL_MAX_H = 440 // 8 rows of two lines
@@ -26,14 +26,6 @@ const PANEL_MIN_W = 360
 const PANEL_MAX_W = 560
 const RESULT_LIMIT = 8
 const MAX_QUERY_LENGTH = 80
-const LONG_KEYWORD = 24 // a longer match is a sentence: show what the user typed instead
-
-function secondaryLine(hit, query, locked) {
-  if (locked) return "เปิดเมื่อกรอกข้อมูลเริ่มต้นครบ"
-  if (hit.ranges) return hit.entry.group
-  const word = hit.keyword && hit.keyword.length <= LONG_KEYWORD ? hit.keyword : query
-  return `คำค้น: ${word} · ${hit.entry.group}`
-}
 
 export default function GlobalFunctionSearch() {
   const navigate = useNavigate()
@@ -154,7 +146,7 @@ export default function GlobalFunctionSearch() {
   }
 
   return (
-    <div ref={rootRef} className="relative w-full max-w-xs md:max-w-sm lg:max-w-md">
+    <div ref={rootRef} data-tour="function-search" className="relative w-full max-w-xs md:max-w-sm lg:max-w-md">
       <input
         ref={inputRef}
         type="text"
@@ -276,7 +268,7 @@ export default function GlobalFunctionSearch() {
                         )}
                       </span>
                       <span className="block truncate text-xs leading-5 text-gray-600 dark:text-gray-400">
-                        {secondaryLine(hit, trimmed, locked)}
+                        {locked ? "เปิดเมื่อกรอกข้อมูลเริ่มต้นครบ" : hitSecondaryLine(hit, trimmed)}
                       </span>
                     </span>
                     {locked && (
