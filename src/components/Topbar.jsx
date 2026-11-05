@@ -4,7 +4,7 @@
 // stack under it now that <body> is the scroller.
 //
 // <md layout:  [back ◀ 44px][☰ 44px][page title …] [branch (compact)][🔔][avatar]
-// ≥md layout:  [☰][logo][‹ back][page title]  [search (decorative)]  [branch][🔔][dark][profile*]
+// ≥md layout:  [☰][logo][‹ back][page title]  [find a function]  [branch][🔔][dark][profile*]
 //              (*Super Admin: กดโปรไฟล์ = เปลี่ยนบทบาท act-as-role; ตอนสวม role มีแถบเตือนใต้ header)
 //              (หน้าหลัก: [☰][logo + org name] — ไม่มี back / title)
 // ชื่อหน้า (title) มาจาก <PageTitle> ในหน้า ผ่าน AppLayout — h1 จริงอยู่ในหน้า (sr-only),
@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Menu, Moon, Sun, X } from "lucide-react";
 import { getUser, getRoleId } from "../lib/auth";
 import BranchSwitcher from "./BranchSwitcher";
+import GlobalFunctionSearch from "./GlobalFunctionSearch";
 import NotificationBell from "./NotificationBell";
 import { ActingRoleBanner, RoleSwitcherSheet } from "./RoleSwitcher";
 import { myRoleLabel } from "../lib/permissions";
@@ -170,20 +171,9 @@ const Topbar = ({ onToggleSidebar, isSidebarOpen, darkMode, setDarkMode, back = 
           </div>
         </div>
 
-        {/* Center: search (desktop only — decorative, not wired) */}
+        {/* Center: find a function (desktop only) */}
         <div className="hidden min-w-0 flex-1 justify-center px-4 md:flex">
-          <div className="relative w-full max-w-xs md:max-w-sm lg:max-w-md">
-            <input
-              type="text"
-              placeholder="ค้นหา"
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-4 text-sm outline-none transition-all duration-150 placeholder:text-gray-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-line-field dark:bg-field dark:text-gray-100 dark:placeholder:text-gray-400 dark:hover:border-line-field-hover dark:focus:border-indigo-400 dark:focus:bg-field dark:focus:ring-1 dark:focus:ring-indigo-400"
-              onKeyDown={(e) => e.key === "Escape" && e.currentTarget.blur()}
-              aria-label="ค้นหา"
-            />
-            <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-          </div>
+          <GlobalFunctionSearch />
         </div>
 
         {/* Right: branch switcher + inbox bell + dark mode (desktop) + profile */}
