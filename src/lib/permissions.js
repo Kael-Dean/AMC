@@ -256,7 +256,7 @@ export const PERMISSIONS = Object.freeze({
   "hr.reports.payrollMonthly": { no: 99, module: "HR: Reports", label: "รายงานเงินเดือนประจำเดือน", en: "Monthly payroll report", roles: [1, 3, 7] },
   "hr.reports.payrollAnnual": { no: 100, module: "HR: Reports", label: "รายงานเงินเดือนประจำปี", en: "Annual payroll report", roles: [1, 3, 7] },
   "hr.reports.socialSecurity": { no: 101, module: "HR: Reports", label: "รายงานประกันสังคม", en: "Social security report", roles: [1, 3, 7] },
-  "hr.reports.reserveFund": { no: 102, module: "HR: Reports", label: "รายงานเงินสะสม / กองทุนสำรองเลี้ยงชีพ", en: "Reserve / provident fund report", roles: [1, 3, 7] },
+  "hr.reports.reserveFund": { no: 102, module: "HR: Reports", label: "รายงานเงินสะสม / กองทุนสงเคราะห์พนักงาน", en: "Reserve / provident fund report", roles: [1, 3, 7] },
   "hr.reports.leaveBalance": { no: 103, module: "HR: Reports", label: "รายงานยอดคงเหลือวันลา", en: "Leave balance report", roles: [1, 3, 7] },
   "hr.reports.leaveUtilization": { no: 104, module: "HR: Reports", label: "รายงานการใช้วันลา", en: "Leave utilization report", roles: [1, 3, 7] },
   "hr.reports.leaveAnnual": { no: 105, module: "HR: Reports", label: "สรุปการลารายปี (ดู / PDF)", en: "Leave annual summary", roles: [1, 3, 7] },

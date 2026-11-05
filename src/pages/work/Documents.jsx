@@ -652,7 +652,7 @@ const HR_REPORTS = [
   { key: "hr-payroll-monthly", title: "รายงานสรุปเงินเดือน", endpoint: "/hr/payroll/report/monthly", require: ["month", "yearBE"], perm: "hr.reports.payrollMonthly", xlsx: true },
   { key: "hr-payroll-annual", title: "รายงานเงินเดือนประจำปีงบประมาณ", endpoint: "/hr/payroll/report/annual", require: ["fiscalYear"], perm: "hr.reports.payrollAnnual", xlsx: true },
   { key: "hr-social-security", title: "รายงานเงินสมทบประกันสังคม", endpoint: "/hr/payroll/report/social-security", require: ["month", "yearBE"], perm: "hr.reports.socialSecurity", xlsx: true },
-  { key: "hr-reserve-fund", title: "รายงานเงินสะสม / กองทุนสำรองเลี้ยงชีพ", endpoint: "/hr/payroll/report/reserve-fund", require: ["month", "yearBE"], perm: "hr.reports.reserveFund", xlsx: true },
+  { key: "hr-reserve-fund", title: "รายงานเงินสะสม / กองทุนสงเคราะห์พนักงาน", endpoint: "/hr/payroll/report/reserve-fund", require: ["month", "yearBE"], perm: "hr.reports.reserveFund", xlsx: true },
   { key: "hr-leave-balance", title: "รายงานสรุปวันลาประจำปีงบประมาณ", endpoint: "/hr/leave/report/balance", require: ["fiscalYear"], perm: "hr.reports.leaveBalance", xlsx: true },
   { key: "hr-leave-utilization", title: "รายงานการลาของพนักงาน", endpoint: "/hr/leave/report/utilization", require: ["startDate", "endDate"], perm: "hr.reports.leaveUtilization", xlsx: true },
   { key: "hr-leave-annual", title: "ทะเบียนคุมการลาประจำปีบัญชี", endpoint: "/hr/leave/annual-summary-pdf", require: [], optional: ["fiscalYear", "branchId"], perm: "hr.reports.leaveAnnual", xlsx: true, allBranchesOption: true },
