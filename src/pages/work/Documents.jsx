@@ -11,6 +11,8 @@ import useBranchLock, { scopedBranchId } from "../../hooks/useBranchLock"
 import { toast } from "../../components/ui"
 import DateInput from "../../components/ThaiDateField"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
+import { createPortal } from "react-dom"
+import useAnchoredPanel from "../../lib/useAnchoredPanel"
 import PageTitle from "../../components/PageTitle"
 import { canGoBack, useDrill } from "../../lib/drill"
 import SelectDropdown from "../../components/SelectDropdown"
@@ -137,15 +139,29 @@ const personLabel = (r) => {
  * ช่องค้นหาสมาชิกแบบ autocomplete — reuse endpoint /order/customers/search (เหมือนหน้าซื้อ)
  * เลือกแล้วส่ง asso_id กลับผ่าน onPick. เป็น component ระดับบนสุด (identity คงที่)
  * เพื่อไม่ให้ remount ทุกครั้งที่ parent re-render (กัน input เสีย focus)
+ * includeCompanies = ค้นบริษัทด้วย (/order/companies/search) สำหรับช่อง "คู่ค้า"
  */
-function MemberSearchBox({ valueLabel = "", error = false, onPick, onClear }) {
+function MemberSearchBox({
+  valueLabel = "",
+  error = false,
+  onPick,
+  onClear,
+  includeCompanies = false,
+  inputId,
+  placeholder = "พิมพ์ชื่อ / รหัสสมาชิก / เลขบัตร แล้วเลือกจากรายการ",
+  emptyText = "ไม่พบสมาชิกที่ตรงกับคำค้น",
+}) {
   const [q, setQ] = useState("")
   const [results, setResults] = useState([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
   const [highlight, setHighlight] = useState(-1)
   const boxRef = useRef(null)
+  const inputRef = useRef(null)
+  const panelRef = useRef(null)
   const epochRef = useRef(0)
+  const { style: panelStyle } = useAnchoredPanel(inputRef, { open, maxH: 288, maxW: 1200 })
 
   const selectable = (r) =>
     r && r.asso_id !== null && r.asso_id !== undefined && String(r.asso_id).trim() !== ""
@@ -153,43 +169,50 @@ function MemberSearchBox({ valueLabel = "", error = false, onPick, onClear }) {
   // debounce + ค้นหา
   useEffect(() => {
     const term = q.trim()
+    const my = ++epochRef.current
     if (term.length < 2) {
       setResults([])
       setLoading(false)
+      setFailed(false)
+      setOpen(false)
       return
     }
-    const my = ++epochRef.current
     setLoading(true)
     const t = setTimeout(async () => {
-      try {
-        const items = (await apiAuth(`/order/customers/search?q=${encodeURIComponent(term)}`)) || []
-        if (my !== epochRef.current) return
-        const arr = Array.isArray(items) ? items : []
-        setResults(arr)
-        setOpen(true)
-        setHighlight(arr.length ? 0 : -1)
-      } catch {
-        if (my !== epochRef.current) return
-        setResults([])
-        setOpen(true)
-      } finally {
-        if (my === epochRef.current) setLoading(false)
-      }
+      const qs = encodeURIComponent(term)
+      const settled = await Promise.allSettled([
+        apiAuth(`/order/customers/search?q=${qs}`),
+        ...(includeCompanies ? [apiAuth(`/order/companies/search?q=${qs}`)] : []),
+      ])
+      if (my !== epochRef.current) return
+      const arr = settled.flatMap((s) => (s.status === "fulfilled" && Array.isArray(s.value) ? s.value : []))
+      setResults(arr)
+      // ค้นไม่สำเร็จแล้วไม่มีผล ห้ามขึ้น "ไม่พบ" — ผู้ใช้จะเข้าใจผิดว่าไม่มีข้อมูล
+      setFailed(arr.length === 0 && settled.some((s) => s.status === "rejected"))
+      setOpen(true)
+      setHighlight(arr.length ? 0 : -1)
+      setLoading(false)
     }, 300)
     return () => clearTimeout(t)
-  }, [q])
+  }, [q, includeCompanies])
 
-  // ปิดเมื่อคลิกนอกกล่อง
+  // ปิดเมื่อคลิกนอกกล่อง — panel อยู่ใน portal จึงต้องเช็คทั้งสองฝั่ง
   useEffect(() => {
     const onClick = (e) => {
-      if (boxRef.current && !boxRef.current.contains(e.target)) {
-        setOpen(false)
-        setHighlight(-1)
-      }
+      if (boxRef.current?.contains(e.target)) return
+      if (panelRef.current?.contains(e.target)) return
+      setOpen(false)
+      setHighlight(-1)
     }
     document.addEventListener("click", onClick)
     return () => document.removeEventListener("click", onClick)
   }, [])
+
+  // เลื่อนรายการตามคีย์บอร์ด
+  useEffect(() => {
+    if (!open || highlight < 0) return
+    panelRef.current?.children[highlight]?.scrollIntoView({ block: "nearest" })
+  }, [open, highlight])
 
   const pick = (r) => {
     if (!selectable(r)) return
@@ -251,35 +274,47 @@ function MemberSearchBox({ valueLabel = "", error = false, onPick, onClear }) {
   return (
     <div className="relative" ref={boxRef}>
       <input
+        ref={inputRef}
+        id={inputId}
         className={cx(baseField, error && "border-red-400 ring-2 ring-red-300/70")}
-        placeholder="พิมพ์ชื่อ / รหัสสมาชิก / เลขบัตร แล้วเลือกจากรายการ"
+        placeholder={placeholder}
         value={q}
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => { if (results.length) setOpen(true) }}
         onKeyDown={onKeyDown}
         autoComplete="off"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={open}
         aria-invalid={error ? true : undefined}
       />
-      {open && (
+      {open && createPortal(
         <div
+          ref={panelRef}
           role="listbox"
-          className="absolute z-30 mt-1 max-h-72 w-full overflow-auto rounded-2xl border border-slate-200 bg-white text-black shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          style={{ ...panelStyle, zIndex: 10050 }}
+          className="overflow-auto rounded-2xl border border-slate-200 bg-white text-black shadow-lg dark:border-line dark:bg-raised dark:text-white"
         >
           {loading && (
             <div className="px-3 py-2.5 text-sm text-slate-500 dark:text-slate-300">กำลังค้นหา…</div>
           )}
-          {!loading && results.length === 0 && (
-            <div className="px-3 py-2.5 text-sm text-slate-500 dark:text-slate-300">ไม่พบสมาชิกที่ตรงกับคำค้น</div>
+          {!loading && failed && (
+            <div className="px-3 py-2.5 text-sm text-red-600 dark:text-red-300">ค้นหาไม่สำเร็จ ลองอีกครั้ง</div>
+          )}
+          {!loading && !failed && results.length === 0 && (
+            <div className="px-3 py-2.5 text-sm text-slate-500 dark:text-slate-300">{emptyText}</div>
           )}
           {!loading &&
             results.map((r, idx) => {
               const ok = selectable(r)
               const isActive = idx === highlight
               const label = personLabel(r)
-              const sub = [
-                r?.type === "member" ? `สมาชิก${r?.member_id ? ` ${r.member_id}` : ""}` : "ลูกค้า",
-                r?.citizen_id ? `บัตร ${r.citizen_id}` : "",
-              ]
+              const sub = (r?.type === "company"
+                ? ["บริษัท", r?.tax_id ? `เลขภาษี ${r.tax_id}` : ""]
+                : [
+                    r?.type === "member" ? `สมาชิก${r?.member_id ? ` ${r.member_id}` : ""}` : "ลูกค้า",
+                    r?.citizen_id ? `บัตร ${r.citizen_id}` : "",
+                  ])
                 .filter(Boolean)
                 .join(" · ")
               return (
@@ -307,7 +342,8 @@ function MemberSearchBox({ valueLabel = "", error = false, onPick, onClear }) {
                 </button>
               )
             })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -379,8 +415,10 @@ const PHASE1_REPORTS = [
     xlsx: true, // Excel twin: /reports/phase1/Pnn/xlsx
     badge: "PHASE1",
     require: ["startDate", "endDate"],
-    optional: ["branchId"],
+    optional: ["branchId", "assoId", "specId"],
     allBranchesOption: true, // ไม่เลือกสาขา = ทุกสาขา
+    partnerSearch: true, // asso_id: สมาชิก / ลูกค้าทั่วไป / บริษัท
+    specCodeLabel: true, // spec_id: แสดงเป็น "รหัสสินค้า"
   },
   {
     key: "phase1-p03",
@@ -1316,14 +1354,18 @@ function Documents() {
   }
 
   /** สินค้ารายการเดียว (P07, P13 ไม่บังคับ · P26 บังคับ) — ส่ง spec_id ตัวเดียว */
-  const FormSpecOnly = ({ requiredSpec = false, note }) => (
+  const FormSpecOnly = ({ requiredSpec = false, note, codeLabel = false }) => {
+    const title = codeLabel ? "รหัสสินค้า" : "รายการสินค้า"
+    // codeLabel: ขึ้นรหัสหน้าชื่อ ให้ค้นด้วยรหัสได้
+    const options = codeLabel ? specOptions.map((o) => ({ ...o, label: `${o.id} · ${o.label}` })) : specOptions
+    return (
     <div>
       <label className={labelCls}>
-        รายการสินค้า{requiredSpec ? <span className="text-red-500"> *</span> : " (ไม่บังคับ)"}
+        {title}{requiredSpec ? <span className="text-red-500"> *</span> : " (ไม่บังคับ)"}
       </label>
 
       <ComboBox
-        options={requiredSpec ? specOptions : withEmpty(specOptions, "— ทุกสินค้า —")}
+        options={requiredSpec ? options : withEmpty(options, "— ทุกสินค้า —")}
         searchable
         value={filters.specId}
         onChange={(v) => setFilter("specId", v)}
@@ -1331,8 +1373,8 @@ function Documents() {
         loading={loadingSpecs}
         disabled={specLoadFailed}
         error={!!(requiredSpec && errors.specId)}
-        title="รายการสินค้า"
-        ariaLabel="รายการสินค้า"
+        title={title}
+        ariaLabel={title}
       />
 
       {requiredSpec && <FieldError name="specId" />}
@@ -1340,7 +1382,8 @@ function Documents() {
         ? <LoadRetry message="โหลดรายการสินค้าไม่สำเร็จ" onRetry={loadSpecs} />
         : <p className={helpTextCls}>{note || (requiredSpec ? "ต้องเลือก 1 รายการ" : "ไม่เลือก = ทุกสินค้า")}</p>}
     </div>
-  )
+    )
+  }
 
   const FormBranchKlang = ({ requireBranch = false, showKlang = true, allBranches = false }) => (
     <>
@@ -1559,7 +1602,22 @@ function Documents() {
           <div className="grid gap-4 md:grid-cols-3">
             {hasDates && <FormDates report={report} />}
             {hasBranch && <FormBranchKlang requireBranch={requireBranch} showKlang={hasKlang} allBranches={!!report.allBranchesOption} />}
-            {hasSpec && <FormSpecOnly requiredSpec={req.includes("specId")} note={report.specNote} />}
+            {report.partnerSearch && (
+              <div className="md:col-span-2">
+                <label htmlFor="report-partner" className={labelCls}>คู่ค้า (ไม่บังคับ)</label>
+                <MemberSearchBox
+                  inputId="report-partner"
+                  includeCompanies
+                  placeholder="พิมพ์ชื่อ / รหัสสมาชิก / เลขบัตร / ชื่อบริษัท / เลขภาษี"
+                  emptyText="ไม่พบคู่ค้าที่ตรงกับคำค้น"
+                  valueLabel={filters.assoName || (filters.assoId ? "เลือกคู่ค้าแล้ว" : "")}
+                  onPick={(r) => setFilters((p) => ({ ...p, assoId: String(r.asso_id), assoName: personLabel(r) }))}
+                  onClear={() => setFilters((p) => ({ ...p, assoId: "", assoName: "" }))}
+                />
+                <p className={helpTextCls}>ไม่เลือก = ทุกคู่ค้า</p>
+              </div>
+            )}
+            {hasSpec && <FormSpecOnly requiredSpec={req.includes("specId")} note={report.specNote} codeLabel={!!report.specCodeLabel} />}
             {hasSpeciesLike && (
               <div>
                 <label className={labelCls}>ชื่อพันธุ์ข้าว (ไม่บังคับ)</label>
@@ -1586,7 +1644,7 @@ function Documents() {
                   เลือกสมาชิก/ลูกค้าที่ต้องการดูประวัติซื้อข้าวเปลือก แล้วกดพิมพ์ PDF
                 </p>
               </div>
-            ) : hasMember ? (
+            ) : hasMember && !report.partnerSearch ? (
               <FormShareIdentity report={report} />
             ) : null}
             {hasKlangIds && <FormShareKlangIds />}
