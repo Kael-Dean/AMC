@@ -5,7 +5,7 @@ import { apiAuth } from "../../lib/api"
 import { getUser, getRoleId } from "../../lib/auth"
 import { HR_HUB_PERMS, can, canAny, myRoleLabel } from "../../lib/permissions"
 import { useMyPermissionsVersion } from "../../lib/myPermissions"
-import { ALL_FUNCTIONS, ALL_ITEMS, canAccessItem, lucideFor } from "../../lib/homeFunctions"
+import { ALL_FUNCTIONS, ALL_ITEMS, canAccessItem, iconToneFor, lucideFor } from "../../lib/homeFunctions"
 import { getRecent } from "../../lib/recentRoutes"
 import { cx, focusRingCls } from "../../lib/styles"
 import { Skeleton, SkeletonStat } from "../../components/ui"
@@ -164,6 +164,7 @@ function GroupIcon({ group, className }) {
 // ALL_FUNCTIONS / canAccessItem ย้ายไป src/lib/homeFunctions.js (ใช้ร่วมกับ Sidebar + recentRoutes)
 
 function FunctionCard({ item, onClick, locked }) {
+  const Icon = lucideFor(item.path)
   return (
     <button
       type="button"
@@ -175,7 +176,15 @@ function FunctionCard({ item, onClick, locked }) {
         locked && "opacity-60",
       )}
     >
-      <span className="text-xl leading-none transition-transform duration-150 group-hover:scale-110 group-active:scale-100">{item.icon}</span>
+      <span
+        aria-hidden="true"
+        className={cx(
+          "flex size-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-150 group-hover:scale-110 group-active:scale-100",
+          iconToneFor(item.path),
+        )}
+      >
+        <Icon strokeWidth={1.75} className="size-[18px]" />
+      </span>
       <span className="text-center text-[11px] font-medium leading-tight text-gray-600 transition-colors duration-150 group-hover:text-indigo-700 dark:text-gray-400 dark:group-hover:text-indigo-300">
         {item.label}
       </span>
