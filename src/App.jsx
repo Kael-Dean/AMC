@@ -4,7 +4,7 @@ import AppLayout from "./components/AppLayout"          // shell หลัก �
 import Login from "./pages/work/Login"                  // entry route "/" — เก็บ eager
 import { PageLoader } from "./components/ui"            // fallback ระหว่างโหลด chunk
 import RequirePermission from "./components/RequirePermission"
-import { DOCUMENTS_PERMS, HR_HUB_PERMS, canBringInMill } from "./lib/permissions"
+import { COMPANY_PAGE_PERMS, DOCUMENTS_PERMS, HR_HUB_PERMS, canBringInMill } from "./lib/permissions"
 import { lazyWithReload } from "./lib/chunkReload"      // chunk หายหลัง deploy → reload 1 ครั้ง แทนหน้าขาว
 
 /* -------- หน้าทั้งหมด lazy-load: แต่ละ route แตกเป็น chunk แยก โหลดเมื่อเข้าถึง -------- */
@@ -18,7 +18,7 @@ const MemberSearch = lazyWithReload(() => import("./pages/work/MemberSearch"))
 const Stock = lazyWithReload(() => import("./pages/work/Stock"))
 
 const CustomerAdd = lazyWithReload(() => import("./pages/work/CustomerAdd"))
-const CompanyAdd = lazyWithReload(() => import("./pages/work/CompanyAdd"))
+const CompanyManage = lazyWithReload(() => import("./pages/work/CompanyManage"))
 const CustomerSearch = lazyWithReload(() => import("./pages/work/CustomerSearch"))
 
 const StockTransferOut = lazyWithReload(() => import("./pages/work/StockTransferOut"))
@@ -122,8 +122,8 @@ function App() {
 
         <Route path="/customer-search" element={guard("members.search", <CustomerSearch />)} />
         <Route path="/customer-add" element={guard("customers.create", <CustomerAdd />)} />
-        {/* เพิ่มบริษัท: customer.register เหมือน backend (canSeeAddCompany) */}
-        <Route path="/company-add" element={guard("customers.create", <CompanyAdd />)} />
+        {/* แก้ไขคู่ค้า/บริษัท: เข้าได้ถ้าดูรายชื่อ (member.search) หรือเพิ่มบริษัท (customer.register) ได้ */}
+        <Route path="/company-add" element={<RequirePermission anyOf={COMPANY_PAGE_PERMS}><CompanyManage /></RequirePermission>} />
         <Route path="/member-termination" element={guard("members.status", <MemberTermination />)} />
         <Route path="/share" element={guard("shares.buy", <Share />)} />
 
