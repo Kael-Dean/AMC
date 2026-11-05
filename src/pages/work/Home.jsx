@@ -88,7 +88,7 @@ function ShortcutStrip({ roleId, permVersion, onOpen }) {
               onClick={() => onOpen(item.path)}
               aria-label={hasBoth ? `${item.label} (${item.kind === "pinned" ? "ปักหมุด" : "ใช้ล่าสุด"})` : item.label}
               className={cx(
-                "flex h-full min-h-touch w-[5.5rem] flex-col items-center gap-1.5 rounded-xl px-1.5 py-2.5",
+                "flex h-full min-h-touch w-[5.5rem] flex-col items-center justify-center gap-1.5 rounded-xl px-1.5 py-2.5",
                 tileMotionCls,
                 tileSurfaceCls,
                 focusRingCls,
@@ -135,7 +135,7 @@ function PhoneTile({ item, onClick, wide, locked }) {
         "flex min-h-touch w-full rounded-xl",
         tileMotionCls,
         locked ? tileLockedCls : tileSurfaceCls,
-        wide ? "items-center gap-3 p-3 text-left" : "flex-col items-center gap-1.5 px-1.5 py-3 text-center",
+        wide ? "items-center gap-3 p-3 text-left" : "flex-col items-center justify-center gap-1.5 px-1.5 py-3 text-center",
         focusRingCls,
       )}
     >
@@ -197,7 +197,7 @@ function FunctionCard({ item, onClick, locked }) {
       aria-disabled={locked || undefined}
       aria-label={locked ? `${item.label} (ล็อกไว้จนกว่าจะกรอกข้อมูลเริ่มต้นครบ)` : undefined}
       className={cx(
-        "flex min-h-[78px] flex-col items-center gap-2 rounded-xl p-3",
+        "flex min-h-[78px] flex-col items-center justify-center gap-2 rounded-xl p-3",
         tileMotionCls,
         locked ? tileLockedCls : tileSurfaceCls,
         focusRingCls,
