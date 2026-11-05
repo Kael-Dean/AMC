@@ -39,7 +39,10 @@ const REDUCED = "(prefers-reduced-motion: reduce)"
 const SMALL = 64
 const SMALL_ZOOM = 1.3
 
-const asset = (p) => `${import.meta.env.BASE_URL.replace(/\/+$/, "")}${p}`
+// /mascot/* is cached for a day and has no hashed name. Bump this whenever the art
+// changes, or returning browsers keep showing the previous version.
+const MASCOT_VERSION = "8.5"
+const asset = (p) => `${import.meta.env.BASE_URL.replace(/\/+$/, "")}${p}?v=${MASCOT_VERSION}`
 
 // Can this page compile WebAssembly at all? A CSP without 'wasm-unsafe-eval' in
 // script-src (or no wasm support) makes the Rive runtime fail after downloading
@@ -166,6 +169,7 @@ export default function Mascot({
             <RiveBoundary onError={() => setFailed(true)}>
               <Suspense fallback={null}>
                 <MascotRive
+                  src={asset("/mascot/homthong.riv")}
                   mood={moodValue}
                   pointDir={POINT_DIRS[point] ?? 0}
                   badgeFlip={mirror ? -1 : 1}
