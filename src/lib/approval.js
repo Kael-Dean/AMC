@@ -9,6 +9,7 @@
 import { getRoleId, getUser } from "./auth"
 import { ROLE, ROLE_LABEL } from "./roles"
 import { can, canAny } from "./permissions"
+import { TH_MONTHS_SHORT } from "./payroll"
 
 /** @deprecated ใช้ ROLE จาก src/lib/roles.js — คงไว้ให้โค้ดเดิม */
 export const APPROVAL_ROLE = ROLE
@@ -224,3 +225,43 @@ export function oooWorkRows(r) {
 
 /** "HH:MM:SS" | "HH:MM" → "HH:MM" */
 export const hhmm = (t) => (typeof t === "string" ? t.slice(0, 5) : "-")
+
+/** "YYYY-MM-DD…" → { y, m, d, utc } without a timezone shift; null when missing or not a real date. */
+function parseOooDate(iso) {
+  if (typeof iso !== "string") return null
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number)
+  const date = new Date(Date.UTC(y, m - 1, d))
+  if (!y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return null
+  return { y, m, d, utc: date.getTime() }
+}
+
+/** The later return day of a 3O request, or null when it comes back on request_date (return_date null = same day). */
+function oooTripDates(r) {
+  const out = parseOooDate(r?.request_date)
+  const back = parseOooDate(r?.return_date)
+  return { out, back: out && back && back.utc > out.utc ? back : null }
+}
+
+/** Days away, counting both ends: 2–4 Nov → 3 · same day → 1. */
+export function oooDayCount(r) {
+  const { out, back } = oooTripDates(r)
+  return back ? Math.round((back.utc - out.utc) / 864e5) + 1 : 1
+}
+
+/** "2 พ.ย. 2569" · "2 พ.ย. – 4 พ.ย. 2569" · "30 ธ.ค. 2569 – 2 ม.ค. 2570" · missing/invalid → "—" */
+export function oooDateText(r) {
+  const { out, back } = oooTripDates(r)
+  if (!out) return "—"
+  const dayMonth = (p) => `${p.d} ${TH_MONTHS_SHORT[p.m - 1]}`
+  const end = back || out
+  const endText = `${dayMonth(end)} ${end.y + 543}`
+  if (!back) return endText
+  return out.y === back.y ? `${dayMonth(out)} – ${endText}` : `${dayMonth(out)} ${out.y + 543} – ${endText}`
+}
+
+/** "09:00–11:00 น." · multi-day "ออก 07:00 · กลับ 19:00 น." (a range would misread 16:00 → 08:00 next morning). */
+export function oooTimeText(r) {
+  return oooTripDates(r).back
+    ? `ออก ${hhmm(r.time_out)} · กลับ ${hhmm(r.time_back)} น.`
+    : `${hhmm(r?.time_out)}–${hhmm(r?.time_back)} น.`
+}
