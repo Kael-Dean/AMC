@@ -7,6 +7,7 @@
 // Control is via the artboard's VIEW MODEL (not legacy SM inputs):
 //   number  mood      0 idle · 1 onboard · 2 empty · 3 loading · 4 success · 5 error · 6 offline
 //   number  pointDir  0 side · 1 up · 2 down   (only used while pointing in onboard)
+//   number  badgeFlip 1 normal · -1 counter-flips the chest badge while the stage is mirrored
 //   trigger wave      one wave, then back to the current mood (fired by the `wave` counter)
 // autoBind binds the default instance at load, so rive.viewModelInstance is the
 // live one by the time useRive hands us `rive`.
@@ -31,16 +32,18 @@ RuntimeLoader.setWasmFallbackUrl(null)
 
 const asset = (p) => `${import.meta.env.BASE_URL.replace(/\/+$/, "")}${p}`
 
-export default function MascotRive({ mood, pointDir = 0, wave = 0, cover, onReady, onError }) {
+export default function MascotRive({ mood, pointDir = 0, badgeFlip = 1, wave = 0, cover, onReady, onError }) {
   // Callbacks / first mood are read once by the Rive constructor; keep them in refs
   // so a parent re-render never re-creates the instance.
   const moodRef = useRef(mood)
   const pointRef = useRef(pointDir)
+  const badgeFlipRef = useRef(badgeFlip)
   const readyRef = useRef(onReady)
   const errorRef = useRef(onError)
   useEffect(() => {
     moodRef.current = mood
     pointRef.current = pointDir
+    badgeFlipRef.current = badgeFlip
     readyRef.current = onReady
     errorRef.current = onError
   })
@@ -64,6 +67,8 @@ export default function MascotRive({ mood, pointDir = 0, wave = 0, cover, onRead
       prop.value = moodRef.current
       const point = r.viewModelInstance.number("pointDir")
       if (point) point.value = pointRef.current
+      const flip = r.viewModelInstance.number("badgeFlip")
+      if (flip) flip.value = badgeFlipRef.current
       readyRef.current?.()
     },
   })
@@ -73,12 +78,17 @@ export default function MascotRive({ mood, pointDir = 0, wave = 0, cover, onRead
     if (rive) setMood(mood)
   }, [rive, mood, setMood])
 
-  // pointDir is optional in the .riv (older files lack it), so set it directly
-  // instead of through the hook, which expects the property to exist.
+  // pointDir and badgeFlip are optional in the .riv (older files lack them), so set
+  // them directly instead of through the hook, which expects the property to exist.
   useEffect(() => {
     const point = rive?.viewModelInstance?.number("pointDir")
     if (point) point.value = pointDir
   }, [rive, pointDir])
+
+  useEffect(() => {
+    const flip = rive?.viewModelInstance?.number("badgeFlip")
+    if (flip) flip.value = badgeFlip
+  }, [rive, badgeFlip])
 
   // `wave` is a counter: every bump fires the view-model trigger once (0 = never).
   useEffect(() => {
