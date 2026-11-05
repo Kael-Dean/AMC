@@ -30,9 +30,7 @@ RuntimeLoader.setWasmUrl(riveWasmUrl)
 // The fallback build only matters for very old browsers; never reach out to a CDN.
 RuntimeLoader.setWasmFallbackUrl(null)
 
-const asset = (p) => `${import.meta.env.BASE_URL.replace(/\/+$/, "")}${p}`
-
-export default function MascotRive({ mood, pointDir = 0, badgeFlip = 1, wave = 0, cover, onReady, onError }) {
+export default function MascotRive({ src, mood, pointDir = 0, badgeFlip = 1, wave = 0, cover, onReady, onError }) {
   // Callbacks / first mood are read once by the Rive constructor; keep them in refs
   // so a parent re-render never re-creates the instance.
   const moodRef = useRef(mood)
@@ -49,7 +47,7 @@ export default function MascotRive({ mood, pointDir = 0, badgeFlip = 1, wave = 0
   })
 
   const { rive, RiveComponent } = useRive({
-    src: asset("/mascot/homthong.riv"),
+    src,
     artboard: "HomThong",
     stateMachine: "HomThong",
     autoplay: true,
