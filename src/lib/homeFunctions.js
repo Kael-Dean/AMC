@@ -4,14 +4,15 @@
 // Sidebar's phone-only "ธุรกิจรวบรวมผลผลิต" section, the Home shortcut strip
 // and recentRoutes.js read the same list).
 //
-//   ALL_FUNCTIONS   [{ group, icon, color, items: [{ label, path, icon, perm | anyOf, allow?, gated? }] }]
+//   ALL_FUNCTIONS   [{ group, color, items: [{ label, path, perm | anyOf, allow?, gated? }] }]
 //                   gated = self-service item locked until onboarding is done (PR 59)
 //   TRADING_GROUP   the trading subset shown in the Sidebar on phones
 //   TRADING_PATHS   Set of every path in the trading module (groups 1–3) —
 //                   recentRoutes only remembers these
 //   canAccessItem(item, roleId)   permission check shared by Home + Sidebar
-//   lucideFor(path)               lucide icon component for a path (line-art;
-//                                 the emoji `icon` field stays for the desktop tiles)
+//   lucideFor(path)               lucide icon component for a path (line-art)
+//   iconToneFor(path)             chip classes (background + icon colour) for a path;
+//                                 used by the desktop tiles on Home
 // No React components are exported from here (react-refresh rule).
 // ─────────────────────────────────────────────────────────────────────────────
 import {
@@ -56,72 +57,67 @@ import { DOCUMENTS_PERMS, HR_HUB_PERMS, canBringInMill, canSeeAddCompany, checkA
 export const ALL_FUNCTIONS = [
   {
     group: "ธุรกิจรวบรวมผลผลิต",
-    icon: "🌾",
     color: "from-green-400 to-emerald-500",
     items: [
-      { label: "ยกมา", path: "/bring-in", icon: "📤", perm: "stock.carryover.record" },
-      { label: "ยกเข้าโรงสี", path: "/bring-in-mill", icon: "🏭", perm: "stock.mill.record", allow: canBringInMill },
-      { label: "ซื้อข้าว", path: "/Buy", icon: "🛒", perm: "trading.buy.create" },
-      { label: "ขายข้าว", path: "/sales", icon: "💰", perm: "trading.sell.create" },
-      { label: "รับเข้า", path: "/transfer-in", icon: "📥", perm: "stock.transfer.confirm" },
-      { label: "โอนออก", path: "/transfer-out", icon: "📦", perm: "stock.transfer.request" },
-      { label: "ส่งสี", path: "/transfer-mill", icon: "🔄", perm: "stock.mill.record" },
-      { label: "ตัดเสียหาย", path: "/damage-out", icon: "⚠️", perm: "stock.cutloss.record" },
+      { label: "ยกมา", path: "/bring-in", perm: "stock.carryover.record" },
+      { label: "ยกเข้าโรงสี", path: "/bring-in-mill", perm: "stock.mill.record", allow: canBringInMill },
+      { label: "ซื้อข้าว", path: "/Buy", perm: "trading.buy.create" },
+      { label: "ขายข้าว", path: "/sales", perm: "trading.sell.create" },
+      { label: "รับเข้า", path: "/transfer-in", perm: "stock.transfer.confirm" },
+      { label: "โอนออก", path: "/transfer-out", perm: "stock.transfer.request" },
+      { label: "ส่งสี", path: "/transfer-mill", perm: "stock.mill.record" },
+      { label: "ตัดเสียหาย", path: "/damage-out", perm: "stock.cutloss.record" },
     ],
   },
   {
     group: "ทะเบียนสมาชิก",
-    icon: "🪪",
     color: "from-blue-400 to-indigo-500",
     items: [
-      { label: "สมัครสมาชิก", path: "/member-signup", icon: "📝", perm: "members.create" },
-      { label: "เพิ่มลูกค้าทั่วไป", path: "/customer-add", icon: "📝", perm: "customers.create" },
-      { label: "เพิ่มบริษัท", path: "/company-add", icon: "📝", perm: "customers.create", allow: canSeeAddCompany },
-      { label: "ค้นหาสมาชิก", path: "/search", icon: "🔎", perm: "members.search" },
-      { label: "ค้นหาลูกค้าทั่วไป", path: "/customer-search", icon: "🔎", perm: "members.search" },
-      { label: "สมาชิกสิ้นสภาพ", path: "/member-termination", icon: "🪪", perm: "members.status" },
-      { label: "ซื้อหุ้น", path: "/share", icon: "📈", perm: "shares.buy" },
+      { label: "สมัครสมาชิก", path: "/member-signup", perm: "members.create" },
+      { label: "เพิ่มลูกค้าทั่วไป", path: "/customer-add", perm: "customers.create" },
+      { label: "เพิ่มบริษัท", path: "/company-add", perm: "customers.create", allow: canSeeAddCompany },
+      { label: "ค้นหาสมาชิก", path: "/search", perm: "members.search" },
+      { label: "ค้นหาลูกค้าทั่วไป", path: "/customer-search", perm: "members.search" },
+      { label: "สมาชิกสิ้นสภาพ", path: "/member-termination", perm: "members.status" },
+      { label: "ซื้อหุ้น", path: "/share", perm: "shares.buy" },
     ],
   },
   {
     group: "ออเดอร์ & คลังสินค้า",
-    icon: "📦",
     color: "from-orange-400 to-amber-500",
     items: [
-      { label: "ดูออเดอร์ซื้อขาย", path: "/order", icon: "📝", perm: "trading.reports.view" },
-      { label: "แก้ไขออเดอร์", path: "/order-correction", icon: "🛠️", perm: "trading.orders.edit" },
-      { label: "คลังสินค้า", path: "/stock", icon: "🏭", perm: "trading.reports.view" },
-      { label: "เพิ่มรหัสข้าว", path: "/spec/create", icon: "🌾", perm: "stock.spec.manage" },
-      { label: "จัดการรหัสข้าว", path: "/spec/manage", icon: "🏷️", perm: "stock.spec.manage" },
+      { label: "ดูออเดอร์ซื้อขาย", path: "/order", perm: "trading.reports.view" },
+      { label: "แก้ไขออเดอร์", path: "/order-correction", perm: "trading.orders.edit" },
+      { label: "คลังสินค้า", path: "/stock", perm: "trading.reports.view" },
+      { label: "เพิ่มรหัสข้าว", path: "/spec/create", perm: "stock.spec.manage" },
+      { label: "จัดการรหัสข้าว", path: "/spec/manage", perm: "stock.spec.manage" },
     ],
   },
   {
     group: "รายงาน & แผน",
-    icon: "📊",
     color: "from-purple-400 to-violet-500",
     items: [
-      { label: "รายงาน", path: "/documents", icon: "📝", anyOf: DOCUMENTS_PERMS },
-      { label: "แผนปฏิบัติงานรายปี", path: "/operation-plan", icon: "🗺️", perm: "plan.saleGoals.view" },
-      { label: "แก้ไขข้อมูลธุรกิจ", path: "/business-edit", icon: "⚙️", perm: "plan.master.products" },
-      { label: "ติดตามหนี้", path: "/debt-hub", icon: "💳", perm: "debt.view" },
-      { label: "รายได้-ค่าใช้จ่ายศูนย์เรียนรู้และพัฒนาผลิตภัณฑ์", path: "/facility-report", icon: "🏢", perm: "facility.view" },
+      { label: "รายงาน", path: "/documents", anyOf: DOCUMENTS_PERMS },
+      { label: "แผนปฏิบัติงานรายปี", path: "/operation-plan", perm: "plan.saleGoals.view" },
+      { label: "แก้ไขข้อมูลธุรกิจ", path: "/business-edit", perm: "plan.master.products" },
+      { label: "ติดตามหนี้", path: "/debt-hub", perm: "debt.view" },
+      { label: "รายได้-ค่าใช้จ่ายศูนย์เรียนรู้และพัฒนาผลิตภัณฑ์", path: "/facility-report", perm: "facility.view" },
     ],
   },
   {
     group: "งานบุคคล",
-    icon: "👥",
     color: "from-rose-400 to-pink-500",
     items: [
-      { label: "ภาพรวมงานบุคคล",     path: "/hr/dashboard",    icon: "👥", anyOf: HR_HUB_PERMS },
-      { label: "ลงทะเบียนเจ้าหน้าที่", path: "/hr/staff-signup",  icon: "➕", perm: "hr.employees.create" },
-      { label: "รายชื่อเจ้าหน้าที่",    path: "/hr/users",         icon: "📋", perm: "hr.employees.list" },
-      { label: "อนุมัติใบลา",       path: "/hr/leaves",        icon: "📅", perm: "hr.leave.list" },
-      { label: "ข้อมูลการเงิน",     path: "/hr/finance",       icon: "💰", perm: "hr.employees.editFinancial" },
-      { label: "ย้ายสาขา",          path: "/hr/relocation",    icon: "🏢", perm: "hr.relocation.list" },
-      { label: "ขอสินเชื่อ",         path: "/loan-request",     icon: "💳", perm: "self.loan.apply", gated: true },
-      { label: "สลิปเงินเดือนของฉัน", path: "/my-payslips",      icon: "🧾", perm: "self.payroll.view", gated: true },
-      { label: "ปฏิทินวันหยุด",      path: "/holidays",         icon: "🗓️", perm: "hr.holidays.view" },
-      { label: "ข้อมูลการเงินของฉัน", path: "/my-financial",     icon: "💵", perm: "self.payroll.view", gated: true },
+      { label: "ภาพรวมงานบุคคล",     path: "/hr/dashboard",    anyOf: HR_HUB_PERMS },
+      { label: "ลงทะเบียนเจ้าหน้าที่", path: "/hr/staff-signup",  perm: "hr.employees.create" },
+      { label: "รายชื่อเจ้าหน้าที่",    path: "/hr/users",         perm: "hr.employees.list" },
+      { label: "อนุมัติใบลา",       path: "/hr/leaves",        perm: "hr.leave.list" },
+      { label: "ข้อมูลการเงิน",     path: "/hr/finance",       perm: "hr.employees.editFinancial" },
+      { label: "ย้ายสาขา",          path: "/hr/relocation",    perm: "hr.relocation.list" },
+      { label: "ขอสินเชื่อ",         path: "/loan-request",     perm: "self.loan.apply", gated: true },
+      { label: "สลิปเงินเดือนของฉัน", path: "/my-payslips",      perm: "self.payroll.view", gated: true },
+      { label: "ปฏิทินวันหยุด",      path: "/holidays",         perm: "hr.holidays.view" },
+      { label: "ข้อมูลการเงินของฉัน", path: "/my-financial",     perm: "self.payroll.view", gated: true },
     ],
   },
 ]
@@ -186,4 +182,63 @@ const ICONS = {
 /** Lucide icon component for a function path (falls back to a generic grid). */
 export function lucideFor(path) {
   return ICONS[path] ?? LayoutGrid
+}
+
+// Class names are written out in full: Tailwind v4 can't detect concatenated names.
+const ICON_TONES = {
+  blue: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
+  sky: "bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300",
+  amber: "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300",
+  orange: "bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300",
+  rose: "bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300",
+  emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+  lime: "bg-lime-50 text-lime-600 dark:bg-lime-500/15 dark:text-lime-300",
+  teal: "bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300",
+  indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300",
+  violet: "bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300",
+  slate: "bg-slate-100 text-slate-600 dark:bg-white/[.06] dark:text-gray-300",
+}
+
+// Each tile keeps the colour of the emoji it used to show.
+const PATH_TONES = {
+  "/bring-in": "blue",
+  "/bring-in-mill": "rose",
+  "/Buy": "slate",
+  "/sales": "amber",
+  "/transfer-in": "blue",
+  "/transfer-out": "orange",
+  "/transfer-mill": "sky",
+  "/damage-out": "amber",
+  "/member-signup": "orange",
+  "/customer-add": "orange",
+  "/company-add": "orange",
+  "/search": "sky",
+  "/customer-search": "sky",
+  "/member-termination": "blue",
+  "/share": "rose",
+  "/order": "orange",
+  "/order-correction": "slate",
+  "/stock": "rose",
+  "/spec/create": "lime",
+  "/spec/manage": "amber",
+  "/documents": "orange",
+  "/operation-plan": "teal",
+  "/business-edit": "slate",
+  "/debt-hub": "sky",
+  "/facility-report": "slate",
+  "/hr/dashboard": "indigo",
+  "/hr/staff-signup": "violet",
+  "/hr/users": "orange",
+  "/hr/leaves": "blue",
+  "/hr/finance": "amber",
+  "/hr/relocation": "slate",
+  "/loan-request": "sky",
+  "/my-payslips": "slate",
+  "/my-financial": "emerald",
+  "/holidays": "blue",
+}
+
+/** Chip classes (background + icon colour) for a function path (falls back to slate). */
+export function iconToneFor(path) {
+  return ICON_TONES[PATH_TONES[path]] ?? ICON_TONES.slate
 }
