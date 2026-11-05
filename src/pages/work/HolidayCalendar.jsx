@@ -6,7 +6,7 @@ import PageTitle from "../../components/PageTitle"
 
 export default function HolidayCalendar() {
   return (
-    <div className="mx-auto max-w-4xl space-y-5 pb-10">
+    <div className="space-y-5 pb-10">
       <PageTitle title="ปฏิทินวันหยุด" />
       <HRHolidayCalendarTab readOnly />
     </div>

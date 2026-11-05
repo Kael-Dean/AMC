@@ -56,7 +56,7 @@ export default function MyKpi() {
   const result = data?.result ?? null
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5 p-4 pb-10 md:p-6">
+    <div className="space-y-5 p-4 pb-10 md:p-6">
       <PageTitle title="ผลการประเมินของฉัน" />
 
       <div className="flex flex-wrap items-end gap-x-6 gap-y-3">

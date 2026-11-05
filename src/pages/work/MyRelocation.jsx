@@ -222,7 +222,7 @@ export default function MyRelocation() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5 pb-10">
+    <div className="space-y-5 pb-10">
       <PageTitle title="คำขอย้ายสาขา" />
 
       {/* Tabs */}
@@ -247,6 +247,7 @@ export default function MyRelocation() {
             {/* Branch prefs */}
             <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5 space-y-3">
               <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">สาขาที่ต้องการ (เลือกได้ {MAX_BRANCH_PREFS} อันดับ)</p>
+              <div className="grid gap-3 md:grid-cols-2">
               {BRANCH_SLOTS.map((n) => {
                 const key = `branch_pref_${n}`
                 const labelId = `relo-branch-${n}-label`
@@ -274,18 +275,21 @@ export default function MyRelocation() {
                   </div>
                 )
               })}
+              </div>
             </div>
 
             {/* Reasons */}
             <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-700/70 p-5 space-y-3">
               <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">เหตุผล</p>
-              {[["reason","เหตุผลที่ 1"],["reason_2","เหตุผลที่ 2"],["reason_3","เหตุผลที่ 3"]].map(([k, label]) => (
-                <div key={k} className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
-                  <input type="text" value={form[k]} onChange={(e) => setField(k, e.target.value)}
-                    placeholder="ระบุเหตุผล (ถ้ามี)" className={inputCls} />
-                </div>
-              ))}
+              <div className="grid gap-3 md:grid-cols-3">
+                {[["reason","เหตุผลที่ 1"],["reason_2","เหตุผลที่ 2"],["reason_3","เหตุผลที่ 3"]].map(([k, label]) => (
+                  <div key={k} className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
+                    <input type="text" value={form[k]} onChange={(e) => setField(k, e.target.value)}
+                      placeholder="ระบุเหตุผล (ถ้ามี)" className={inputCls} />
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* ─── Family section (optional) ─── */}

@@ -95,7 +95,7 @@ export default function ProfitResultPanel({ fy, info, people, onChanged }) {
           <button type="button" className={secondaryBtn} onClick={retry}>ประมวลผลซ้ำด้วยผลเดิม</button>
         </div>
       ) : (
-        <div className={cx(cardCls, "p-4 sm:p-5 space-y-4 max-w-2xl")}>
+        <div className={cx(cardCls, "p-4 sm:p-5 space-y-4")}>
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-gray-100">บันทึกผลประกอบการปีบัญชี {fy}</h3>
             <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-400">
