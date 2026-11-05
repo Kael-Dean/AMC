@@ -1,26 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="น้องหอมทอง มาสคอต AMC">
-  <!-- v8.1: long rice-grain body with smooth gradient shading (no stipple, no filters, no masks).
+  <!-- v8.2: rice-grain body with a slightly fuller middle with smooth gradient shading (no stipple, no filters, no masks).
        Same geometry and paints as the idle pose of homthong.riv. Single light from upper-left;
        shadows are warmer, darker tones of the material itself, never black or grey. -->
   <defs>
-    <linearGradient id="ht-grain" x1="-55" y1="-240" x2="62" y2="-20" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ht-grain" x1="-60" y1="-240" x2="68" y2="-20" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#F4EDE0"/>
       <stop offset=".5" stop-color="#F1E8D8"/>
       <stop offset=".82" stop-color="#E6D7BE"/>
       <stop offset="1" stop-color="#DCC9AC"/>
     </linearGradient>
-    <linearGradient id="ht-rim" x1="-65" y1="-235" x2="40" y2="-40" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ht-rim" x1="-70" y1="-235" x2="40" y2="-40" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#D6C2A0" stop-opacity=".85"/>
       <stop offset=".45" stop-color="#DCC9AC" stop-opacity=".6"/>
       <stop offset="1" stop-color="#DCC9AC" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="ht-head-shade" x1="6" y1="-150" x2="62" y2="-125" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ht-head-shade" x1="8" y1="-135" x2="68" y2="-110" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#CDB38A" stop-opacity="0"/>
       <stop offset=".55" stop-color="#C9A97C" stop-opacity=".18"/>
       <stop offset="1" stop-color="#BE9A6A" stop-opacity=".5"/>
     </linearGradient>
-    <radialGradient id="ht-head-ao" cx="-1" cy="-130" r="88" gradientUnits="userSpaceOnUse">
-      <stop offset=".76" stop-color="#B8935F" stop-opacity="0"/>
+    <radialGradient id="ht-head-ao" cx="-1" cy="-130" r="92" gradientUnits="userSpaceOnUse">
+      <stop offset=".77" stop-color="#B8935F" stop-opacity="0"/>
       <stop offset=".88" stop-color="#B8935F" stop-opacity=".2"/>
       <stop offset="1" stop-color="#B8935F" stop-opacity=".6"/>
     </radialGradient>
@@ -29,7 +29,7 @@
       <stop offset=".4" stop-color="#C9AE84" stop-opacity=".5"/>
       <stop offset="1" stop-color="#C9AE84" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="ht-groove-b" x1="34" y1="-226" x2="50" y2="-105" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ht-groove-b" x1="38" y1="-222" x2="56" y2="-105" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#C9AE84" stop-opacity="0"/>
       <stop offset=".45" stop-color="#C9AE84" stop-opacity=".45"/>
       <stop offset="1" stop-color="#C9AE84" stop-opacity="0"/>
@@ -55,28 +55,28 @@
       <stop offset=".55" stop-color="#9C8660" stop-opacity=".133"/>
       <stop offset="1" stop-color="#9C8660" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="ht-husk" x1="-50" y1="-70" x2="62" y2="10" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ht-husk" x1="-56" y1="-70" x2="68" y2="10" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#DDB15A"/>
       <stop offset=".5" stop-color="#D6A54E"/>
       <stop offset=".82" stop-color="#C49244"/>
       <stop offset="1" stop-color="#B4833C"/>
     </linearGradient>
-    <linearGradient id="ht-husk-shade" x1="5" y1="-55" x2="60" y2="5" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ht-husk-shade" x1="5" y1="-55" x2="66" y2="5" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#A0722F" stop-opacity="0"/>
       <stop offset=".5" stop-color="#A0722F" stop-opacity=".15"/>
       <stop offset="1" stop-color="#A0722F" stop-opacity=".6"/>
     </linearGradient>
-    <linearGradient id="ht-lip" x1="-60" y1="-60" x2="60" y2="-60" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ht-lip" x1="-66" y1="-60" x2="66" y2="-60" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#EACB86" stop-opacity="0"/>
       <stop offset=".22" stop-color="#EACB86"/>
       <stop offset=".78" stop-color="#EACB86"/>
       <stop offset="1" stop-color="#EACB86" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="ht-flap-l" x1="-60" y1="-70" x2="-54" y2="-150" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ht-flap-l" x1="-66" y1="-70" x2="-54" y2="-150" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#DDB15A"/>
       <stop offset="1" stop-color="#D0A24E"/>
     </linearGradient>
-    <linearGradient id="ht-flap-r" x1="58" y1="-70" x2="50" y2="-158" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ht-flap-r" x1="64" y1="-70" x2="54" y2="-158" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#CC9B49"/>
       <stop offset="1" stop-color="#BE8E40"/>
     </linearGradient>
@@ -100,12 +100,12 @@
       <stop offset=".6" stop-color="#000" stop-opacity=".09"/>
       <stop offset="1" stop-color="#000" stop-opacity="0"/>
     </radialGradient>
-    <path id="ht-grain-shape" d="M12-250C41.7-245.8 62-210 62-150C62-70 28 6-2 6C-32 6-63-60-63-140C-63-205-21.7-254.7 12-250Z"/>
-    <path id="ht-husk-shape" d="M68-74C68-18 33 11-1 11C-35 11-69-16-69-72C-69-80-63.3-84-59.3-79C-47.4-56-24-42-1-42C23.5-42 47.4-54 60.09-80C64.1-86 68-82 68-74Z"/>
+    <path id="ht-grain-shape" d="M12-250C41.7-245.8 68-200 68-118C68-60 30 6-2 6C-34 6-67-58-67-112C-67-200-21.7-254.7 12-250Z"/>
+    <path id="ht-husk-shape" d="M74-74C74-18 36 11-1 11C-38 11-75-16-75-72C-75-80-69.26-84-65.3-79C-53.42-56-27-42-1-42C26.5-42 53.42-54 66.09-80C70.06-86 74-82 74-74Z"/>
   </defs>
 
-  <ellipse cx="256" cy="455" rx="54" ry="11" fill="#000" fill-opacity=".2"/>
-  <ellipse cx="256" cy="455" rx="37" ry="7" fill="url(#ht-contact-core)"/>
+  <ellipse cx="256" cy="455" rx="58" ry="11" fill="#000" fill-opacity=".2"/>
+  <ellipse cx="256" cy="455" rx="40" ry="7" fill="url(#ht-contact-core)"/>
 
   <g transform="translate(256 452)">
     <g transform="translate(-16 -16)"><rect x="-10.5" y="-20" width="21" height="40" rx="10.5" fill="url(#ht-leg)"/></g>
@@ -113,8 +113,8 @@
 
     <g transform="translate(0 -30)">
       <!-- back husk flaps: outer edge continues the husk edge and tucks in behind the head -->
-      <path d="M-47.5-46C-58.8-50.1-69.5-58-69.5-70C-69.5-100-62-139-56-163C-55-165-55-163-54-160C-50-126-48.9-62-47.5-46Z" fill="url(#ht-flap-l)"/>
-      <path d="M46-46C57.3-50.1 68-58 68-70C68-104 60.5-142 54-168C53-170 53-168 52-165C48-128 47.4-62 46-46Z" fill="url(#ht-flap-r)"/>
+      <path d="M-53.5-46C-64.8-50.1-75.5-58-75.5-70C-75.5-120-63.5-136-53.5-165C-52.5-167-52.5-165-51.5-162C-47.5-128-54.9-62-53.5-46Z" fill="url(#ht-flap-l)"/>
+      <path d="M52-46C63.3-50.1 74-58 74-70C74-120 64-143 54-172C53-174 53-172 52-169C48-132 53.4-62 52-46Z" fill="url(#ht-flap-r)"/>
 
       <!-- sprout: grows out of the oblique germ tip -->
       <g transform="translate(-1 30)">
@@ -136,11 +136,11 @@
       </g>
 
       <!-- arms: sleeve + mitt on one bone each, pivot hidden behind the husk -->
-      <g transform="translate(61 -50) rotate(64)">
+      <g transform="translate(67 -50) rotate(64)">
         <rect x="-8" y="-13" width="54" height="26" rx="13" fill="#C99A48"/>
         <circle cx="48" r="13.5" fill="url(#ht-mitt)"/>
       </g>
-      <g transform="translate(-60 -46) rotate(116)">
+      <g transform="translate(-66 -46) rotate(116)">
         <rect x="-8" y="-13" width="54" height="26" rx="13" fill="#C99A48"/>
         <circle cx="48" r="13.5" fill="url(#ht-mitt)"/>
       </g>
@@ -148,36 +148,36 @@
       <!-- grain: base gradient, warm form shadow on the right, smooth AO above the husk lip -->
       <use href="#ht-grain-shape" fill="url(#ht-grain)" stroke="url(#ht-rim)" stroke-width="1.5"/>
       <use href="#ht-grain-shape" fill="url(#ht-head-shade)"/>
-      <path d="M62-150C62-70 28 6-2 6C-32 6-63-60-63-140Z" fill="url(#ht-head-ao)"/>
+      <path d="M68-118C68-60 30 6-2 6C-34 6-67-58-67-112Z" fill="url(#ht-head-ao)"/>
 
       <!-- longitudinal grooves: tapered, tone on tone, clear of the face -->
-      <path d="M34-226C45-205 51.5-180 52-160C52.3-140 52-120 50-105C50.4-120 50.3-140 50-160C49.5-180 43-205 34-226Z" fill="url(#ht-groove-b)"/>
+      <path d="M38-222C50-203 57.5-180 58-160C58.3-140 58-120 56-105C56.4-120 56.3-140 56-160C55.5-180 48-203 38-222Z" fill="url(#ht-groove-b)"/>
       <path d="M4-230C0-210-5-190-6-170C-3-190 2.4-210 4-230Z" fill="url(#ht-groove-a)"/>
 
       <!-- rice germ: blends into the oblique tip, only the top stays opaque -->
-      <path d="M40-232C33.2-240.7 33.8-257.3 14-254.5C-3.8-252-9.3-247.6-19-240.6C-1.7-230.6 18.7-226.3 40-232Z" fill="url(#ht-germ)"/>
+      <path d="M39-232C32.2-240.7 33.8-257.3 14-254.5C-3.8-252-8.3-247-18-240C-.7-230 17.7-226.3 39-232Z" fill="url(#ht-germ)"/>
       <g transform="translate(13 -249) scale(1 .35)"><circle r="20" fill="url(#ht-sprout-ao)"/></g>
-      <g transform="translate(-27 -186) rotate(28) scale(1 1.75)"><circle r="26" fill="url(#ht-sheen)"/></g>
+      <g transform="translate(-30 -186) rotate(28) scale(1 1.75)"><circle r="26" fill="url(#ht-sheen)"/></g>
       <path d="M-14-238C0-231 20-228 38-231C20-226.2 0-229-14-238Z" fill="url(#ht-germ-fold)"/>
 
       <!-- face: dot eyes, brow bars, warm nose, thin smile, soft blush + freckles -->
       <g transform="translate(4 -130)">
-        <g transform="translate(-32 16) scale(1 .55)"><circle r="14" fill="url(#ht-cheek)"/></g>
-        <g transform="translate(32 16) scale(1 .55)"><circle r="14" fill="url(#ht-cheek)"/></g>
+        <g transform="translate(-34 16) scale(1 .55)"><circle r="14" fill="url(#ht-cheek)"/></g>
+        <g transform="translate(34 16) scale(1 .55)"><circle r="14" fill="url(#ht-cheek)"/></g>
         <g fill="#A97C62">
-          <circle cx="-37" cy="12" r="1.5"/>
-          <circle cx="-31" cy="17" r="1.3"/>
-          <circle cx="37" cy="14" r="1.5"/>
+          <circle cx="-39" cy="12" r="1.2"/>
+          <circle cx="-33" cy="17" r="1"/>
+          <circle cx="39" cy="14" r="1.2"/>
         </g>
-        <rect x="-34" y="-37.5" width="22" height="7" rx="3.5" fill="#2B2421"/>
-        <rect x="12" y="-37.5" width="22" height="7" rx="3.5" fill="#2B2421"/>
-        <ellipse cx="-23" cy="-10" rx="10" ry="11.5" fill="#2B2421"/>
-        <ellipse cx="23" cy="-10" rx="10" ry="11.5" fill="#2B2421"/>
+        <rect x="-36" y="-37.5" width="22" height="7" rx="3.5" fill="#2B2421"/>
+        <rect x="14" y="-37.5" width="22" height="7" rx="3.5" fill="#2B2421"/>
+        <ellipse cx="-25" cy="-10" rx="10" ry="11.5" fill="#2B2421"/>
+        <ellipse cx="25" cy="-10" rx="10" ry="11.5" fill="#2B2421"/>
         <g fill="#fff">
-          <circle cx="-26.8" cy="-14.6" r="3.1"/>
-          <circle cx="19.2" cy="-14.6" r="3.1"/>
-          <circle cx="-18.6" cy="-4.8" r="1.4"/>
-          <circle cx="27.4" cy="-4.8" r="1.4"/>
+          <circle cx="-28.8" cy="-14.6" r="3.1"/>
+          <circle cx="21.2" cy="-14.6" r="3.1"/>
+          <circle cx="-20.6" cy="-4.8" r="1.4"/>
+          <circle cx="29.4" cy="-4.8" r="1.4"/>
         </g>
         <ellipse cy="4" rx="5.5" ry="4" fill="#E6BB98"/>
         <path d="M-11 28C-5 34 5 34 11 28" fill="none" stroke="#2B2421" stroke-width="3" stroke-linecap="round"/>
@@ -187,7 +187,7 @@
       <use href="#ht-husk-shape" fill="url(#ht-husk)"/>
       <use href="#ht-husk-shape" fill="url(#ht-husk-shade)"/>
       <path d="M-2-36C-1-24-1-10-2 2" fill="none" stroke="#9C6F33" stroke-width="2.6" stroke-linecap="round"/>
-      <path d="M-59.3-79C-47.4-56-24-42-1-42C23.5-42 47.4-54 60.09-80" fill="none" stroke="url(#ht-lip)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M-65.3-79C-53.42-56-27-42-1-42C26.5-42 53.42-54 66.09-80" fill="none" stroke="url(#ht-lip)" stroke-width="4" stroke-linecap="round"/>
     </g>
   </g>
 </svg>
