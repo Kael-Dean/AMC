@@ -378,7 +378,7 @@ export default function HRPersonnelDetail() {
           <InfoRow label="เงินเดือนปัจจุบัน" value={fmt(fin.current_salary)} />
           <InfoRow label="เงินกู้คงเหลือ" value={fmt(fin.current_loan)} />
           <InfoRow label="ประกันสังคม" value={fmt(fin.current_ss)} />
-          <InfoRow label="กองทุนสำรอง" value={fmt(fin.current_prov)} />
+          <InfoRow label="กองทุนสงเคราะห์พนักงาน" value={fmt(fin.current_prov)} />
           {fin.current_reserve !== undefined && (
             <InfoRow label="เงินสะสม/เดือน" value={Number(fin.current_reserve) > 0 ? fmt(fin.current_reserve) : "ตามอัตรา % ในการตั้งค่า"} />
           )}

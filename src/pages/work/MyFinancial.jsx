@@ -32,7 +32,7 @@ const DEDUCTIONS_ON_FILE = [
   { key: "current_ss", label: "ประกันสังคม", always: true },
   // 0 = ใช้อัตรา % ตามการตั้งค่าการคำนวณเงินเดือน (ดู FinancialEditSheet)
   { key: "current_reserve", label: "เงินสะสม", always: true, zeroText: "ตามอัตรา % ที่ตั้งไว้" },
-  { key: "current_prov", label: "กองทุนสำรองเลี้ยงชีพ", always: true },
+  { key: "current_prov", label: "กองทุนสงเคราะห์พนักงาน", always: true },
   { key: "current_loan", label: "เงินกู้สหกรณ์", always: true },
   { key: "current_slf", label: "กยศ.", always: true },
   { key: "current_wg", label: "รายการหักอื่น ๆ" },

@@ -138,7 +138,7 @@ const DOCUMENT_REPORTS = [
   { key: "hr-payroll-monthly", title: "รายงานสรุปเงินเดือน", perm: "hr.reports.payrollMonthly", keywords: ["เงินเดือนประจำเดือน", "payroll report"] },
   { key: "hr-payroll-annual", title: "รายงานเงินเดือนประจำปีงบประมาณ", perm: "hr.reports.payrollAnnual", keywords: ["เงินเดือนรายปี", "payroll annual"] },
   { key: "hr-social-security", title: "รายงานเงินสมทบประกันสังคม", perm: "hr.reports.socialSecurity", keywords: ["ประกันสังคม", "สปส", "social security"] },
-  { key: "hr-reserve-fund", title: "รายงานเงินสะสม / กองทุนสำรองเลี้ยงชีพ", perm: "hr.reports.reserveFund", keywords: ["กองทุน", "provident fund"] },
+  { key: "hr-reserve-fund", title: "รายงานเงินสะสม / กองทุนสงเคราะห์พนักงาน", perm: "hr.reports.reserveFund", keywords: ["กองทุน", "provident fund"] },
   { key: "hr-leave-balance", title: "รายงานสรุปวันลาประจำปีงบประมาณ", perm: "hr.reports.leaveBalance", keywords: ["วันลาคงเหลือ", "โควตาลา", "leave balance"] },
   { key: "hr-leave-utilization", title: "รายงานการลาของพนักงาน", perm: "hr.reports.leaveUtilization", keywords: ["สถิติการลา", "ลาป่วย", "ลากิจ", "leave report"] },
   { key: "hr-leave-annual", title: "ทะเบียนคุมการลาประจำปีบัญชี", perm: "hr.reports.leaveAnnual", keywords: ["สรุปการลารายปี", "ทะเบียนการลา"] },
