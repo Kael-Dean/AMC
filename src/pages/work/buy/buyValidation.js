@@ -10,7 +10,7 @@
 //   validateSpec(ctx)     → { product?, riceType?, …, branchName?, klangName? }
 //   validateWeigh(ctx)    → { entryWeightKg?, exitWeightKg?, deductWeightKg?, moisturePct?, impurityPct?, gram?, unitPrice?, amountTHB? }
 // ─────────────────────────────────────────────────────────────────────────────
-import { moneyToNumber, validateThaiTaxId } from "./buyShared"
+import { moneyToNumber } from "./buyShared"
 
 export function validateCustomer({ buyerType, customer, memberMeta, order, resolvePaymentId }) {
   const e = {}
@@ -23,7 +23,7 @@ export function validateCustomer({ buyerType, customer, memberMeta, order, resol
     }
   } else {
     if (!customer.companyName.trim()) e.companyName = "กรุณากรอกชื่อบริษัท"
-    if (!customer.taxId.trim() || !validateThaiTaxId(customer.taxId)) e.taxId = "กรุณากรอกเลขผู้เสียภาษี (13 หลัก)"
+    if (!customer.taxId.trim()) e.taxId = "กรุณากรอกเลขผู้เสียภาษี"
   }
 
   const pid = resolvePaymentId()
