@@ -10,7 +10,8 @@
 //              Decorative extra only — nothing depends on it, so no keyboard path.
 //   size       px, the box is always square and reserved up front (no layout shift)
 //   point      "side" | "up" | "down" — where the onboard pose points (view model pointDir)
-//   mirror     true flips the character horizontally, so "side" points left
+//   mirror     true flips the character horizontally, so "side" points left. The chest
+//              badge has text, so it is counter-flipped to keep reading correctly.
 //   deferMs    wait this long before fetching the Rive runtime (default: next idle
 //              moment). PageLoader uses it so quick loads never pull the wasm.
 //   className  extra classes on the box
@@ -144,7 +145,7 @@ export default function Mascot({
         style={{ ...stageStyle, transform: mirror ? "scaleX(-1)" : undefined }}
       >
         <img
-          src={asset("/mascot/homthong.svg")}
+          src={asset(mirror ? "/mascot/homthong-flip.svg" : "/mascot/homthong.svg")}
           alt=""
           width={stage}
           height={stage}
@@ -167,6 +168,7 @@ export default function Mascot({
                 <MascotRive
                   mood={moodValue}
                   pointDir={POINT_DIRS[point] ?? 0}
+                  badgeFlip={mirror ? -1 : 1}
                   wave={wave}
                   cover={small}
                   onReady={() => setReady(true)}
