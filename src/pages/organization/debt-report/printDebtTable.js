@@ -1,6 +1,10 @@
 import { sumRows } from "./buildReportRows"
 import { printHtml } from "../../../lib/files"
 
+// Values come from the API and end up in document.write, so they must not be parsed as HTML.
+const esc = (v) =>
+  String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]))
+
 const fmtMoney = (v) =>
   new Intl.NumberFormat("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(v) || 0)
 
@@ -35,21 +39,21 @@ export function printDebtTable({ title, subtitle, tableRows, colTotals }) {
       bodyRows += `<tr style="background:${rowBg}">`
       if (yi === 0) {
         bodyRows += `<td rowspan="${group.yearRows.length}" style="text-align:center;vertical-align:middle;border:1px solid #94a3b8;padding:5px 6px">${gi + 1}</td>`
-        bodyRows += `<td rowspan="${group.yearRows.length}" style="vertical-align:middle;border:1px solid #94a3b8;padding:5px 8px;font-weight:500">${group.program.prog_name}</td>`
+        bodyRows += `<td rowspan="${group.yearRows.length}" style="vertical-align:middle;border:1px solid #94a3b8;padding:5px 8px;font-weight:500">${esc(group.program.prog_name)}</td>`
       }
-      bodyRows += `<td style="text-align:center;border:1px solid #94a3b8;padding:5px 6px">${yr.fiscalYear.year_name}</td>`
+      bodyRows += `<td style="text-align:center;border:1px solid #94a3b8;padding:5px 6px">${esc(yr.fiscalYear.year_name)}</td>`
       // 8 amount/count pairs (ยกมา/เพิ่มในปี/ชำระ/คงเหลือ) then 3 amount-only
       // method columns (v5 method breakdown has no per-method count).
       cellVals(yr).forEach((c) => {
         bodyRows += `<td style="text-align:right;border:1px solid #94a3b8;padding:5px 6px;font-variant-numeric:tabular-nums">${c.money ? fmtMoney(c.v) : (c.v || 0)}</td>`
       })
-      bodyRows += `<td style="border:1px solid #94a3b8;padding:5px 6px;color:#6b7280">${yr.note || ""}</td>`
+      bodyRows += `<td style="border:1px solid #94a3b8;padding:5px 6px;color:#6b7280">${esc(yr.note)}</td>`
       bodyRows += `</tr>`
     })
     // ผลรวมต่อโครงการ (subtotal) — แถบสีคราม indigo คั่นจาก row รวมทั้งหมด (เขียว)
     const gTot = sumRows(group.yearRows)
     bodyRows += `<tr>`
-    bodyRows += `<td colspan="3" style="font-weight:700;background:#eef2ff;border:1px solid #c7d2fe;padding:5px 10px;color:#3730a3">รวม ${group.program.prog_name}</td>`
+    bodyRows += `<td colspan="3" style="font-weight:700;background:#eef2ff;border:1px solid #c7d2fe;padding:5px 10px;color:#3730a3">รวม ${esc(group.program.prog_name)}</td>`
     cellVals(gTot).forEach((c) => {
       bodyRows += `<td style="text-align:right;border:1px solid #c7d2fe;padding:5px 6px;font-weight:700;background:#eef2ff;color:#3730a3;font-variant-numeric:tabular-nums">${c.money ? fmtMoney(c.v) : (c.v || 0)}</td>`
     })
@@ -88,9 +92,9 @@ export function printDebtTable({ title, subtitle, tableRows, colTotals }) {
     <div class="head-text">
       <img class="doc-logo" src="${logoUrl}" alt="" />
       <div class="org-name">${ORG_NAME}</div>
-      <h1>${title}</h1>
+      <h1>${esc(title)}</h1>
     </div>
-    <div class="sub">${subtitle ? subtitle + " &nbsp;|&nbsp; " : ""}วันที่พิมพ์: ${todayThai()}</div>
+    <div class="sub">${subtitle ? esc(subtitle) + " &nbsp;|&nbsp; " : ""}วันที่พิมพ์: ${todayThai()}</div>
   </div>
   <table>
     <thead>

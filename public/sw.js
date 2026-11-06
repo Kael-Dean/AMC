@@ -5,8 +5,9 @@
 // handles it exactly as if this worker did not exist.
 //
 // Deploy: bump VERSION only when this file's caching behaviour changes.
-// Kill switch: replace this file with one that deletes every cache and calls
-// self.registration.unregister().
+// Kill switch: never delete this file (a 404 fails the update and the old worker
+// stays). Replace it with one that calls self.skipWaiting() on install and, on
+// activate, deletes every cache and calls self.registration.unregister().
 
 const VERSION = "v1"
 const STATIC_CACHE = `skt-static-${VERSION}` // offline page + icons

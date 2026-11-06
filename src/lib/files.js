@@ -168,6 +168,13 @@ export async function deliverBlob(blob, filename) {
   const file = isStandalone() && isIOSLike() && typeof File === "function" ? new File([blob], name, { type: blob.type }) : null
   if (!file || !navigator.canShare?.({ files: [file] })) {
     saveBlob(blob, name)
+    // The installed app can't preview, so opening a document leaves a copy on the device.
+    if (isMobileStandalone()) {
+      toast.info("บันทึกไฟล์ลงเครื่องแล้ว", {
+        description: "ถ้าใช้เครื่องนี้ร่วมกับคนอื่น ให้ลบไฟล์หลังใช้งาน",
+        duration: 10_000,
+      })
+    }
     return
   }
   try {
@@ -189,14 +196,23 @@ export async function deliverBlob(blob, filename) {
 /**
  * Print a standalone HTML document. Prints straight from this click: the app's CSP
  * also covers the popup, so a script inside `html` would not run.
- * No popup available → the document is handed over as a file to print from there.
+ * On a phone/tablet installed app the document is handed over as a file to print from
+ * there. Anywhere else no popup means the browser blocked it: say so, never save a
+ * report to disk the user didn't ask for.
  */
 export function printHtml(html, { filename = "document.html", features } = {}) {
   // No "noopener": window.open would return null and we need the handle to write
   // and print. Clear opener by hand instead (reverse-tabnabbing).
   const popup = openPopup("", features)
   if (!popup) {
-    deliverBlob(new Blob([html], { type: "text/html;charset=utf-8" }), filename)
+    if (isMobileStandalone()) {
+      deliverBlob(new Blob([html], { type: "text/html;charset=utf-8" }), filename)
+    } else {
+      toast.warning("เบราว์เซอร์กันหน้าต่างพิมพ์ไว้", {
+        description: "อนุญาตป๊อปอัปสำหรับเว็บนี้ แล้วกดพิมพ์อีกครั้ง",
+        duration: 10_000,
+      })
+    }
     return
   }
   try {
