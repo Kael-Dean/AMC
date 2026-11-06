@@ -111,6 +111,7 @@ const Topbar = ({ onToggleSidebar, isSidebarOpen, darkMode, setDarkMode, back = 
 
           <button
             onClick={onToggleSidebar}
+            data-sidebar-toggle
             className={chromeBtnCls}
             aria-label={sidebarBtnLabel}
             title={sidebarBtnLabel}

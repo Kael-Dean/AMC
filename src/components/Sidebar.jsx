@@ -77,6 +77,8 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
   }
 
   const handleInstall = () => {
+    // เมนูจะกลายเป็น inert: ย้ายโฟกัสออกก่อน ไม่งั้นปิด sheet แล้วโฟกัสหลุดไป body (Sheet คืนโฟกัสให้ปุ่มที่โฟกัสตอนเปิด)
+    document.querySelector("[data-sidebar-toggle]")?.focus({ preventScroll: true })
     setIsOpen(false)
     if (installOption === "ios") setInstallSheetOpen(true)
     else promptInstall().catch(() => {})

@@ -3,18 +3,20 @@
 //
 // Desktop: the calendar is portaled to <body> (position: fixed, z 10050 via
 // useAnchoredPanel) so no table scrollbar / overflow wrapper can clip it.
-// Phone (<md): opens as a bottom <Sheet size="sm"> with 44px day buttons.
+// Phone (<md) and a phone in landscape: opens as a <Sheet size="sm"> with 44px day
+// buttons, because a popover next to the field has room for only two rows there.
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import useAnchoredPanel from "../lib/useAnchoredPanel"
-import { useIsCoarsePointer, useIsPhone } from "../hooks/useMediaQuery"
+import { useIsCoarsePointer, useIsPhone, useMediaQuery } from "../hooks/useMediaQuery"
 import Sheet from "./ui/Sheet"
 import { cx, focusRingCls } from "../lib/styles"
 
 const PANEL_Z = 10050
 const PANEL_W = 288
 const PANEL_W_TOUCH = 352 // 7 columns × 44px + grid gaps + panel padding/border
+const SHORT_TOUCH = "(pointer: coarse) and (max-height: 500px)" // same as the short-touch variant in index.css
 
 const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน",
@@ -196,7 +198,8 @@ function Calendar({ value, today, viewYear, viewMonth, onPrev, onNext, onPick, o
               aria-pressed={isSelected}
               aria-label={`${day} ${THAI_MONTHS[viewMonth - 1]} ${viewYear + 543}`}
               className={cx(
-                "h-11 w-full cursor-pointer rounded-xl text-sm font-medium tabular-nums transition-colors duration-150 md:pointer-fine:h-9",
+                // min-w-0: at 320px a column is ~41px, and the global 44px floor would overlap the next day
+                "h-11 w-full min-w-0 cursor-pointer rounded-xl text-sm font-medium tabular-nums transition-colors duration-150 md:pointer-fine:h-9",
                 focusRingCls,
                 isSelected
                   ? "bg-indigo-600 text-white shadow-sm dark:bg-indigo-600"
@@ -249,10 +252,12 @@ const ThaiDatePicker = forwardRef(function ThaiDatePicker({
   const panelRef = useRef(null)
   useImperativeHandle(ref, () => triggerRef.current)
   const isPhone = useIsPhone()
+  const isShortTouch = useMediaQuery(SHORT_TOUCH)
+  const asSheet = isPhone || isShortTouch
   // จอสัมผัสที่ ≥md (tablet/มือถือแนวนอน) ยังเป็น popover: ขยายให้วันกว้าง ≥44px
   const isCoarse = useIsCoarsePointer()
   const panelW = isCoarse ? PANEL_W_TOUCH : PANEL_W
-  const { style } = useAnchoredPanel(triggerRef, { open: open && !isPhone, minW: panelW, maxW: panelW, maxH: isCoarse ? 480 : 400 })
+  const { style } = useAnchoredPanel(triggerRef, { open: open && !asSheet, minW: panelW, maxW: panelW, maxH: isCoarse ? 480 : 400 })
 
   useEffect(() => {
     if (parsed) { setViewYear(parsed.year); setViewMonth(parsed.month) }
@@ -261,7 +266,7 @@ const ThaiDatePicker = forwardRef(function ThaiDatePicker({
 
   // Desktop popover: outside click closes (trigger + portaled panel both count as inside)
   useEffect(() => {
-    if (!open || isPhone) return
+    if (!open || asSheet) return
     function onDown(e) {
       if (wrapRef.current?.contains(e.target)) return
       if (panelRef.current?.contains(e.target)) return
@@ -269,12 +274,12 @@ const ThaiDatePicker = forwardRef(function ThaiDatePicker({
     }
     document.addEventListener("mousedown", onDown)
     return () => document.removeEventListener("mousedown", onDown)
-  }, [open, isPhone])
+  }, [open, asSheet])
 
   // Esc closes the popover only (capture + preventDefault so a parent modal
   // using useModalDismiss stays open).
   useEffect(() => {
-    if (!open || isPhone) return
+    if (!open || asSheet) return
     function onKey(e) {
       if (e.key !== "Escape" || e.defaultPrevented || e.isComposing) return
       e.preventDefault()
@@ -283,7 +288,7 @@ const ThaiDatePicker = forwardRef(function ThaiDatePicker({
     }
     document.addEventListener("keydown", onKey, true)
     return () => document.removeEventListener("keydown", onKey, true)
-  }, [open, isPhone])
+  }, [open, asSheet])
 
   function prevMonth() {
     if (viewMonth === 1) { setViewYear(y => y - 1); setViewMonth(12) }
@@ -298,6 +303,40 @@ const ThaiDatePicker = forwardRef(function ThaiDatePicker({
     setOpen(false)
     if (refocus) triggerRef.current?.focus({ preventScroll: true })
   }
+
+  // The popover is portaled to the end of <body> and focus stays on the trigger (so the
+  // field keeps its look), which left the days out of the Tab order. Tab walks into the
+  // panel from the trigger, and out of it back to the trigger.
+  function onTriggerKeyDown(e) {
+    if (open && !asSheet && e.key === "Tab" && !e.shiftKey) {
+      const first = panelRef.current?.querySelector("button")
+      if (first) {
+        e.preventDefault()
+        first.focus()
+        return
+      }
+    }
+    onKeyDown?.(e)
+  }
+
+  function onPanelKeyDown(e) {
+    if (e.key !== "Tab") return
+    const buttons = [...panelRef.current.querySelectorAll("button:not([disabled])")]
+    if (e.shiftKey && e.target === buttons[0]) {
+      e.preventDefault()
+      triggerRef.current?.focus({ preventScroll: true })
+    } else if (!e.shiftKey && e.target === buttons[buttons.length - 1]) {
+      e.preventDefault()
+      close()
+    }
+  }
+
+  // Switching days/years/months removes the focused button: stay inside the panel.
+  useEffect(() => {
+    if (open && !asSheet && document.activeElement === document.body) {
+      panelRef.current?.querySelector("button")?.focus({ preventScroll: true })
+    }
+  }, [mode, open, asSheet])
 
   function selectDay(day) {
     const iso = `${viewYear}-${String(viewMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`
@@ -372,7 +411,7 @@ const ThaiDatePicker = forwardRef(function ThaiDatePicker({
         type="button"
         disabled={disabled}
         onClick={() => { setMode("days"); setOpen(o => !o) }}
-        onKeyDown={onKeyDown}
+        onKeyDown={onTriggerKeyDown}
         onFocus={onFocus}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -391,7 +430,7 @@ const ThaiDatePicker = forwardRef(function ThaiDatePicker({
         <CalendarDays aria-hidden="true" className="size-4 shrink-0 text-gray-400 dark:text-gray-500" strokeWidth={1.75} />
       </button>
 
-      {isPhone ? (
+      {asSheet ? (
         <Sheet open={open} onClose={() => close()} title={ariaLabel} size="sm" z={PANEL_Z} initialFocus={null}>
           {calendar}
         </Sheet>
@@ -402,6 +441,7 @@ const ThaiDatePicker = forwardRef(function ThaiDatePicker({
             ref={panelRef}
             role="dialog"
             aria-label={ariaLabel}
+            onKeyDown={onPanelKeyDown}
             style={{ ...style, zIndex: PANEL_Z }}
             className="overflow-y-auto rounded-2xl border border-gray-200 bg-white p-3 shadow-xl dark:border-line-strong dark:bg-raised dark:shadow-2xl dark:shadow-black/60"
           >
