@@ -17,6 +17,7 @@ import PageTitle from "../../components/PageTitle"
 import { canGoBack, useDrill } from "../../lib/drill"
 import SelectDropdown from "../../components/SelectDropdown"
 import { STATUS, STATUS_LABEL } from "../../lib/approval"
+import { SPEC_API, SPECIES_LABEL_KEY, mapIdLabel, speciesUrl } from "../../lib/riceSpec"
 
 /** ---------- Utils ---------- */
 
@@ -655,6 +656,9 @@ function Documents() {
   const [loadingKlangs, setLoadingKlangs] = useState(false)
   const [branchLoadFailed, setBranchLoadFailed] = useState(false)
   const [specLoadFailed, setSpecLoadFailed] = useState(false)
+  const [speciesOptions, setSpeciesOptions] = useState([])
+  const [loadingSpecies, setLoadingSpecies] = useState(false)
+  const [speciesLoadFailed, setSpeciesLoadFailed] = useState(false)
   const [klangLoadFailed, setKlangLoadFailed] = useState(false)
   const [klangReload, setKlangReload] = useState(0)
 
@@ -811,6 +815,30 @@ function Documents() {
   }, [])
 
   useEffect(() => { loadSpecs() }, [loadSpecs])
+
+  /** ชื่อพันธุ์ข้าว (P22): รวมทุกประเภทสินค้า ตัดชื่อซ้ำ — id = ชื่อ เพราะ backend กรองด้วย species_like */
+  const loadSpecies = useCallback(async () => {
+    setLoadingSpecies(true)
+    setSpeciesLoadFailed(false)
+    try {
+      const products = mapIdLabel(await apiAuth(SPEC_API.products), ["product_type", "product_name", "name"])
+      const lists = await Promise.all(products.map((p) => apiAuth(speciesUrl(p.id))))
+      const names = new Set(lists.flatMap((rows) => mapIdLabel(rows, SPECIES_LABEL_KEY).map((s) => s.label)))
+      setSpeciesOptions(
+        [...names]
+          .sort((a, b) => a.localeCompare(b, "th"))
+          .map((name) => ({ id: name, label: name }))
+      )
+    } catch (err) {
+      console.error("loadSpecies error:", err)
+      setSpeciesOptions([])
+      setSpeciesLoadFailed(true)
+    } finally {
+      setLoadingSpecies(false)
+    }
+  }, [])
+
+  useEffect(() => { loadSpecies() }, [loadSpecies])
 
   /** ล็อกสาขา (รวมถึงลิงก์แชร์ที่ระบุ branch_id อื่น) → บังคับเป็นสาขาที่ใช้งานอยู่ */
   useEffect(() => {
@@ -1522,7 +1550,20 @@ function Documents() {
             {hasSpeciesLike && (
               <div>
                 <label className={labelCls}>ชื่อพันธุ์ข้าว (ไม่บังคับ)</label>
-                <input className={baseField} placeholder="เช่น มะลิ" value={filters.speciesLike} onChange={(e) => setFilter("speciesLike", e.target.value)} />
+                <ComboBox
+                  options={withEmpty(speciesOptions, "— ทุกพันธุ์ —")}
+                  searchable
+                  value={filters.speciesLike}
+                  onChange={(v) => setFilter("speciesLike", v)}
+                  placeholder="— ทุกพันธุ์ —"
+                  loading={loadingSpecies}
+                  disabled={speciesLoadFailed}
+                  title="ชื่อพันธุ์ข้าว"
+                  ariaLabel="ชื่อพันธุ์ข้าว"
+                />
+                {speciesLoadFailed
+                  ? <LoadRetry message="โหลดรายชื่อพันธุ์ข้าวไม่สำเร็จ" onRetry={loadSpecies} />
+                  : <p className={helpTextCls}>ไม่เลือก = ทุกพันธุ์</p>}
               </div>
             )}
             {hasSpecs && <FormSpecMulti note={report.specNote} />}
