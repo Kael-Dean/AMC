@@ -126,6 +126,11 @@ const FIELD_ORDER = [
 // These decide whether the request is multi-day, so errors comparing dates/times may no longer hold
 const MULTI_DAY_INPUTS = ["request_type", "request_date", "return_date"]
 
+// Personal trips: 2.5 hours per request. Work trips have no limit.
+// Backend still needs the matching change until it ships.
+const PERSONAL_MAX_MIN = 150
+const PERSONAL_TOO_LONG_MSG = `ธุระส่วนตัวออกได้ไม่เกิน ${fmtDuration(PERSONAL_MAX_MIN)}`
+
 /** Files can be added to pending or approved work requests only (409 otherwise); personal trips need none. */
 const canAttach = (r) =>
   !!r && r.request_type === "work" && (isPendingStatus(r.status) || r.status === "approved") &&
@@ -197,8 +202,9 @@ function StatusBadge({ status }) {
 }
 
 /**
- * Workday strip: shows work hours, the chosen out→back span and where the
- * half-day ceiling falls. Purely informative — backend enforces the rules.
+ * Workday strip (personal trips only): shows work hours and the chosen out→back
+ * span, and warns when it leaves work hours or exceeds PERSONAL_MAX_MIN.
+ * Purely informative — validate() and the backend enforce the rules.
  */
 function WorkdayStrip({ settings, timeOut, timeBack }) {
   const ws = toMin(settings?.work_start)
@@ -209,9 +215,8 @@ function WorkdayStrip({ settings, timeOut, timeBack }) {
   const b = toMin(timeBack)
   const hasSpan = o != null && b != null && b > o
   const pct = (m) => `${Math.min(100, Math.max(0, ((m - ws) / span) * 100))}%`
-  const halfMin = Number(settings?.half_day_hours) > 0 ? Number(settings.half_day_hours) * 60 : null
   const outside = hasSpan && (o < ws || b > we)
-  const tooLong = hasSpan && halfMin != null && b - o > halfMin
+  const tooLong = hasSpan && b - o > PERSONAL_MAX_MIN
 
   return (
     <div className="mt-1">
@@ -234,7 +239,7 @@ function WorkdayStrip({ settings, timeOut, timeBack }) {
         <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
           {outside
             ? "ช่วงเวลานี้อยู่นอกเวลาทำงาน ระบบอาจไม่รับคำขอ"
-            : `เกินครึ่งวันทำงาน (${settings.half_day_hours} ชม.) — หากต้องออกนานกว่านี้ ให้ยื่นใบลาแทน`}
+            : PERSONAL_TOO_LONG_MSG}
         </p>
       )}
     </div>
@@ -359,7 +364,7 @@ export default function OutOfOffice() {
     return wd === 0 || wd === 6
   }, [form.request_date])
 
-  // Mirrors backend 422 rules (+ required fields)
+  // Mirrors backend 422 rules (+ required fields, + PERSONAL_MAX_MIN ahead of the backend change)
   const validate = () => {
     const er = {}
     if (!["work", "personal"].includes(form.request_type)) er.request_type = "กรุณาเลือกประเภท"
@@ -369,6 +374,9 @@ export default function OutOfOffice() {
     // Multi-day: time_back is on another day, so it may be earlier in the day than time_out
     if (!isMultiDay && form.time_out && form.time_back && toMin(form.time_back) <= toMin(form.time_out)) {
       er.time_back = "เวลากลับต้องหลังเวลาออก"
+    }
+    if (!isWork && durationMin != null && durationMin > PERSONAL_MAX_MIN) {
+      er.time_back = PERSONAL_TOO_LONG_MSG
     }
     if (!form.place.trim()) er.place = "กรุณาระบุสถานที่"
     if (!form.reason.trim()) er.reason = "กรุณาระบุเหตุผล"
@@ -607,11 +615,13 @@ export default function OutOfOffice() {
                   ? <>ไปกลับ <span className="font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{oooDayCount(form)} วัน</span> · <span className="tabular-nums">{oooDateText(form)}</span></>
                   : durationMin
                     ? <>รวม <span className="font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{fmtDuration(durationMin)}</span></>
-                    : settings
-                      ? <>เวลาทำงาน <span className="tabular-nums">{hhmm(settings.work_start)}–{hhmm(settings.work_end)} น.</span> · ไม่เกิน <span className="tabular-nums">{settings.half_day_hours}</span> ชม.</>
-                      : "ระบุเวลาออกและเวลากลับ"}
+                    : isWork
+                      ? "ระบุเวลาออกและเวลากลับ"
+                      : settings
+                        ? <>เวลาทำงาน <span className="tabular-nums">{hhmm(settings.work_start)}–{hhmm(settings.work_end)} น.</span> · ไม่เกิน <span className="tabular-nums">{fmtDuration(PERSONAL_MAX_MIN)}</span></>
+                        : <>ไม่เกิน <span className="tabular-nums">{fmtDuration(PERSONAL_MAX_MIN)}</span></>}
               </p>
-              {settings && !isMultiDay && <WorkdayStrip settings={settings} timeOut={form.time_out} timeBack={form.time_back} />}
+              {settings && !isWork && <WorkdayStrip settings={settings} timeOut={form.time_out} timeBack={form.time_back} />}
             </div>
 
             {isWork && (
