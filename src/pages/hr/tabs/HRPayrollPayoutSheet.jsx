@@ -2,8 +2,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // รายละเอียดเงินเดือนหนึ่งคน + ปรับรายการด้วยมือ (เฉพาะงวด "ร่าง")
 //   GET   /hr/employees/{user_id}/payroll   ประวัติ (หา record ตาม id — มีบรรทัดครบ รวม add_holiday_pay)
-//   PATCH /hr/payroll/{id}                  { reason*, income_tax, add_pending, deduct_loan, deduct_slf, deduct_extra_leave }
+//   PATCH /hr/payroll/{id}                  { reason*, income_tax, add_pending, deduct_loan, deduct_extra_leave }
 //                                           gross/net คำนวณใหม่จากบรรทัด — ไม่ส่ง final_payout
+//   รายการหักภายนอก (กยศ. ฯลฯ) ปรับที่นี่ไม่ได้ — บันทึกที่แท็บย่อย "รายการหักภายนอก" (PUT /hr/payroll/external/{y}/{m})
 //   งวดที่ไม่ใช่ร่าง → backend ตอบ 409 (หน้าเว็บปิดฟอร์มไว้ก่อน)
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useId, useState } from "react"
@@ -19,10 +20,9 @@ const inputCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm tabular-nums
 const btnCls = "h-12 md:h-10"
 
 const ADJUST_FIELDS = [
-  { key: "income_tax", label: "ภาษีหัก ณ ที่จ่าย" },
+  { key: "income_tax", label: "ภาษีเงินได้" },
   { key: "add_pending", label: "เงินเพิ่มอื่น ๆ" },
-  { key: "deduct_loan", label: "เงินกู้" },
-  { key: "deduct_slf", label: "กยศ." },
+  { key: "deduct_loan", label: "หนี้เงินกู้กองทุนสงเคราะห์เจ้าหน้าที่" },
   { key: "deduct_extra_leave", label: EXTRA_LEAVE_LABEL },
 ]
 
@@ -149,7 +149,7 @@ export default function HRPayrollPayoutSheet({ payout, isDraft, periodLabel, onC
       ) : editing ? (
         <form className="space-y-4" noValidate onSubmit={(e) => { e.preventDefault(); save() }}>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            รายได้รวมและยอดสุทธิจะคำนวณใหม่จากบรรทัดที่แก้ · บันทึกเหตุผลไว้ในประวัติการใช้งาน
+            รายได้รวมและยอดสุทธิจะคำนวณใหม่จากบรรทัดที่แก้ · บันทึกเหตุผลไว้ในประวัติการใช้งาน · รายการหักภายนอกแก้ที่แท็บย่อย &quot;รายการหักภายนอก&quot;
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {ADJUST_FIELDS.map((f) => {
@@ -181,7 +181,7 @@ export default function HRPayrollPayoutSheet({ payout, isDraft, periodLabel, onC
               type="text"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="เช่น แก้ภาษีตามหนังสือ ล.ย.01"
+              placeholder="เช่น เจ้าหน้าที่แจ้งเปลี่ยนยอดภาษี"
               aria-invalid={errors.reason ? true : undefined}
               aria-describedby={errors.reason ? `${uid}-reason-err` : `${uid}-reason-hint`}
               className={cx(inputCls, errors.reason && "!border-red-500 dark:!border-red-400")}

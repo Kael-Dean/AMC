@@ -177,8 +177,14 @@ export const PERMISSIONS = Object.freeze({
   // งวด 3 (3C) — code ใหม่ของ backend (payroll.settings / payroll.period.approve) ยังไม่มีเลขฟังก์ชันใน matrix ที่ได้รับ
   // ส่ง/ปิดงวด/คำนวณใหม่ ใช้ payroll.generate เดิม → hr.payroll.generate
   "hr.payroll.settings.view": { code: ["payroll.view", "payroll.settings"], no: null, module: "HR: Payroll", label: "ดูการตั้งค่าการคำนวณเงินเดือน", en: "View payroll settings", roles: [1, 3], note: "GET /hr/payroll/settings — payroll.view หรือ payroll.settings" },
-  "hr.payroll.settings.edit": { code: "payroll.settings", no: null, module: "HR: Payroll", label: "แก้ไขการตั้งค่าการคำนวณเงินเดือน (อัตราประกันสังคม / เงินสะสม / ภาษี)", en: "Edit payroll settings", roles: [1, 3], note: "PATCH /hr/payroll/settings" },
-  "hr.payroll.periods.view": { code: ["payroll.view", "payroll.period.approve"], no: null, module: "HR: Payroll", label: "ดูสถานะงวดเงินเดือน", en: "View pay periods", roles: [1, 2, 3], note: "GET /hr/payroll/periods" },
+  "hr.payroll.settings.edit": { code: "payroll.settings", no: null, module: "HR: Payroll", label: "แก้ไขการตั้งค่าการคำนวณเงินเดือน (อัตราประกันสังคม / เงินสะสมขั้นต่ำ / กองทุนสงเคราะห์เจ้าหน้าที่)", en: "Edit payroll settings", roles: [1, 3], note: "PATCH /hr/payroll/settings" },
+  "hr.payroll.periods.view": { code: ["payroll.view", "payroll.period.approve", "payroll.check.admin", "payroll.check.asst", "payroll.view.accounting"], no: null, module: "HR: Payroll", label: "ดูสถานะงวดเงินเดือน", en: "View pay periods", roles: [1, 2, 3, 4, 7], note: "GET /hr/payroll/periods — _PERIOD_VIEW_PERMS" },
+  // หน้า "งวดประจำเดือน" + แท็บรายการหักภายนอก — ตรงกับ _PERIOD_VIEW_PERMS ของ backend
+  // (ผช.ผจก. และหัวหน้าฝ่ายบัญชีเห็นเดือนที่ยังไม่ผ่านการตรวจขั้นแรกไม่ได้ — backend ตอบ 403)
+  "hr.payroll.month.view": { code: ["payroll.view", "payroll.period.approve", "payroll.check.admin", "payroll.check.asst", "payroll.view.accounting"], no: null, module: "HR: Payroll", label: "ดูงวดเงินเดือนประจำเดือนและรายการหักภายนอก", en: "View a pay month and external deductions", roles: [1, 2, 3, 4, 7], note: "GET /hr/payroll, /hr/payroll/periods/{y}/{m}, /hr/payroll/external/{y}/{m}" },
+  "hr.payroll.check.admin": { code: "payroll.check.admin", no: null, module: "HR: Payroll", label: "ตรวจสอบงวดเงินเดือน — หัวหน้าฝ่ายอำนวยการ", en: "Check pay period (head of administration)", roles: [1], note: "POST …/admin-check, …/return ที่ขั้น review" },
+  "hr.payroll.check.asst": { code: "payroll.check.asst", no: null, module: "HR: Payroll", label: "ตรวจสอบงวดเงินเดือน — ผู้ช่วยผู้จัดการ", en: "Check pay period (assistant manager)", roles: [1, 7], note: "POST …/asst-check, …/return ที่ขั้น admin_checked" },
+  "hr.payroll.view.accounting": { code: "payroll.view.accounting", no: null, module: "HR: Payroll", label: "ดูและดาวน์โหลดงวดเงินเดือนที่ผ่านการตรวจขั้นแรก — หัวหน้าฝ่ายบัญชี (ดูอย่างเดียว)", en: "View checked pay periods (accounting, read-only)", roles: [1, 4] },
   "hr.payroll.period.approve": { code: "payroll.period.approve", no: null, module: "HR: Payroll", label: "อนุมัติ / ส่งกลับแก้ไขงวดเงินเดือน — ผู้จัดการ", en: "Approve / return pay period (manager)", roles: [1, 2] },
 
   // ── HR: Positions, salary & promotions ──
@@ -256,7 +262,7 @@ export const PERMISSIONS = Object.freeze({
   "hr.reports.payrollMonthly": { no: 99, module: "HR: Reports", label: "รายงานเงินเดือนประจำเดือน", en: "Monthly payroll report", roles: [1, 3, 7] },
   "hr.reports.payrollAnnual": { no: 100, module: "HR: Reports", label: "รายงานเงินเดือนประจำปี", en: "Annual payroll report", roles: [1, 3, 7] },
   "hr.reports.socialSecurity": { no: 101, module: "HR: Reports", label: "รายงานประกันสังคม", en: "Social security report", roles: [1, 3, 7] },
-  "hr.reports.reserveFund": { no: 102, module: "HR: Reports", label: "รายงานเงินสะสม / กองทุนสงเคราะห์พนักงาน", en: "Reserve / provident fund report", roles: [1, 3, 7] },
+  "hr.reports.reserveFund": { no: 102, module: "HR: Reports", label: "รายงานเงินสะสม / กองทุนสงเคราะห์เจ้าหน้าที่", en: "Reserve / provident fund report", roles: [1, 3, 7] },
   "hr.reports.leaveBalance": { no: 103, module: "HR: Reports", label: "รายงานยอดคงเหลือวันลา", en: "Leave balance report", roles: [1, 3, 7] },
   "hr.reports.leaveUtilization": { no: 104, module: "HR: Reports", label: "รายงานการใช้วันลา", en: "Leave utilization report", roles: [1, 3, 7] },
   "hr.reports.leaveAnnual": { no: 105, module: "HR: Reports", label: "สรุปการลารายปี (ดู / PDF)", en: "Leave annual summary", roles: [1, 3, 7] },
@@ -575,7 +581,7 @@ export const HR_KPI_PERMS = Object.freeze(Object.keys(PERMISSIONS).filter((k) =>
  */
 export const HR_HUB_PERMS = Object.freeze([
   "hr.dashboard.view",
-  ...new Set(["hr.employees.list", "hr.positions.view", "hr.promotions.eligible", "hr.promotions.exams", "hr.employees.terminate", "hr.reports.resignedRetired", "hr.leave.list", "hr.reports.leaveAnnual", "hr.reports.leaveRegister", "hr.ooo.list", "hr.holidayWork.view", "hr.relocation.list", "hr.reports.relocations", "hr.salaryLadder.view", "hr.salaryRoster.view", "hr.salary.history", "hr.salary.stepAward", "hr.payroll.list", "hr.payroll.settings.view", "hr.payroll.period.approve", "hr.loans.list", "hr.loans.queue", "hr.loans.approve.finance", "hr.loans.fundLedger","hr.salaryCert.list", "hr.leaveTypes.manage", "hr.holidays.manage", "hr.issues.list", "hr.audit.view", "hr.onboarding.list", "hr.dependants.list", ...HR_KPI_PERMS,
+  ...new Set(["hr.employees.list", "hr.positions.view", "hr.promotions.eligible", "hr.promotions.exams", "hr.employees.terminate", "hr.reports.resignedRetired", "hr.leave.list", "hr.reports.leaveAnnual", "hr.reports.leaveRegister", "hr.ooo.list", "hr.holidayWork.view", "hr.relocation.list", "hr.reports.relocations", "hr.salaryLadder.view", "hr.salaryRoster.view", "hr.salary.history", "hr.salary.stepAward", "hr.payroll.list", "hr.payroll.month.view", "hr.payroll.settings.view", "hr.payroll.period.approve", "hr.loans.list", "hr.loans.queue", "hr.loans.approve.finance", "hr.loans.fundLedger","hr.salaryCert.list", "hr.leaveTypes.manage", "hr.holidays.manage", "hr.issues.list", "hr.audit.view", "hr.onboarding.list", "hr.dependants.list", ...HR_KPI_PERMS,
     // WP0 scaffold: 3H ปฏิทินการลา · 3P สวัสดิการ · 3Q วินัย · 3F สถิติคำร้อง
     "hr.leave.calendar", "hr.welfare.view", "hr.welfare.submit", "hr.welfare.settings", "hr.discipline.cases", "hr.discipline.topics", "hr.issues.stats"]),
 ])

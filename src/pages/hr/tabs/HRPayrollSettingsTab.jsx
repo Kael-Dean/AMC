@@ -24,16 +24,9 @@ const FIELDS = {
   sso_rate_pct: { label: "อัตราเงินสมทบประกันสังคม", unit: "%", type: "pct" },
   sso_wage_floor: { label: "ค่าจ้างขั้นต่ำที่ใช้คำนวณ", unit: "บาท", type: "baht" },
   sso_wage_ceiling: { label: "เพดานค่าจ้าง", unit: "บาท", type: "baht" },
-  reserve_rate_pct: { label: "อัตราเงินสะสม (% ของเงินเดือน)", unit: "%", type: "pct", hint: "ใช้กับคนที่ไม่ได้กำหนดเงินสะสมเป็นบาทไว้ในข้อมูลการเงินรายคน" },
-  tax_mode: {
-    label: "วิธีคำนวณภาษี", type: "choice",
-    options: [{ value: "pnd1", label: "ภ.ง.ด.1" }, { value: "flat_rate", label: "อัตราคงที่" }],
-    hint: "ภ.ง.ด.1 = คำนวณภาษีทั้งปีตามกรมสรรพากรแล้วหารเฉลี่ยรายเดือน · อัตราคงที่ = % ของเงินเดือน",
-  },
-  tax_flat_rate_pct: { label: "อัตราภาษีคงที่", unit: "%", type: "pct", when: (f) => f.tax_mode === "flat_rate" },
-  tax_expense_pct: { label: "หักค่าใช้จ่าย", unit: "%", type: "pct", hint: "ตามกฎหมาย 50%", when: (f) => f.tax_mode === "pnd1" },
-  tax_expense_cap: { label: "หักค่าใช้จ่ายไม่เกิน", unit: "บาท/ปี", type: "baht", hint: "ตามกฎหมาย 100,000 บาท", when: (f) => f.tax_mode === "pnd1" },
-  tax_personal_allowance: { label: "ค่าลดหย่อนส่วนตัว", unit: "บาท/ปี", type: "baht", hint: "ตามกฎหมาย 60,000 บาท", when: (f) => f.tax_mode === "pnd1" },
+  reserve_rate_pct: { label: "อัตราเงินสะสมขั้นต่ำ", unit: "%", type: "pct", hint: "% ของเงินเดือน — แต่ละคนกำหนดอัตราของตัวเองได้ในข้อมูลการเงินรายคน แต่ต้องไม่ต่ำกว่าค่านี้ คนที่ไม่ได้กำหนดใช้อัตรานี้" },
+  // ค่าเริ่มต้น 0.25 มาจาก backend — แสดงเฉพาะเมื่อ backend ส่ง field นี้มา
+  welfare_fund_rate_pct: { label: "อัตรากองทุนสงเคราะห์เจ้าหน้าที่", unit: "%", type: "pct", optionalKey: true, hint: "% ของเงินเดือน หักจากเจ้าหน้าที่ทุกคน" },
   daily_rate_divisor: {
     label: "ตัวหารค่าจ้างรายวัน", type: "choice",
     options: [{ value: "working_days", label: "วันทำงานจริง" }, { value: "fixed", label: "จำนวนวันคงที่" }],
@@ -50,7 +43,7 @@ const FIELDS = {
 const GROUPS = [
   { title: "ประกันสังคม", keys: ["sso_rate_pct", "sso_wage_floor", "sso_wage_ceiling"], note: "หักจากค่าจ้างที่อยู่ระหว่างค่าจ้างขั้นต่ำกับเพดาน" },
   { title: "เงินสะสม", keys: ["reserve_rate_pct"] },
-  { title: "ภาษีเงินได้หัก ณ ที่จ่าย", keys: ["tax_mode", "tax_flat_rate_pct", "tax_expense_pct", "tax_expense_cap", "tax_personal_allowance"] },
+  { title: "กองทุนสงเคราะห์เจ้าหน้าที่", keys: ["welfare_fund_rate_pct"] },
   { title: "อัตรารายวันของพนักงานรายเดือน", keys: ["daily_rate_divisor", "daily_rate_fixed_days"], note: "เงินเดือน ÷ ตัวหาร = อัตรารายวัน ใช้คิดงดจ่ายเงิน (ลาเกินสิทธิ์) และค่าทำงานวันหยุด" },
   { title: "ลูกจ้างรายวัน", keys: ["daily_wage"] },
 ]
