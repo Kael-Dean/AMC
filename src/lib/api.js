@@ -37,8 +37,33 @@ function joinUrl(base, path) {
 // --------------------------------------------------
 // timeoutMs: opt-in — server ค้างไม่ตอบ (เช่น Cloud Run แฮงก์) จะได้ error แทนปุ่มหมุนค้างตลอดไป.
 // ไม่ตั้ง default ทั้งแอป เพราะรายงาน/คำนวณเงินเดือนบางตัวใช้เวลานานจริง
-async function _call(path, { method = "GET", body, headers, timeoutMs } = {}) {
+// signal: opt-in — ผู้เรียกยกเลิกคำขอเองได้ → reject เป็น AbortError ตรง ๆ (ไม่แปลงเป็น error ภาษาไทย,
+// ไม่มี status จึงไม่เข้าทาง 401/403) ผู้เรียกที่ไม่ส่ง signal ทำงานเหมือนเดิมทุกอย่าง
+function _fetchSignal(signal, timeoutMs) {
+  if (!timeoutMs) return signal;
+  const timeout = AbortSignal.timeout(timeoutMs);
+  if (!signal) return timeout;
+  if (typeof AbortSignal.any === "function") return AbortSignal.any([signal, timeout]);
+
+  const merged = new AbortController();
+  for (const source of [signal, timeout]) {
+    if (source.aborted) merged.abort(source.reason);
+    else source.addEventListener("abort", () => merged.abort(source.reason), { once: true });
+  }
+  return merged.signal;
+}
+
+function _timeoutError(cause) {
+  const error = new Error("เซิร์ฟเวอร์ไม่ตอบสนอง กรุณาลองใหม่อีกครั้งภายหลัง");
+  error.status = 0;
+  error.timeout = true;
+  error.cause = cause;
+  return error;
+}
+
+async function _call(path, { method = "GET", body, headers, timeoutMs, signal } = {}) {
   const isJsonBody = body != null && !(body instanceof FormData);
+  const fetchSignal = _fetchSignal(signal, timeoutMs);
 
   let res;
   try {
@@ -49,16 +74,11 @@ async function _call(path, { method = "GET", body, headers, timeoutMs } = {}) {
         ...(headers || {}),
       },
       body: isJsonBody ? JSON.stringify(body) : body,
-      ...(timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
+      ...(fetchSignal ? { signal: fetchSignal } : {}),
     });
   } catch (e) {
-    if (e?.name === "TimeoutError") {
-      const error = new Error("เซิร์ฟเวอร์ไม่ตอบสนอง กรุณาลองใหม่อีกครั้งภายหลัง");
-      error.status = 0;
-      error.timeout = true;
-      error.cause = e;
-      throw error;
-    }
+    if (e?.name === "TimeoutError") throw _timeoutError(e);
+    if (signal?.aborted) throw e; // ผู้เรียกยกเลิกเอง — ไม่ใช่ปัญหาเครือข่าย
     // เน็ตหลุด / CORS / DNS — ไม่มี HTTP status (status 0) ให้หน้าเว็บแสดงข้อความไทยแทน "Failed to fetch"
     const error = new Error("เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่");
     error.status = 0;
@@ -66,10 +86,16 @@ async function _call(path, { method = "GET", body, headers, timeoutMs } = {}) {
     throw error;
   }
 
+  // ถูกยกเลิกระหว่างอ่าน body → ต้อง reject ห้ามคืน {} / "" ให้ผู้เรียกเข้าใจว่าเป็นข้อมูล
+  // (เฉพาะผู้ที่ส่ง signal; timeoutMs อย่างเดียวคงพฤติกรรมเดิม)
+  const rethrowIfAborted = (e) => {
+    if (!signal || !fetchSignal.aborted) return;
+    throw e?.name === "TimeoutError" ? _timeoutError(e) : e;
+  };
   const ct = res.headers.get("content-type") || "";
   const data = ct.includes("application/json")
-    ? await res.json().catch(() => ({}))
-    : await res.text().catch(() => "");
+    ? await res.json().catch((e) => { rethrowIfAborted(e); return {}; })
+    : await res.text().catch((e) => { rethrowIfAborted(e); return ""; });
 
   if (!res.ok) {
     const error = new Error(errorMessageFrom(data) || `HTTP ${res.status}`);
