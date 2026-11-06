@@ -166,7 +166,7 @@ const Topbar = ({ onToggleSidebar, isSidebarOpen, darkMode, setDarkMode, back = 
                 </p>
               </div>
             ) : (
-              <span className="whitespace-nowrap text-sm font-semibold tracking-tight text-gray-700 dark:text-gray-200 lg:text-[15px] short-touch:hidden">
+              <span className="whitespace-nowrap text-sm font-semibold tracking-tight text-gray-700 dark:text-gray-200 lg:text-[15px] short-touch:hidden max-lg:pointer-coarse:hidden">
                 สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส.สุรินทร์ จำกัด
               </span>
             )}
@@ -174,7 +174,7 @@ const Topbar = ({ onToggleSidebar, isSidebarOpen, darkMode, setDarkMode, back = 
         </div>
 
         {/* Center: find a function (desktop only) */}
-        <div className="hidden min-w-0 flex-1 justify-center px-4 md:flex">
+        <div className="hidden min-w-0 flex-1 justify-center px-4 md:flex pointer-coarse:min-w-44 max-lg:pointer-coarse:px-0">
           <GlobalFunctionSearch />
         </div>
 
@@ -218,11 +218,11 @@ const Topbar = ({ onToggleSidebar, isSidebarOpen, darkMode, setDarkMode, back = 
               </div>
               <span className="status-ping absolute -right-0.5 -top-0.5 block h-2 w-2 rounded-full bg-emerald-500 text-emerald-500 ring-1 ring-white dark:ring-gray-800" />
             </div>
-            <div className="hidden text-left md:block">
+            <div className="hidden text-left md:block max-lg:pointer-coarse:hidden">
               <div className="text-[13px] font-semibold leading-4 text-gray-800 dark:text-gray-100">{displayName}</div>
               <div className={acting ? "text-[11px] font-semibold text-amber-700 dark:text-amber-300" : "text-[11px] text-gray-500 dark:text-gray-400"}>{displayRole}</div>
             </div>
-            <svg className="ml-0.5 hidden h-3 w-3 text-gray-400 transition-colors group-hover:text-gray-600 dark:text-gray-500 md:block" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="ml-0.5 hidden h-3 w-3 text-gray-400 transition-colors group-hover:text-gray-600 dark:text-gray-500 max-lg:pointer-coarse:hidden md:block" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
             </svg>
           </button>

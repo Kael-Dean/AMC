@@ -142,7 +142,7 @@ export default function HRLeaveTab() {
           {displayRequests.map((r) => (
             <div key={r.id} className="rounded-2xl bg-white dark:bg-gray-800 ring-1 ring-gray-200/70 dark:ring-gray-700/70 shadow-sm p-4">
               <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="flex-1 space-y-2">
+                <div className="flex-[1_1_15rem] space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-gray-900 dark:text-gray-100">
                       {requesterName(r)}

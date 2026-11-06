@@ -219,7 +219,7 @@ export default function DaysWorkedSheet({ open, ym, canEdit, isDraft, dailyWage 
           </div>
         )}
 
-        <div className="overflow-hidden rounded-xl ring-1 ring-gray-200/70 dark:ring-line">
+        <div className="overflow-x-auto rounded-xl ring-1 ring-gray-200/70 dark:ring-line">
           <table className="w-full text-sm">
             <caption className="sr-only">จำนวนวันทำงานของลูกจ้างรายวัน งวด {label}</caption>
             <thead>

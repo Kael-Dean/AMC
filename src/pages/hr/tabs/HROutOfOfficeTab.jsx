@@ -163,7 +163,7 @@ function RequestsPanel({ branchOptions, branchName }) {
     <div className="space-y-4">
       {/* Filters */}
       <div className={`${cardCls} p-4`}>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] items-end">
+        <div className="grid gap-3 sm:grid-cols-2 lg:pointer-fine:grid-cols-[repeat(4,minmax(0,1fr))_auto] xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] items-end">
           <div className="flex flex-col gap-1">
             <span className={labelCls}>สถานะ</span>
             <SelectDropdown options={STATUS_FILTER_OPTIONS} value={filters.status} onChange={setFilter("status")} placeholder="ทุกสถานะ" />

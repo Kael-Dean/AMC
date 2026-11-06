@@ -786,7 +786,7 @@ function OrderCorrection() {
               กำลังเตรียมตัวเลือกสาขา/คลัง/สเปค…
             </div>
           )}
-          <div className="grid gap-3 md:grid-cols-6">
+          <div className="grid gap-3 md:grid-cols-3 md:pointer-fine:grid-cols-6 lg:grid-cols-6">
             <div>
               <label className={labelCls} htmlFor="oc-start">วันที่เริ่ม</label>
               <DateInput
@@ -883,7 +883,7 @@ function OrderCorrection() {
               />
             </div>
 
-            <div className="flex flex-wrap items-end gap-2 md:col-span-6">
+            <div className="flex flex-wrap items-end gap-2 col-span-full">
               <button
                 onClick={fetchOrders}
                 type="button"
@@ -1094,7 +1094,7 @@ function OrderCorrection() {
                       type="button"
                       onClick={() => goToPage(it)}
                       className={[
-                        "h-10 min-w-[40px] rounded-xl px-3 text-sm font-semibold transition",
+                        "h-10 min-w-[40px] pointer-coarse:min-w-touch rounded-xl px-3 text-sm font-semibold transition",
                         it === page
                           ? "bg-emerald-600 text-white"
                           : "bg-white text-slate-700 hover:bg-slate-100 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600",
