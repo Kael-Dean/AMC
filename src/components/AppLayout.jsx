@@ -1,5 +1,5 @@
 import { createContext, useContext, useDeferredValue, useEffect, useLayoutEffect, useState } from "react"
-import { Outlet, useLocation, useNavigate } from "react-router-dom"
+import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom"
 import Sidebar from "./Sidebar"
 import Topbar from "./Topbar"
 import Toaster from "./ui/Toaster"
@@ -10,6 +10,7 @@ import { HR_HUB_PERMS, can, canAny } from "../lib/permissions"
 import { useCurrentPageTitle } from "../lib/pageTitle"
 import { ALL_ITEMS } from "../lib/homeFunctions"
 import { ONBOARDING_REQUIRED_EVENT } from "../lib/api"
+import { getToken } from "../lib/auth"
 import { loadOnboarding, useOnboarding } from "../lib/onboarding"
 import TourOverlay from "./onboarding/TourOverlay"
 import SearchIntroGate from "./onboarding/SearchIntroGate"
@@ -149,6 +150,10 @@ const AppLayout = () => {
     recordVisit(location.pathname)
     window.scrollTo(0, 0)
   }, [location.pathname])
+
+  // Signed out: loadOnboarding() has nothing to fetch, so the gate below would wait forever,
+  // and with no API call there is no 401 to send them to login.
+  if (!getToken()) return <Navigate to="/" replace />
 
   if (gateMode !== "open") {
     return (
