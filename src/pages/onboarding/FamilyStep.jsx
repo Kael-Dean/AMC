@@ -339,7 +339,7 @@ export default function FamilyStep({ data, handlers, onBack, onGoStep, onReport,
       </div>
 
       <p className="mt-3 max-w-prose text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-        รายการที่รอ HR ตรวจสอบยังไม่ถูกนับในสวัสดิการ สิทธิ์ของคนนั้นเริ่มหลังจาก HR ตรวจสอบแล้ว
+        รายการที่รอ HR ตรวจสอบยังเบิกสวัสดิการไม่ได้ หลัง HR ตรวจสอบแล้วระบบจะแสดงว่ามีสิทธิ์หรือไม่ตามระเบียบ
       </p>
 
       <ProblemPanel problem={flow.problem} />

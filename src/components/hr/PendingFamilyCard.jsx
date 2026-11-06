@@ -8,6 +8,7 @@ import { apiAuth } from "../../lib/api"
 import { cardCls, cx } from "../../lib/styles"
 import { useCan } from "../../lib/permissions"
 import { thaiDate } from "../../lib/loans"
+import { DEPENDANTS_CHANGED_EVENT } from "../../lib/welfare"
 import { Badge } from "../ui"
 import { VerifyDependantButton } from "../../pages/hr/tabs/HRDependantsVerifyTab"
 
@@ -19,10 +20,20 @@ export default function PendingFamilyCard({ userId }) {
   useEffect(() => {
     if (!allowed || userId == null) return undefined
     let alive = true
-    apiAuth(`/hr/employees/${userId}/dependants?verified=false`)
-      .then((d) => { if (alive) setRows((Array.isArray(d) ? d : []).filter((r) => r.hr_verified !== true)) })
-      .catch(() => { if (alive) setRows([]) })
-    return () => { alive = false }
+    let latest = 0
+    const fetchRows = () => {
+      const req = ++latest
+      apiAuth(`/hr/employees/${userId}/dependants?verified=false`)
+        .then((d) => { if (alive && req === latest) setRows((Array.isArray(d) ? d : []).filter((r) => r.hr_verified !== true)) })
+        .catch(() => { if (alive && req === latest) setRows([]) })
+    }
+    fetchRows()
+    // HR แก้ด้วยปุ่มดินสอ = ตรวจสอบอัตโนมัติ แถวนั้นต้องออกจากการ์ดนี้ด้วย
+    window.addEventListener(DEPENDANTS_CHANGED_EVENT, fetchRows)
+    return () => {
+      alive = false
+      window.removeEventListener(DEPENDANTS_CHANGED_EVENT, fetchRows)
+    }
   }, [allowed, userId])
 
   if (!allowed || rows.length === 0) return null
@@ -36,7 +47,7 @@ export default function PendingFamilyCard({ userId }) {
         <Badge tone="pending">{rows.length} รายการ</Badge>
       </div>
       <p className="mb-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-        พนักงานเพิ่มหรือแก้รายการเหล่านี้เอง สวัสดิการจะนับหลังตรวจสอบแล้วเท่านั้น
+        พนักงานเพิ่มหรือแก้รายการเหล่านี้เอง กด “ตรวจสอบแล้ว” เมื่อเทียบเอกสารแล้ว ระบบจะแสดงว่ามีสิทธิ์หรือไม่ตามระเบียบ
       </p>
       <ul className="divide-y divide-gray-100 dark:divide-line">
         {rows.map((d) => (

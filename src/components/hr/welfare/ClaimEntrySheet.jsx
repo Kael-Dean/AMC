@@ -33,6 +33,8 @@ const dateCls = "!rounded-lg !px-3 !py-2 md:!text-sm"
 const btnCls = "h-12 md:h-10 md:!px-5 md:!py-0 md:!text-sm"
 const errBorder = "!border-red-500 dark:!border-red-400"
 const Req = () => <span className="text-red-600 dark:text-red-400" aria-hidden="true"> *</span>
+// แถวที่ HR ยังไม่ตรวจ = ยังไม่ตัดสินสิทธิ์ จึงไม่ขึ้นต้นด้วย "ไม่มีสิทธิ์:"
+const PENDING_NOTE = "รอ HR ตรวจสอบข้อมูล"
 
 /** ช่องตัวเลขเงิน */
 function MoneyField({ id, label, value, onChange, error, hint, required, placeholder = "0.00", integer = false }) {
@@ -181,18 +183,19 @@ export default function ClaimEntrySheet({ open, onClose, onSaved, initialUserId 
         ...depRows.map((d) => ({
           value: String(d.id),
           label: dependantName(d),
-          sublabel: d.medical_eligible ? dependantMeta(d) : `ไม่มีสิทธิ์: ${d.medical_reason || "—"}`,
+          sublabel: d.hr_verified === false ? PENDING_NOTE : d.medical_eligible ? dependantMeta(d) : `ไม่มีสิทธิ์: ${d.medical_reason || "—"}`,
         })),
       ]
     }
     return depRows.filter((d) => d.relationship === "บุตร").map((d) => ({
       value: String(d.id),
       label: dependantName(d),
-      sublabel: d.education_eligible ? dependantMeta(d) : `ไม่มีสิทธิ์: ${d.education_reason || "—"}`,
+      sublabel: d.hr_verified === false ? PENDING_NOTE : d.education_eligible ? dependantMeta(d) : `ไม่มีสิทธิ์: ${d.education_reason || "—"}`,
     }))
   }, [t, depRows, personName])
   const pickedDep = depRows.find((d) => String(d.id) === String(form.dependant_id))
-  const pickedReason = pickedDep && (t === "medical" ? (!pickedDep.medical_eligible && pickedDep.medical_reason) : (!pickedDep.education_eligible && pickedDep.education_reason))
+  const pickedRuleReason = pickedDep && (t === "medical" ? (!pickedDep.medical_eligible && pickedDep.medical_reason) : (!pickedDep.education_eligible && pickedDep.education_reason))
+  const pickedReason = pickedDep?.hr_verified === false ? PENDING_NOTE : pickedRuleReason && `ไม่มีสิทธิ์: ${pickedRuleReason}`
 
   // อัตราเพดานค่าเล่าเรียนของระดับ/ประเภทที่เลือก (ถ้าโหลดตารางมาแล้ว)
   const levelOptions = useMemo(() => {
@@ -273,7 +276,7 @@ export default function ClaimEntrySheet({ open, onClose, onSaved, initialUserId 
               {pickedReason && (
                 <p id={`${id("dep")}-why`} className="mt-1 flex items-start gap-1.5 text-sm text-amber-800 dark:text-amber-200">
                   <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                  ไม่มีสิทธิ์: {pickedReason}
+                  {pickedReason}
                 </p>
               )}
               {form.user_id && !depsLoading && !depRows.length && !deps.error && (

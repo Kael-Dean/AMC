@@ -111,6 +111,25 @@ export function dependantMeta(d) {
   return parts.filter(Boolean).join(" · ")
 }
 
+/** รายการครอบครัวเปลี่ยน (เพิ่ม/แก้/ลบ/ตรวจสอบ) — การ์ดรอตรวจสอบกับรายชื่อผู้มีสิทธิ์โหลดใหม่พร้อมกัน */
+export const DEPENDANTS_CHANGED_EVENT = "skt:dependants-changed"
+export function notifyDependantsChanged() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(DEPENDANTS_CHANGED_EVENT))
+}
+
+/**
+ * ผลสิทธิ์จาก POST /hr/dependants/{id}/verify เป็นข้อความเดียว
+ * "นางฤ — ค่ารักษาพยาบาล: ไม่มีสิทธิ์ (ไม่ได้จดทะเบียนสมรส)" — คืน "" ถ้า response ไม่มีผลสิทธิ์
+ */
+export function dependantVerifyResult(d) {
+  if (d?.medical_eligible == null) return ""
+  const line = (label, eligible, reason) =>
+    `${label}: ${eligible ? "มีสิทธิ์" : reason ? `ไม่มีสิทธิ์ (${reason})` : "ไม่มีสิทธิ์"}`
+  const parts = [line("ค่ารักษาพยาบาล", d.medical_eligible, d.medical_reason)]
+  if (d.relationship === "บุตร") parts.push(line("ค่าเล่าเรียนบุตร", d.education_eligible, d.education_reason))
+  return `${dependantName(d)} — ${parts.join(" · ")}`
+}
+
 // ─── ปี ──────────────────────────────────────────────────────────────────────
 
 /** ปีงบประมาณ (พ.ศ.) เม.ย.–มี.ค. ของวันนี้ */
