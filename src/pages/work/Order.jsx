@@ -1,9 +1,10 @@
 // src/pages/Order.jsx
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { apiAuth } from "../../lib/api"  // ✅ helper รวม token/BASE URL
+import { getActiveBranch, getUserKey } from "../../lib/auth"
 import { cx, baseField, primaryBtnCls, neutralBtnCls, focusRingCls, helpTextCls } from "../../lib/styles"
-import { EmptyState, ErrorState, SkeletonTableRows, DataList, Badge } from "../../components/ui"
+import { EmptyState, ErrorState, Skeleton, SkeletonTableRows, DataList, Badge } from "../../components/ui"
 import ComboBox from "../../components/ComboBox"
 import { useIsPhone } from "../../hooks/useMediaQuery"
 import useBranchLock, { scopedBranchId } from "../../hooks/useBranchLock"
@@ -85,6 +86,82 @@ const deriveSell = (r) => {
 const buyKey = (r) => r.id ?? `${r.order_serial}-${r.date}-${r.first_name ?? ""}-${r.last_name ?? ""}`
 const sellKey = (r) => `${r.id ?? r.sale_id}-${r.sub_order ?? 0}`
 
+/** ---------- Report request + stale-while-revalidate cache ---------- */
+// In memory only: rows carry PII (member_id, tax_id) — never localStorage/sessionStorage.
+const ORDER_CACHE_MAX = 5
+const orderCache = new Map()
+const writeOrderCache = (key, rows) => {
+  orderCache.delete(key) // re-insert so the most recently fetched query is evicted last
+  orderCache.set(key, rows)
+  while (orderCache.size > ORDER_CACHE_MAX) orderCache.delete(orderCache.keys().next().value)
+}
+
+const orderRequest = (mode, filters) => {
+  const params = new URLSearchParams()
+  params.set("start_date", filters.allTime ? ALL_TIME_START : filters.startDate)
+  params.set("end_date", filters.allTime ? ALL_TIME_END : filters.endDate)
+  const branchId = scopedBranchId(filters.branchId)
+  if (branchId) params.set("branch_id", branchId)
+  if (filters.klangId) params.set("klang_id", filters.klangId)
+  if (filters.q?.trim()) params.set("q", filters.q.trim())
+  // สินค้า: เลือกได้ 1 รายการ · ไม่เลือก = ทุกสินค้า (api-handoff §7)
+  if (filters.specId) params.set("spec_id", filters.specId)
+
+  const endpoint = mode === "buy" ? `/order/orders/buy-report` : `/order/orders/sell-report`
+  const url = `${endpoint}?${params.toString()}`
+  // Active branch too: it lives in the JWT, so the server's answer can differ for the same URL.
+  return { url, key: `${getUserKey() ?? ""}|${getActiveBranch() ?? ""}|${url}` }
+}
+
+/** ---------- Variant names for the spec ComboBox sublabels (loaded once, on first use) ---------- */
+let variantLabels = null
+let variantLabelsPending = null
+const loadVariantLabels = (specOptions) => {
+  if (variantLabels) return Promise.resolve(variantLabels)
+  if (variantLabelsPending) return variantLabelsPending
+  const speciesIds = Array.from(
+    new Set(
+      (specOptions || [])
+        .map((t) => t?.spec?.species_id)
+        .filter(Boolean)
+        .map(String)
+    )
+  )
+  if (speciesIds.length === 0) return null // options not loaded yet — the next interaction tries again
+
+  variantLabelsPending = Promise.all(
+    speciesIds.map(async (sid) => {
+      const arr = (await apiAuth(`/order/variant/search?species_id=${encodeURIComponent(sid)}`)) || []
+      return arr.map((x) => ({
+        id: String(x.id ?? x.variant_id ?? x.value ?? ""),
+        label: String(x.variant ?? x.name ?? x.label ?? "").trim(),
+      }))
+    })
+  )
+    .then((list) => {
+      const map = {}
+      list.flat().forEach(({ id, label }) => {
+        if (id && label) map[id] = label
+      })
+      variantLabels = map
+      return map
+    })
+    .finally(() => { variantLabelsPending = null })
+  return variantLabelsPending
+}
+
+/** Stands in for a summary value: invisible sizer text keeps the line box, baseline and width of the real number. */
+const StatSkeleton = ({ sizer, className }) => (
+  <span className="relative inline-block">
+    <span className="invisible">{sizer}</span>
+    <span className="absolute inset-x-0 inset-y-[0.15em]">
+      <Skeleton rounded="rounded-md" className={cx("size-full", className)} />
+    </span>
+  </span>
+)
+const AMBER_SKELETON = "!bg-amber-200/70 dark:!bg-amber-700/30"
+const EMERALD_SKELETON = "!bg-emerald-200/70 dark:!bg-emerald-700/30"
+
 /** ---------- Page: Order ---------- */
 const PAGE_SIZE = 100
 const PAGE_BTN_ACTIVE = "bg-emerald-600 text-white"
@@ -103,22 +180,6 @@ const Order = () => {
   const [mode, setMode] = useState(() =>
     /[?&]mode=sell\b/.test(typeof window !== "undefined" ? window.location.search : "") ? "sell" : "buy"
   ) // 'buy' | 'sell'
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(false)
-  // Phone only: show ErrorState instead of a silent empty list when the fetch fails.
-  const [loadError, setLoadError] = useState("")
-
-  // ⭐ Request guard — ทำให้ผลคำขอเก่าถูกเมินเมื่อมีคำขอใหม่กว่า
-  const listReqId = useRef(0)
-
-  // pagination
-  const [page, setPage] = useState(1)
-  const [pageInput, setPageInput] = useState("1")
-  const totalPages = useMemo(() => Math.max(1, Math.ceil(rows.length / PAGE_SIZE)), [rows.length])
-  const pagedRows = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE
-    return rows.slice(start, start + PAGE_SIZE)
-  }, [rows, page])
 
   // options
   const [branchOptions, setBranchOptions] = useState([])
@@ -127,7 +188,7 @@ const Order = () => {
   const [loadingSpecs, setLoadingSpecs] = useState(false)
 
   // เก็บ label ของ variant ไว้ดูชื่อชั้นย่อย
-  const [variantLookup, setVariantLookup] = useState({})
+  const [variantLookup, setVariantLookup] = useState(() => variantLabels ?? {})
 
   // สาขา: scope "own_branch" → ล็อกที่สาขาที่ใช้งานอยู่
   const branchLock = useBranchLock()
@@ -146,6 +207,31 @@ const Order = () => {
   })
   const [errors, setErrors] = useState({ startDate: "", endDate: "" })
   const debouncedQ = useDebounce(filters.q, 500)
+
+  // A revisit starts from the cache in the very first render, so no skeleton frame shows.
+  const [initialCached] = useState(() => {
+    const { key } = orderRequest(mode, filters)
+    return orderCache.has(key) ? { key, rows: orderCache.get(key) } : null
+  })
+  const [rows, setRows] = useState(() => initialCached?.rows ?? [])
+  const [loading, setLoading] = useState(!initialCached) // nothing to show yet → skeleton
+  const [revalidating, setRevalidating] = useState(false) // rows on screen, newer ones on the way
+  const [refreshFailed, setRefreshFailed] = useState(false) // rows on screen may be out of date
+  const [loadError, setLoadError] = useState("") // nothing to show and the fetch failed
+
+  // ⭐ Request guard — ทำให้ผลคำขอเก่าถูกเมินเมื่อมีคำขอใหม่กว่า
+  const listReqId = useRef(0)
+  const activeReq = useRef(null) // { key, controller } of the request in flight
+  const shownKey = useRef(initialCached?.key ?? null) // which query the rows on screen belong to
+
+  // pagination
+  const [page, setPage] = useState(1)
+  const [pageInput, setPageInput] = useState("1")
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(rows.length / PAGE_SIZE)), [rows.length])
+  const pagedRows = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return rows.slice(start, start + PAGE_SIZE)
+  }, [rows, page])
 
   /** ---------- Validation ---------- */
   const validateDates = (s, e) => {
@@ -202,40 +288,12 @@ const Order = () => {
     loadInitial()
   }, [])
 
-  /** ---------- โหลดชื่อ variant ของ species ที่ปรากฏใน specOptions ---------- */
-  useEffect(() => {
-    const speciesIds = Array.from(
-      new Set(
-        (specOptions || [])
-          .map((t) => t?.spec?.species_id)
-          .filter(Boolean)
-          .map(String)
-      )
-    )
-    if (speciesIds.length === 0) return
-
-    const fetchAll = async () => {
-      try {
-        const list = await Promise.all(
-          speciesIds.map(async (sid) => {
-            const arr = (await apiAuth(`/order/variant/search?species_id=${encodeURIComponent(sid)}`)) || []
-            return arr.map((x) => ({
-              id: String(x.id ?? x.variant_id ?? x.value ?? ""),
-              label: String(x.variant ?? x.name ?? x.label ?? "").trim(),
-            }))
-          })
-        )
-        const map = {}
-        list.flat().forEach(({ id, label }) => {
-          if (id && label) map[id] = label
-        })
-        setVariantLookup(map)
-      } catch (e) {
-        console.error("load variants for specs error:", e)
-      }
-    }
-    fetchAll()
-  }, [specOptions])
+  /** ---------- โหลดชื่อ variant เมื่อผู้ใช้แตะช่องรายการสินค้าครั้งแรก ---------- */
+  const ensureVariantLabels = () => {
+    loadVariantLabels(specOptions)
+      ?.then(setVariantLookup)
+      .catch((e) => console.error("load variants for specs error:", e))
+  }
 
   /** ---------- คืน subLabel ใต้ label: “ชั้นย่อย: …” ---------- */
   const templateSubLabel = (opt) => {
@@ -270,69 +328,107 @@ const Order = () => {
   }, [filters.branchId])
 
   /** ---------- Fetch orders (BUY or SELL) + Request Guard ---------- */
+  const cancelInFlight = () => {
+    listReqId.current += 1  // ทำให้คำขอเก่ากลายเป็นของเดิม
+    activeReq.current?.controller.abort()
+    activeReq.current = null
+  }
+
+  // No parameters on purpose: this is passed straight to onClick / onRetry, which hand it the event.
   const fetchOrders = async () => {
-    if (!filters.allTime && !validateDates(filters.startDate, filters.endDate)) return
+    if (!filters.allTime && !validateDates(filters.startDate, filters.endDate)) {
+      // switchMode may have raised these already and no request will come along to clear them.
+      if (!activeReq.current) { setLoading(false); setRevalidating(false) }
+      return
+    }
 
-    const myReq = ++listReqId.current  // ทำให้คำขอเก่ากลายเป็นของเดิม
-    try {
-      setLoading(true)
-      const params = new URLSearchParams()
-      params.set("start_date", filters.allTime ? ALL_TIME_START : filters.startDate)
-      params.set("end_date", filters.allTime ? ALL_TIME_END : filters.endDate)
-      const branchId = scopedBranchId(filters.branchId)
-      if (branchId) params.set("branch_id", branchId)
-      if (filters.klangId) params.set("klang_id", filters.klangId)
-      if (filters.q?.trim()) params.set("q", filters.q.trim())
-      // สินค้า: เลือกได้ 1 รายการ · ไม่เลือก = ทุกสินค้า (api-handoff §7)
-      if (filters.specId) params.set("spec_id", filters.specId)
+    const { url, key } = orderRequest(mode, filters)
+    if (activeReq.current?.key === key) return  // same query on its way (e.g. ค้นหา, then the debounce catching up)
 
-      const endpoint = mode === "buy" ? `/order/orders/buy-report` : `/order/orders/sell-report`
-      const data = await apiAuth(`${endpoint}?${params.toString()}`)
+    cancelInFlight()
+    const controller = new AbortController()
+    activeReq.current = { key, controller }
+    const myReq = listReqId.current
 
-      if (listReqId.current !== myReq) return  // ถ้าไม่ใช่คำขอล่าสุดให้เมินผลนี้
-      setRows(Array.isArray(data) ? data : [])
+    // Rows of this query already on screen, or in the cache → keep showing them while we refetch.
+    const onScreen = shownKey.current === key
+    const cached = onScreen ? undefined : orderCache.get(key)
+    const background = onScreen || cached !== undefined
+    if (!onScreen) {
+      setRows(cached ?? [])  // a different query never keeps the previous query's rows or totals
+      shownKey.current = cached ? key : null
       setPage(1); setPageInput("1")
-      setLoadError("")
+    }
+    setLoading(!background)
+    setRevalidating(background)
+    setRefreshFailed(false)
+    setLoadError("")
+
+    try {
+      const data = await apiAuth(url, { signal: controller.signal })
+      if (listReqId.current !== myReq) return  // ถ้าไม่ใช่คำขอล่าสุดให้เมินผลนี้
+      if (!Array.isArray(data)) throw new Error("order report: expected a list")
+
+      writeOrderCache(key, data)
+      shownKey.current = key
+      setRows(data)  // page stays put: the totalPages clamp below handles a shorter list
     } catch (e) {
+      if (e?.name === "AbortError" || listReqId.current !== myReq) return
       console.error(e)
-      if (listReqId.current !== myReq) return
-      setRows([]); setPage(1); setPageInput("1")
-      setLoadError("โหลดข้อมูลไม่สำเร็จ")
+      // 401/403: the user may no longer be allowed to see this — drop it rather than keep showing it.
+      const denied = e?.status === 401 || e?.status === 403
+      if (denied) orderCache.clear()
+      if (background && !denied) {
+        setRefreshFailed(true)
+      } else {
+        shownKey.current = null
+        setRows([]); setPage(1); setPageInput("1")
+        setLoadError("โหลดข้อมูลไม่สำเร็จ")
+      }
     } finally {
       if (listReqId.current === myReq) {
+        activeReq.current = null
         setLoading(false)
+        setRevalidating(false)
       }
     }
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchOrders() }, []) // init load
-
-  // ⭐ สลับโหมด: เคลียร์จอ + ขึ้นโหลดทันที + ทำให้คำขอเก่าหมดอายุ
+  // ⭐ สลับโหมด: ทำให้คำขอเก่าหมดอายุ + แสดงแคชของโหมดใหม่ทันที (ไม่มีแคช = skeleton) ไม่ให้ข้อมูลโหมดเดิมค้างจอ
   const switchMode = (next) => {
     if (next === mode) return
-    listReqId.current += 1        // invalidate คำขอที่ค้างอยู่ทั้งหมด
-    setLoading(true)               // ให้ UI แสดงกำลังโหลดทันที
-    setRows([])                    // กันข้อมูลโหมดเดิมค้างจอ
+    cancelInFlight()
+    const { key } = orderRequest(next, filters)
+    const cached = orderCache.get(key)
+    shownKey.current = cached ? key : null
+    setRows(cached ?? [])
+    setLoading(!cached)
+    setRevalidating(!!cached)
+    setRefreshFailed(false)
+    setLoadError("")
     setPage(1); setPageInput("1")
     setMode(next)                  // useEffect ด้านล่างจะ fetch ใหม่
   }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchOrders() }, [mode]) // โหลดใหม่เมื่อเปลี่ยนโหมด
 
-  // สลับ "ดูทั้งหมด (ทุกช่วงเวลา)" → โหลดใหม่ทันที (ข้ามรอบแรกตอน mount)
-  const allTimeMounted = useRef(false)
+  /** ---------- The one effect that loads orders ----------
+   * Mount, mode, "ดูทั้งหมด" and a locked branch resolving late (first fetch may predate the lock) always load.
+   * A debounced search loads when q has 0 or 2+ characters; other filter fields wait for the ค้นหา button. */
+  const loadScope = `${mode}|${filters.allTime}|${branchLock.locked ? branchLock.activeKey : ""}`
+  const lastLoadScope = useRef(null)
   useEffect(() => {
-    if (!allTimeMounted.current) { allTimeMounted.current = true; return }
+    const onlySearchChanged = lastLoadScope.current === loadScope
+    lastLoadScope.current = loadScope
+    if (onlySearchChanged && debouncedQ.length === 1) return
     fetchOrders()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.allTime])
+  }, [loadScope, debouncedQ])
 
-  /** ---------- Auto refresh on debounced search ---------- */
-  useEffect(() => {
-    if (filters.q.length >= 2 || filters.q.length === 0) fetchOrders()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQ])
+  // Separate from the effect above: a 1-char q re-runs that one without fetching and must not cancel what's in flight.
+  useEffect(() => () => {
+    listReqId.current += 1
+    activeReq.current?.controller.abort()
+    activeReq.current = null
+  }, [])
 
   /** ---------- Totals ---------- */
   const totals = useMemo(() => {
@@ -422,6 +518,7 @@ const Order = () => {
   const colCount = 12
   const dateError = !filters.allTime && (!!errors.startDate || !!errors.endDate)
   const setAllTime = (v) => setFilters((p) => ({ ...p, allTime: v }))
+  const statsLoading = loading && rows.length === 0
 
   // Active filters (badge on the phone disclosure). All time is the default, so a date range counts as one filter.
   const activeFilterCount =
@@ -503,7 +600,7 @@ const Order = () => {
       </div>
 
       {/* รายการสินค้า (spec) — โชว์ชั้นย่อยแบบหน้า Buy · ส่ง spec_id เดียว, ไม่เลือก = ทุกสินค้า */}
-      <div className="md:col-span-2">
+      <div className="md:col-span-2" onPointerDownCapture={ensureVariantLabels} onFocusCapture={ensureVariantLabels}>
         <label className={labelCls}>รายการสินค้า (ไม่บังคับ)</label>
         <ComboBox
           options={specOptions.length ? [{ id: "", label: "— ทุกสินค้า —" }, ...specOptions] : specOptions}
@@ -713,14 +810,42 @@ const Order = () => {
           </div>
         )}
 
+        {/* Refresh failed: the rows below stay, but nobody should take them as current */}
+        {refreshFailed && (
+          <div
+            role="alert"
+            className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950
+                       dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200"
+          >
+            <AlertTriangle aria-hidden="true" className="size-5 shrink-0 text-amber-700 dark:text-amber-300" />
+            <p className="min-w-0 flex-1 text-pretty">ดึงข้อมูลล่าสุดไม่สำเร็จ ตัวเลขที่แสดงอาจไม่เป็นปัจจุบัน</p>
+            <button type="button" onClick={fetchOrders} className={neutralBtnCls}>ลองใหม่</button>
+          </div>
+        )}
+
+        {/* Revalidating: zero-height sticky slot, so it never moves the layout and stays in view on long lists.
+            The live region stays mounted so the message is announced when it appears. */}
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none sticky top-[calc(var(--topbar-h)+1.75rem)] z-10 flex h-0 items-start justify-center"
+        >
+          {revalidating && (
+            <span className="inline-flex -translate-y-full items-center gap-1.5 rounded-full bg-white px-3 py-0.5 text-xs font-medium text-slate-600 shadow-sm ring-1 ring-slate-200 dark:bg-raised dark:text-slate-200 dark:ring-line">
+              <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+              กำลังอัปเดตข้อมูล…
+            </span>
+          )}
+        </div>
+
         {/* Summary — 2 columns on phones */}
-        <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+        <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3" aria-busy={statsLoading ? "true" : "false"}>
           {/* จำนวนรายการ */}
           <div className="rounded-2xl bg-white p-4 text-black shadow-sm ring-1 ring-slate-200
                         dark:bg-slate-800 dark:text-white dark:ring-slate-700">
             <div className="text-sm md:text-base text-slate-500 dark:text-slate-400">จำนวนรายการ</div>
             <div className="text-xl md:text-2xl font-semibold tabular-nums">
-              {rows.length.toLocaleString()}
+              {statsLoading ? <StatSkeleton sizer="0,000" /> : rows.length.toLocaleString()}
             </div>
           </div>
 
@@ -729,7 +854,7 @@ const Order = () => {
                         dark:bg-slate-800 dark:text-white dark:ring-slate-700">
             <div className="text-sm md:text-base text-slate-500 dark:text-slate-400">น้ำหนักสุทธิรวม (กก.)</div>
             <div className="text-xl md:text-2xl font-semibold tabular-nums">
-              {(Math.round(toNumber(totals.weight) * 100) / 100).toLocaleString()}
+              {statsLoading ? <StatSkeleton sizer="000,000" /> : (Math.round(toNumber(totals.weight) * 100) / 100).toLocaleString()}
             </div>
           </div>
 
@@ -738,7 +863,7 @@ const Order = () => {
                         dark:bg-amber-900/20 dark:text-amber-200 dark:ring-amber-700">
             <div className="text-sm md:text-base text-amber-700 dark:text-amber-300">หัก นน.รวม (กก.)</div>
             <div className="text-xl md:text-2xl font-semibold tabular-nums">
-              {totals.deduct.toLocaleString()}
+              {statsLoading ? <StatSkeleton sizer="0,000" className={AMBER_SKELETON} /> : totals.deduct.toLocaleString()}
             </div>
           </div>
 
@@ -746,7 +871,9 @@ const Order = () => {
           {isPhone && (
             <div className="rounded-2xl bg-white p-4 text-black shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:text-white dark:ring-slate-700">
               <div className="text-sm text-slate-500 dark:text-slate-400">ราคาเฉลี่ย (บาท/กก.)</div>
-              <div className="text-xl font-semibold tabular-nums">{baht(toNumber(totals.avgUnitPrice))}</div>
+              <div className="text-xl font-semibold tabular-nums">
+                {statsLoading ? <StatSkeleton sizer="00.00" /> : baht(toNumber(totals.avgUnitPrice))}
+              </div>
             </div>
           )}
 
@@ -758,7 +885,7 @@ const Order = () => {
 
             <div className="text-emerald-700 dark:text-emerald-300">มูลค่ารวม</div>
             <div className="text-2xl font-semibold tabular-nums">
-              {thb(toNumber(totals.revenue))}
+              {statsLoading ? <StatSkeleton sizer="฿00,000,000.00" className={EMERALD_SKELETON} /> : thb(toNumber(totals.revenue))}
             </div>
 
             {/* ✅ ราคาเฉลี่ยของ “ราคาต่อกก.” ของออเดอร์ทั้งหมดตามฟิลเตอร์ ณ ตอนนั้น (ทำให้เด่น + มีกล่อง) */}
@@ -774,14 +901,18 @@ const Order = () => {
                 </span>
 
                 <span className="text-xl md:text-2xl font-extrabold text-emerald-900 dark:text-emerald-100">
-                  {baht(toNumber(totals.avgUnitPrice))}
+                  {statsLoading ? <StatSkeleton sizer="00.00" className={EMERALD_SKELETON} /> : baht(toNumber(totals.avgUnitPrice))}
                 </span>
 
                 <span className="text-sm md:text-base font-semibold text-emerald-800/90 dark:text-emerald-200/90">
                   บาท/กก.
                 </span>
 
-                {totals.unitCount ? (
+                {statsLoading ? (
+                  <span className="text-sm md:text-base">
+                    <StatSkeleton sizer="(0,000 รายการ)" className={EMERALD_SKELETON} />
+                  </span>
+                ) : totals.unitCount ? (
                   <span className="text-sm md:text-base text-emerald-800/80 dark:text-emerald-200/80">
                     ({totals.unitCount.toLocaleString()} รายการ)
                   </span>
@@ -840,6 +971,12 @@ const Order = () => {
             <tbody>
               {loading ? (
                 <SkeletonTableRows rows={10} cols={colCount} />
+              ) : loadError ? (
+                <tr>
+                  <td className="p-3" colSpan={colCount}>
+                    <ErrorState message={loadError} onRetry={fetchOrders} />
+                  </td>
+                </tr>
               ) : rows.length === 0 ? (
                 <tr>
                   <td className="p-0" colSpan={colCount}>
