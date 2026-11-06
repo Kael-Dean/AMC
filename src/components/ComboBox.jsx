@@ -26,6 +26,7 @@
 //     false = Buy dialect, keeps the recorded desktop Enter-flow)
 //   searchable     true | false | 'auto' (default: search when > 8 options)
 //   emptyText, searchPlaceholder, id, ariaLabel, className
+//   onQueryChange(query)  search text changed (stable callback): for lists that also search the server
 //   title          heading of the phone picker sheet (falls back to ariaLabel,
 //                  then placeholder)
 //   ref            imperative { focus(), open(), close() }
@@ -97,6 +98,7 @@ const ComboBox = forwardRef(function ComboBox(
     className = "",
     panelMinW = 0,      // desktop panel may grow wider than the trigger (long labels)
     panelMaxW = 512,
+    onQueryChange,
     wrapLabels = false, // wrap option labels (and the selected trigger text) instead of truncating them
   },
   ref,
@@ -109,6 +111,10 @@ const ComboBox = forwardRef(function ComboBox(
   const panelRef = useRef(null)
   const searchRef = useRef(null)
   const typeAhead = useRef({ buf: "", timer: 0 })
+
+  useEffect(() => {
+    onQueryChange?.(query)
+  }, [query, onQueryChange])
 
   const isPhone = useIsPhone()
   const isCoarse = useIsCoarsePointer()

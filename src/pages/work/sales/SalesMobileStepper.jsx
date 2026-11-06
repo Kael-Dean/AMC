@@ -93,7 +93,7 @@ export default function SalesMobileStepper({ form }) {
     refs, errors, setErrors, buyerType, setBuyerType, customer, updateCustomer, memberMeta, order, dept,
     trailers, trailersCount, trailerSummary, formTemplate, templateOptions, selectedTemplateLabel,
     isCreditPayment, resolvePaymentId, handleSubmit, handleReset, scrollToPageTop, submitting,
-    stepApiRef, beforeFocusTrailerRef, focusTrailerField, nameBoxRef, companyBoxRef, clearError,
+    stepApiRef, beforeFocusTrailerRef, focusTrailerField, nameBoxRef, clearError,
   } = form
 
   const [current, setCurrent] = useState(0)
@@ -330,10 +330,9 @@ export default function SalesMobileStepper({ form }) {
                 </>
               ) : (
                 <>
-                  <div ref={companyBoxRef}>
+                  <div>
                     <label className={labelCls} htmlFor={fieldId("companyName")}>ชื่อบริษัท / นิติบุคคล</label>
                     <CompanyNameField form={form} />
-                    {!errors.companyName && <p className={helpTextCls}>พิมพ์ 2 ตัวอักษรเพื่อค้นหา</p>}
                   </div>
                   <Field label="เลขผู้เสียภาษี" error={errors.taxId} htmlFor={fieldId("taxId")} errorId={errId("taxId")}>
                     <input
