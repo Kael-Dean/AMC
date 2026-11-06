@@ -68,18 +68,8 @@ const Buy = () => {
   const [showNameList, setShowNameList] = useState(false)
 
   // ▼ บริษัท
-  const [companyResults, setCompanyResults] = useState([])
-  const [showCompanyList, setShowCompanyList] = useState(false)
-  const companyBoxRef = useRef(null)
-  const companyInputRef = useRef(null)
-  /** ชื่อบริษัทที่เพิ่งเลือก — ข้ามการค้นหาเฉพาะเมื่อข้อความตรงกับชื่อนี้ (null = ไม่ข้าม) */
-  const companySuppressSearchRef = useRef(null)
-  /** ข้อมูลบริษัทในฟอร์มมาจากการเลือก (ลิสต์/เลขภาษี): { name, taxId } — null = ผู้ใช้กรอกเอง */
+  /** บริษัทที่เลือกล่าสุด (ดรอปดาวน์/เลขภาษี): { taxId } — แก้เลขภาษีต่อจากนี้ = เลิกผูก asso_id */
   const companyPickRef = useRef(null)
-  /** ผลการค้นหาชื่อบริษัทล่าสุด: { query, failed } — null ระหว่างรอผล/ยังไม่ได้ค้น */
-  const [companySearchOutcome, setCompanySearchOutcome] = useState(null)
-  const [companyHighlighted, setCompanyHighlighted] = useState(-1)
-  const companyItemRefs = useRef([])
 
   const nameBoxRef = useRef(null)
   const nameInputRef = useRef(null)
@@ -376,7 +366,6 @@ const { onEnter, focusNext } = useEnterNavigation(refs, buyerType, order)
   const debouncedCitizenId = useDebounce(customer.citizenId)
   const debouncedMemberId = useDebounce(customer.memberId)
   const debouncedFullName = useDebounce(customer.fullName)
-  const debouncedCompanyName = useDebounce(customer.companyName)
   const debouncedTaxId = useDebounce(customer.taxId)
 
   /** helper: เรียกหลาย endpoint จนกว่าจะเจอ */
@@ -491,39 +480,37 @@ const { onEnter, focusNext } = useEnterNavigation(refs, buyerType, order)
     }
   }
 
-  const pickCompanyResult = async (rec) => {
+  const pickCompanyResult = (rec) => {
     const data = mapCompanyToUI(rec)
-    const pickedName = (data.companyName || "").trim()
-    if (pickedName) companySuppressSearchRef.current = pickedName
-    // เรคอร์ดไม่มีชื่อ = ชื่อในช่องยังเป็นค่าเดิม
-    companyPickRef.current = {
-      name: pickedName || (companyInputRef.current?.value ?? customer.companyName).trim(),
-      taxId: data.taxId,
-    }
-    setCompanySearchOutcome(null)
+    companyPickRef.current = { taxId: data.taxId }
+    // Replace every field: switching company must not keep the previous one's details
     setCustomer((prev) => ({
       ...prev,
       companyName: data.companyName || prev.companyName,
-      taxId: data.taxId || prev.taxId,
-      companyPhone: data.phone || prev.companyPhone,
-      hqHouseNo: data.hqHouseNo || prev.hqHouseNo,
-      hqMoo: data.hqMoo || prev.hqMoo,
-      hqSubdistrict: data.hqSubdistrict || prev.hqSubdistrict,
-      hqDistrict: data.hqDistrict || prev.hqDistrict,
-      hqProvince: data.hqProvince || prev.hqProvince,
-      hqPostalCode: data.hqPostalCode || prev.hqPostalCode,
-      brHouseNo: data.brHouseNo || prev.brHouseNo,
-      brMoo: data.brMoo || prev.brMoo,
-      brSubdistrict: data.brSubdistrict || prev.brSubdistrict,
-      brDistrict: data.brDistrict || prev.brDistrict,
-      brProvince: data.brProvince || prev.brProvince,
-      brPostalCode: data.brPostalCode || prev.brPostalCode,
+      taxId: data.taxId,
+      companyPhone: data.phone,
+      hqHouseNo: data.hqHouseNo,
+      hqMoo: data.hqMoo,
+      hqSubdistrict: data.hqSubdistrict,
+      hqDistrict: data.hqDistrict,
+      hqProvince: data.hqProvince,
+      hqPostalCode: data.hqPostalCode,
+      brHouseNo: data.brHouseNo,
+      brMoo: data.brMoo,
+      brSubdistrict: data.brSubdistrict,
+      brDistrict: data.brDistrict,
+      brProvince: data.brProvince,
+      brPostalCode: data.brPostalCode,
     }))
     setMemberMeta({ type: "company", assoId: data.assoId ?? null, memberId: null })
-    setShowCompanyList(false)
-    setCompanyResults([])
-    setCompanyHighlighted(-1)
   }
+
+  // Back to a person: a picked company's asso_id must not follow into a person's order
+  useEffect(() => {
+    if (buyerType === "person") {
+      setMemberMeta((m) => (m.type === "company" ? { type: "unknown", assoId: null, memberId: null } : m))
+    }
+  }, [buyerType])
 
   /** โหลด dropdown ชุดแรก + branch */
   useEffect(() => {
@@ -707,86 +694,6 @@ const { onEnter, focusNext } = useEnterNavigation(refs, buyerType, order)
   }, [branchOptions])
 
 
-// ปิด dropdown บริษัทเมื่อคลิกนอก
-  useEffect(() => {
-    const onClick = (e) => {
-      if (!companyBoxRef.current) return
-      if (!companyBoxRef.current.contains(e.target)) {
-        setShowCompanyList(false)
-        setCompanyHighlighted(-1)
-      }
-    }
-    document.addEventListener("click", onClick)
-    document.addEventListener("focusin", onClick) // Tab / Enter ไปช่องอื่น
-    return () => {
-      document.removeEventListener("click", onClick)
-      document.removeEventListener("focusin", onClick)
-    }
-  }, [])
-
-  // trigger ค้นหาจากชื่อบริษัท
-  const liveCompanyName = customer.companyName.trim()
-  useEffect(() => {
-    if (!autoSearchEnabled) { setShowCompanyList(false); setCompanyResults([]); setCompanyHighlighted(-1); setCompanySearchOutcome(null); return }
-    if (buyerType !== "company") {
-      setShowCompanyList(false)
-      setCompanyResults([])
-      setCompanyHighlighted(-1)
-      setCompanySearchOutcome(null)
-      return
-    }
-
-    const q = (debouncedCompanyName || "").trim()
-    // ค่า debounce ยังตามช่องจริงไม่ทัน (เช่น รีเซ็ตแล้วเริ่มพิมพ์ใหม่ทันที): ห้ามค้นจากค่าเก่า รอรอบถัดไป
-    if (q !== liveCompanyName) return
-    if (companySuppressSearchRef.current !== null) {
-      if (q === companySuppressSearchRef.current) {
-        setShowCompanyList(false)
-        setCompanyResults([])
-        setCompanyHighlighted(-1)
-        setCompanySearchOutcome(null)
-        return
-      }
-      companySuppressSearchRef.current = null
-    }
-    setCompanySearchOutcome(null)
-    if (q.length < 2) {
-      setCompanyResults([])
-      setShowCompanyList(false)
-      setCompanyHighlighted(-1)
-      return
-    }
-
-    let cancelled = false
-    const searchCompany = async () => {
-      const __epoch = searchEpochRef.current
-      try {
-        setLoadingCustomer(true)
-        const items = (await apiAuth(`/order/companies/search?q=${encodeURIComponent(q)}`)) || []
-        if (cancelled || __epoch !== searchEpochRef.current) return
-        setCompanyResults(items)
-        setCompanySearchOutcome({ query: q, failed: false })
-        if (document.activeElement === companyInputRef.current) {
-          setShowCompanyList(true)
-          setCompanyHighlighted(items.length > 0 ? 0 : -1)
-        }
-      } catch (err) {
-        if (cancelled || __epoch !== searchEpochRef.current) return
-        console.error(err)
-        setCompanyResults([])
-        setCompanyHighlighted(-1)
-        setCompanySearchOutcome({ query: q, failed: true })
-        if (document.activeElement === companyInputRef.current) setShowCompanyList(true)
-      } finally {
-        if (!cancelled) setLoadingCustomer(false)
-      }
-    }
-    searchCompany()
-    return () => {
-      cancelled = true
-      setLoadingCustomer(false)
-    }
-  }, [debouncedCompanyName, liveCompanyName, buyerType, autoSearchEnabled])
 
   // ค้นหาจากเลขภาษี
   const liveTaxId = onlyDigits(customer.taxId)
@@ -820,37 +727,6 @@ const { onEnter, focusNext } = useEnterNavigation(refs, buyerType, order)
       setLoadingCustomer(false)
     }
   }, [debouncedTaxId, liveTaxId, buyerType, autoSearchEnabled])
-
-  // คีย์บอร์ดนำทางลิสต์บริษัท
-  const handleCompanyKeyDown = async (e) => {
-    if (!showCompanyList || (companyResults.length === 0 && e.key !== "Escape")) return
-    if (e.key === "ArrowDown") {
-      e.preventDefault()
-      const next = companyHighlighted < companyResults.length - 1 ? companyHighlighted + 1 : 0
-      setCompanyHighlighted(next)
-      requestAnimationFrame(() => {
-        const el = companyItemRefs.current[next]
-        try { el?.scrollIntoView({ block: "nearest" }) } catch { /* ignore */ }
-      })
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault()
-      const prev = companyHighlighted > 0 ? companyHighlighted - 1 : companyResults.length - 1
-      setCompanyHighlighted(prev)
-      requestAnimationFrame(() => {
-        const el = companyItemRefs.current[prev]
-        try { el?.scrollIntoView({ block: "nearest" }) } catch { /* ignore */ }
-      })
-    } else if (e.key === "Enter") {
-      e.preventDefault()
-      if (companyHighlighted >= 0 && companyHighlighted < companyResults.length) {
-        await pickCompanyResult(companyResults[companyHighlighted])
-      }
-    } else if (e.key === "Escape") {
-      e.preventDefault()
-      setShowCompanyList(false)
-      setCompanyHighlighted(-1)
-    }
-  }
 
   /** เมื่อเลือก product → โหลด species */
   useEffect(() => {
@@ -1065,7 +941,8 @@ if (!mid) return
     if (!autoSearchEnabled) return
     if (buyerType !== "person") {
       setCustomerFound(null)
-      setMemberMeta({ type: "unknown", assoId: null, memberId: null })
+      // Keep a picked company: it is what the order form and the company dropdown read
+      setMemberMeta((m) => (m.type === "company" ? m : { type: "unknown", assoId: null, memberId: null }))
       return
     }
     const cid = onlyDigits(debouncedCitizenId)
@@ -1400,22 +1277,6 @@ const pickNameResult = async (rec) => {
     setAutoSearchEnabled(true)
     if (String(v).trim() !== "") clearHint(k)
     const pick = companyPickRef.current
-    if (pick && k === "companyName" && String(v).trim() !== pick.name) {
-      // แก้ชื่อหลังเลือกบริษัท: ล้างข้อมูลบริษัทเดิม ไม่งั้นออเดอร์จะไปเข้าบริษัทเดิมตาม tax_id
-      // (เลขภาษีที่ผู้ใช้แก้เองหลังเลือกไม่ใช่ของบริษัทเดิม จึงคงไว้)
-      companyPickRef.current = null
-      companySuppressSearchRef.current = null
-      setMemberMeta({ type: "unknown", assoId: null, memberId: null })
-      setCustomer((prev) => ({
-        ...prev,
-        companyName: v,
-        taxId: prev.taxId === pick.taxId ? "" : prev.taxId,
-        companyPhone: "",
-        hqHouseNo: "", hqMoo: "", hqSubdistrict: "", hqDistrict: "", hqProvince: "", hqPostalCode: "",
-        brHouseNo: "", brMoo: "", brSubdistrict: "", brDistrict: "", brProvince: "", brPostalCode: "",
-      }))
-      return
-    }
     // แก้เลขภาษีหลังเลือกบริษัท: เลิกผูก asso_id ของบริษัทเดิม
     if (pick && k === "taxId" && v !== pick.taxId) setMemberMeta((m) => ({ ...m, assoId: null }))
     setCustomer((prev) => ({ ...prev, [k]: v }))
@@ -1776,9 +1637,6 @@ if (buyerType === "person") {
   // ปิดระบบ auto-search ชั่วคราวระหว่างรีเซ็ตเพื่อไม่ให้มี auto-fill
   setAutoSearchEnabled(false)
   try { suppressNameSearchRef.current = true; } catch { /* ignore */ }
-  // ลืมชื่อที่เลือกไว้ ไม่งั้นพิมพ์ชื่อเดิมซ้ำหลังรีเซ็ตจะไม่ค้นหา
-  // (ค่า debounce เก่าถูกกันไว้ที่ effect ค้นหาชื่อบริษัท: ต้องตรงกับช่องจริงจึงจะค้น)
-  companySuppressSearchRef.current = null
   companyPickRef.current = null
 
   // ปิดออโต้ฟิลและยกเลิกผล async เก่าทันที
@@ -1921,15 +1779,13 @@ if (buyerType === "person") {
     submitting,
     // refs
     refs, nameBoxRef, nameInputRef, listContainerRef, itemRefs,
-    companyBoxRef, companyInputRef, companyItemRefs,
     // enter-flow
     onEnter, focusNext,
     // name search
     showNameList, setShowNameList, nameResults, highlightedIndex, setHighlightedIndex,
     handleNameKeyDown, pickNameResult, scrollHighlightedIntoView2,
-    // company search
-    showCompanyList, setShowCompanyList, companyResults, companyHighlighted, setCompanyHighlighted,
-    handleCompanyKeyDown, pickCompanyResult, companySearchOutcome,
+    // company
+    pickCompanyResult,
     // actions
     handleSubmit, handleReset, scrollToPageTop, resolvePaymentId, setErrors, focusKlangOrBranchOrEntry,
     // phone stepper plumbing

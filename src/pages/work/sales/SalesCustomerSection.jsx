@@ -10,7 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useRef } from "react"
 import ComboBox from "../../../components/ComboBox"
-import CompanySearchStatus from "../../../components/CompanySearchStatus"
+import CompanyPicker from "../../../components/CompanyPicker"
 import Badge from "../../../components/ui/Badge"
 import {
   cx, baseField, fieldDisabled, labelCls, helpTextCls, errorTextCls, cardCls,
@@ -420,75 +420,13 @@ export function FullNameField({ form, placeholder = "เช่น นายส�
   )
 }
 
-/** ชื่อบริษัท input + inline listbox. Caller wraps in a div with `ref={companyBoxRef}`. */
+/** ชื่อบริษัท: ดรอปดาวน์ค้นหาได้ */
 export function CompanyNameField({ form }) {
-  const {
-    refs, companyInputRef, customer, updateCustomer, buyerType, setShowCompanyList, setCompanyHighlighted,
-    clearError, handleCompanyKeyDown, onEnter, showCompanyList, errors, redFieldCls,
-    companyResults, companyHighlighted, companyItemRefs, pickCompanyResult,
-  } = form
+  const { errors } = form
   return (
     <>
-      <input
-        id={fieldId("companyName")}
-        ref={(el) => { refs.companyName.current = el; companyInputRef.current = el }}
-        className={cx(baseField, redFieldCls("companyName"))}
-        value={customer.companyName}
-        onChange={(e) => {
-          updateCustomer("companyName", e.target.value)
-          clearError("companyName")
-          if (buyerType === "company") {
-            if (e.target.value.trim().length >= 2) setShowCompanyList(true)
-            else { setShowCompanyList(false); setCompanyHighlighted(-1) }
-          }
-        }}
-        onKeyDown={handleCompanyKeyDown}
-        onKeyDownCapture={onEnter("companyName")}
-        placeholder="เช่น บริษัท ตัวอย่าง จำกัด"
-        aria-expanded={showCompanyList}
-        aria-controls="company-results"
-        role="combobox"
-        aria-autocomplete="list"
-        aria-invalid={errors.companyName ? true : undefined}
-        aria-describedby={describedBy(errors, "companyName")}
-      />
+      <CompanyPicker form={form} id={fieldId("companyName")} ariaDescribedBy={describedBy(errors, "companyName")} />
       {errors.companyName && <p id={errId("companyName")} className={errorTextCls}>{errors.companyName}</p>}
-
-      {buyerType === "company" && showCompanyList && companyResults.length > 0 && (
-        <div
-          id="company-results"
-          className={"mt-1 max-h-72 w-full overflow-auto rounded-2xl border border-slate-200 bg-white text-black shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"}
-          role="listbox"
-        >
-          {companyResults.map((r, idx) => {
-            const isActive = idx === companyHighlighted
-            const name = r.company_name ?? r.companyName ?? "(ไม่มีชื่อ)"
-            const tid = r.tax_id ?? "-"
-            return (
-              <button
-                type="button"
-                ref={(el) => (companyItemRefs.current[idx] = el)}
-                key={`${r.asso_id}-${tid}-${idx}`}
-                onClick={async () => await pickCompanyResult(r)}
-                onMouseEnter={() => { setCompanyHighlighted(idx); requestAnimationFrame(() => { try { companyItemRefs.current[idx]?.scrollIntoView({ block: "nearest" }) } catch {} }) }}
-                role="option"
-                aria-selected={isActive}
-                className={cx(
-                  "relative flex w-full min-h-touch items-start gap-3 px-3 py-2.5 text-left transition rounded-xl cursor-pointer",
-                  isActive ? "bg-indigo-100 ring-1 ring-indigo-300 dark:bg-indigo-400/20 dark:ring-indigo-500"
-                           : "hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
-                )}
-              >
-                <div className="flex-1">
-                  <div className="font-medium">{name}</div>
-                  <div className="text-sm text-slate-600 dark:text-slate-300">เลขผู้เสียภาษี {tid} · โทร {r.phone_number ?? "-"}</div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      )}
-      <CompanySearchStatus form={form} />
     </>
   )
 }
@@ -582,7 +520,7 @@ const sectionTitle = "text-lg font-semibold leading-snug text-gray-900 dark:text
 // payment row (+ credit terms). Desktop Enter runs top → bottom through the
 // whole page: customer → วิธีชำระเงิน → เอกสารอ้างอิง → [เครดิต] → คลัง → …
 export default function SalesCustomerSection({ form }) {
-  const { buyerType, order, errors, isCreditPayment, nameBoxRef, companyBoxRef } = form
+  const { buyerType, order, errors, isCreditPayment, nameBoxRef } = form
   return (
     <section aria-labelledby="sales-sec-customer" className={cx(cardCls, "p-5")}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -610,7 +548,7 @@ export default function SalesCustomerSection({ form }) {
         </div>
       ) : (
         <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <div ref={companyBoxRef}>
+          <div>
             <label className={labelCls} htmlFor={fieldId("companyName")}>ชื่อบริษัท / นิติบุคคล</label>
             <CompanyNameField form={form} />
           </div>

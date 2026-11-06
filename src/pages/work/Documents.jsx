@@ -1,4 +1,5 @@
 // src/pages/Documents.jsx
+import { ChevronDown } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { apiAuth, apiDownload } from "../../lib/api"   // helper แนบ token + BASE URL
 import { cx, baseField, labelCls, helpTextCls, errorTextCls, secondaryBtnCls } from "../../lib/styles"
@@ -139,7 +140,8 @@ const personLabel = (r) => {
  * ช่องค้นหาสมาชิกแบบ autocomplete — reuse endpoint /order/customers/search (เหมือนหน้าซื้อ)
  * เลือกแล้วส่ง asso_id กลับผ่าน onPick. เป็น component ระดับบนสุด (identity คงที่)
  * เพื่อไม่ให้ remount ทุกครั้งที่ parent re-render (กัน input เสีย focus)
- * includeCompanies = ค้นบริษัทด้วย (/order/companies/search) สำหรับช่อง "คู่ค้า"
+ * includeCompanies = ค้นบริษัทด้วย (/order/companies/search) สำหรับช่อง "คู่ค้า":
+ *   กดช่องแล้วเปิดเป็นดรอปดาวน์รายชื่อบริษัททันที พิมพ์ 2 ตัวขึ้นไปจึงค้นสมาชิก/ลูกค้าด้วย
  */
 function MemberSearchBox({
   valueLabel = "",
@@ -157,6 +159,7 @@ function MemberSearchBox({
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
   const [highlight, setHighlight] = useState(-1)
+  const [browsing, setBrowsing] = useState(false)
   const boxRef = useRef(null)
   const inputRef = useRef(null)
   const panelRef = useRef(null)
@@ -170,7 +173,8 @@ function MemberSearchBox({
   useEffect(() => {
     const term = q.trim()
     const my = ++epochRef.current
-    if (term.length < 2) {
+    const companiesOnly = includeCompanies && browsing && term.length < 2
+    if (term.length < 2 && !companiesOnly) {
       setResults([])
       setLoading(false)
       setFailed(false)
@@ -181,7 +185,7 @@ function MemberSearchBox({
     const t = setTimeout(async () => {
       const qs = encodeURIComponent(term)
       const settled = await Promise.allSettled([
-        apiAuth(`/order/customers/search?q=${qs}`),
+        ...(companiesOnly ? [] : [apiAuth(`/order/customers/search?q=${qs}`)]),
         ...(includeCompanies ? [apiAuth(`/order/companies/search?q=${qs}`)] : []),
       ])
       if (my !== epochRef.current) return
@@ -192,9 +196,9 @@ function MemberSearchBox({
       setOpen(true)
       setHighlight(arr.length ? 0 : -1)
       setLoading(false)
-    }, 300)
+    }, term ? 300 : 0)
     return () => clearTimeout(t)
-  }, [q, includeCompanies])
+  }, [q, includeCompanies, browsing])
 
   // ปิดเมื่อคลิกนอกกล่อง — panel อยู่ใน portal จึงต้องเช็คทั้งสองฝั่ง
   useEffect(() => {
@@ -203,6 +207,7 @@ function MemberSearchBox({
       if (panelRef.current?.contains(e.target)) return
       setOpen(false)
       setHighlight(-1)
+      setBrowsing(false)
     }
     document.addEventListener("click", onClick)
     return () => document.removeEventListener("click", onClick)
@@ -221,11 +226,13 @@ function MemberSearchBox({
     setResults([])
     setOpen(false)
     setHighlight(-1)
+    setBrowsing(false)
   }
 
   const onKeyDown = (e) => {
     if (!open && e.key === "ArrowDown") {
       if (results.length) setOpen(true)
+      else if (includeCompanies) setBrowsing(true)
       return
     }
     if (!open) return
@@ -242,6 +249,7 @@ function MemberSearchBox({
       e.preventDefault()
       setOpen(false)
       setHighlight(-1)
+      setBrowsing(false)
     }
   }
 
@@ -276,11 +284,18 @@ function MemberSearchBox({
       <input
         ref={inputRef}
         id={inputId}
-        className={cx(baseField, error && "border-red-400 ring-2 ring-red-300/70")}
+        className={cx(baseField, includeCompanies && "!pr-10", error && "border-red-400 ring-2 ring-red-300/70")}
         placeholder={placeholder}
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        onFocus={() => { if (results.length) setOpen(true) }}
+        onFocus={() => {
+          if (includeCompanies) setBrowsing(true)
+          if (results.length) setOpen(true)
+        }}
+        onClick={() => {
+          if (includeCompanies) setBrowsing(true)
+          if (results.length) setOpen(true)
+        }}
         onKeyDown={onKeyDown}
         autoComplete="off"
         role="combobox"
@@ -288,6 +303,13 @@ function MemberSearchBox({
         aria-expanded={open}
         aria-invalid={error ? true : undefined}
       />
+      {includeCompanies && (
+        <ChevronDown
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-slate-400"
+          strokeWidth={2}
+        />
+      )}
       {open && createPortal(
         <div
           ref={panelRef}
@@ -1608,7 +1630,7 @@ function Documents() {
                 <MemberSearchBox
                   inputId="report-partner"
                   includeCompanies
-                  placeholder="พิมพ์ชื่อ / รหัสสมาชิก / เลขบัตร / ชื่อบริษัท / เลขภาษี"
+                  placeholder="เลือกบริษัท หรือพิมพ์ชื่อ / รหัสสมาชิก / เลขบัตร / เลขภาษี"
                   emptyText="ไม่พบคู่ค้าที่ตรงกับคำค้น"
                   valueLabel={filters.assoName || (filters.assoId ? "เลือกคู่ค้าแล้ว" : "")}
                   onPick={(r) => setFilters((p) => ({ ...p, assoId: String(r.asso_id), assoName: personLabel(r) }))}

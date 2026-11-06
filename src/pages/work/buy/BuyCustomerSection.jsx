@@ -9,7 +9,7 @@
 import { useEffect, useRef } from "react"
 import { ChevronDown } from "lucide-react"
 import ComboBox from "../../../components/ComboBox"
-import CompanySearchStatus from "../../../components/CompanySearchStatus"
+import CompanyPicker from "../../../components/CompanyPicker"
 import { Badge, SearchResults } from "../../../components/ui"
 import {
   cx, baseField, labelCls, helpTextCls, errorTextCls, cardCls,
@@ -60,9 +60,6 @@ function PhoneCustomerSection({ form }) {
     nameBoxRef, nameInputRef, itemRefs,
     showNameList, setShowNameList, nameResults, highlightedIndex, setHighlightedIndex,
     handleNameKeyDown, pickNameResult,
-    companyBoxRef, companyInputRef,
-    showCompanyList, setShowCompanyList, companyResults, companyHighlighted, setCompanyHighlighted,
-    handleCompanyKeyDown, pickCompanyResult,
   } = form
 
   const addrRef = useRef(null)
@@ -272,48 +269,10 @@ function PhoneCustomerSection({ form }) {
       ) : (
         <>
           {/* 4a ชื่อบริษัท + ผลค้นหา */}
-          <div ref={companyBoxRef}>
+          <div>
             <label className={phoneLabelCls} htmlFor="buy-companyName">ชื่อบริษัท</label>
-            <input
-              id="buy-companyName"
-              ref={(el) => { refs.companyName.current = el; companyInputRef.current = el }}
-              className={cx(baseField, redFieldCls("companyName"))}
-              value={customer.companyName}
-              onChange={(e) => {
-                updateCustomer("companyName", e.target.value)
-                clearError("companyName")
-                if (e.target.value.trim().length >= 2) setShowCompanyList(true)
-                else { setShowCompanyList(false); setCompanyHighlighted(-1) }
-              }}
-              onKeyDown={handleCompanyKeyDown}
-              onKeyDownCapture={onEnter("companyName")}
-              placeholder="เช่น บริษัท ตัวอย่าง จำกัด"
-              aria-expanded={showCompanyList}
-              aria-controls="company-results"
-              role="combobox"
-              aria-autocomplete="list"
-              aria-invalid={errors.companyName ? true : undefined}
-              aria-describedby={describedBy(errors, "companyName")}
-            />
+            <CompanyPicker form={form} id="buy-companyName" ariaDescribedBy={describedBy(errors, "companyName")} />
             {errors.companyName && <p id={errId("companyName")} className={errorTextCls}>{errors.companyName}</p>}
-            <SearchResults
-              open={showCompanyList && companyResults.length > 0}
-              inline
-              results={companyResults}
-              listId="company-results"
-              highlightedIndex={companyHighlighted}
-              onHighlight={setCompanyHighlighted}
-              onPick={(r) => pickCompanyResult(r)}
-              loading={loadingCustomer}
-              ariaLabel="ผลค้นหาบริษัท"
-              renderResult={(r) => (
-                <div>
-                  <div className="truncate text-base">{r.company_name ?? r.companyName ?? "(ไม่มีชื่อ)"}</div>
-                  <div className="truncate text-sm text-gray-500 dark:text-gray-400">ภาษี {r.tax_id ?? "-"} · โทร {r.phone_number ?? "-"}</div>
-                </div>
-              )}
-            />
-            <CompanySearchStatus form={form} />
           </div>
 
           {field("taxId", "เลขผู้เสียภาษี", { inputMode: "numeric", maxLength: 13, digits: true, placeholder: "13 หลัก" }, !errors.taxId && <p className={helpTextCls}>13 หลัก</p>)}
@@ -510,9 +469,7 @@ function DesktopCustomerSection({ form }) {
     nameBoxRef, nameInputRef, listContainerRef, itemRefs,
     showNameList, setShowNameList, nameResults, highlightedIndex, setHighlightedIndex,
     handleNameKeyDown, pickNameResult, scrollHighlightedIntoView2,
-    companyBoxRef, companyInputRef, companyItemRefs,
-    showCompanyList, setShowCompanyList, companyResults, companyHighlighted, setCompanyHighlighted,
-    handleCompanyKeyDown, pickCompanyResult, focusKlangOrBranchOrEntry,
+    focusKlangOrBranchOrEntry,
   } = form
 
   const isPerson = buyerType === "person"
@@ -707,69 +664,10 @@ function DesktopCustomerSection({ form }) {
       ) : (
         /* ชื่อบริษัท | เลขผู้เสียภาษี | เบอร์โทร */
         <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <div ref={companyBoxRef}>
+          <div>
             <label className={labelCls} htmlFor={fieldId("companyName")}>ชื่อบริษัท / นิติบุคคล</label>
-            <input
-              id={fieldId("companyName")}
-              ref={(el) => {
-                refs.companyName.current = el
-                companyInputRef.current = el
-              }}
-              className={cx(baseField, redFieldCls("companyName"))}
-              value={customer.companyName}
-              onChange={(e) => {
-                updateCustomer("companyName", e.target.value)
-                clearError("companyName")
-                if (e.target.value.trim().length >= 2) setShowCompanyList(true)
-                else { setShowCompanyList(false); setCompanyHighlighted(-1) }
-              }}
-              onFocus={() => clearHint("companyName")}
-              onKeyDown={handleCompanyKeyDown}
-              onKeyDownCapture={onEnter("companyName")}
-              placeholder="พิมพ์ชื่อเพื่อค้นหา"
-              autoComplete="off"
-              aria-expanded={showCompanyList && companyResults.length > 0}
-              aria-controls="company-results"
-              role="combobox"
-              aria-autocomplete="list"
-              aria-activedescendant={showCompanyList && companyHighlighted >= 0 ? `company-opt-${companyHighlighted}` : undefined}
-              aria-invalid={errors.companyName ? true : undefined}
-              aria-describedby={describedBy(errors, "companyName")}
-            />
+            <CompanyPicker form={form} id={fieldId("companyName")} ariaDescribedBy={describedBy(errors, "companyName")} />
             {errors.companyName && <p id={errId("companyName")} className={errorTextCls}>{errors.companyName}</p>}
-
-            {showCompanyList && companyResults.length > 0 && (
-              <div id="company-results" className={resultListCls} role="listbox" aria-label="ผลค้นหาบริษัท">
-                {companyResults.map((r, idx) => {
-                  const isActive = idx === companyHighlighted
-                  return (
-                    <button
-                      type="button"
-                      id={`company-opt-${idx}`}
-                      tabIndex={-1}
-                      ref={(el) => (companyItemRefs.current[idx] = el)}
-                      key={`${r.asso_id}-${r.tax_id}-${idx}`}
-                      onClick={async () => await pickCompanyResult(r)}
-                      onMouseEnter={() => {
-                        setCompanyHighlighted(idx)
-                        requestAnimationFrame(() => {
-                          try { companyItemRefs.current[idx]?.scrollIntoView({ block: "nearest" }) } catch { /* ignore */ }
-                        })
-                      }}
-                      role="option"
-                      aria-selected={isActive}
-                      className={resultItemCls(isActive)}
-                    >
-                      <span className="font-medium">{r.company_name ?? r.companyName ?? "(ไม่มีชื่อ)"}</span>
-                      <span className="text-sm tabular-nums text-gray-600 dark:text-gray-300">
-                        เลขผู้เสียภาษี {r.tax_id ?? "-"} · โทร {r.phone_number ?? "-"}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-            <CompanySearchStatus form={form} />
           </div>
 
           {textField("taxId", "เลขประจำตัวผู้เสียภาษี", {
