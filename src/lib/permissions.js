@@ -607,15 +607,9 @@ export function canBringInMill(user = getUser()) {
 }
 
 /**
- * ปุ่ม "เพิ่มบริษัท" — เปิดตามสิทธิ์ customer.register เหมือน backend
+ * เมนู/หน้า "เพิ่มบริษัท" — เปิดตามสิทธิ์ customer.register เหมือน backend
  * (POST /member/customers/company-signup) · Super Admin ผ่านเสมอ (handoff F29)
  */
 export function canSeeAddCompany(roleId = getRoleId()) {
   return can("customers.company.add", roleId) || can("customers.create", roleId)
 }
-
-/**
- * เมนู/หน้า "แก้ไขคู่ค้า/บริษัท" (/company-add) — เข้าได้ถ้าดูรายชื่อ (member.search) หรือเพิ่มบริษัท
- * (customer.register) ได้. ปุ่มแก้ไข (customer.edit) อยู่ในรายชื่อ จึงไม่ใช่เงื่อนไขเข้าหน้าโดยลำพัง
- */
-export const COMPANY_PAGE_PERMS = Object.freeze(["members.search", "customers.create", "customers.company.add"])

@@ -50,7 +50,7 @@ import {
   Warehouse,
   Wheat,
 } from "lucide-react"
-import { COMPANY_PAGE_PERMS, DOCUMENTS_PERMS, HR_HUB_PERMS, canBringInMill, checkAccess } from "./permissions"
+import { DOCUMENTS_PERMS, HR_HUB_PERMS, canBringInMill, canSeeAddCompany, checkAccess } from "./permissions"
 
 // ฟังก์ชันทั้งหมดที่ใช้ในการทำงาน — แต่ละการ์ดแสดงตาม permission key
 // (perm / anyOf / allow — ดู checkAccess ใน src/lib/permissions.js)
@@ -75,7 +75,7 @@ export const ALL_FUNCTIONS = [
     items: [
       { label: "สมัครสมาชิก", path: "/member-signup", perm: "members.create" },
       { label: "เพิ่มลูกค้าทั่วไป", path: "/customer-add", perm: "customers.create" },
-      { label: "แก้ไขคู่ค้า/บริษัท", path: "/company-add", anyOf: COMPANY_PAGE_PERMS },
+      { label: "เพิ่มบริษัท", path: "/company-add", perm: "customers.create", allow: canSeeAddCompany },
       { label: "ค้นหาสมาชิก", path: "/search", perm: "members.search" },
       { label: "ค้นหาลูกค้าทั่วไป", path: "/customer-search", perm: "members.search" },
       { label: "สมาชิกสิ้นสภาพ", path: "/member-termination", perm: "members.status" },
