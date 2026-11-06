@@ -1,24 +1,28 @@
 // src/pages/hr/tabs/HRPayrollTab.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// จ่ายเงินเดือน (งวด 3 · 3C) — งวดประจำเดือน ร่าง → ตรวจสอบ → อนุมัติ → ปิดงวด
+// จ่ายเงินเดือน (งวด 3 · 3C) — งวดประจำเดือน ร่าง → หัวหน้าฝ่ายอำนวยการตรวจ → ผช.ผจก.ตรวจ → ผจก.อนุมัติ → อนุมัติ → ปิดงวด
 //   GET  /hr/payroll?month&year                      รายการเงินเดือนของเดือน
 //   GET  /hr/payroll/periods/{y}/{m}                  สถานะงวด (404 = ยังไม่มีงวด → ถือเป็นร่าง)
 //   POST /hr/payroll/generate {employee_id,month,year} · POST /hr/payroll/generate-bulk {month,year}
-//   POST /hr/payroll/periods/{y}/{m}/recalculate | submit | approve | close   (+ return ใน ReturnPeriodSheet)
+//   POST /hr/payroll/periods/{y}/{m}/recalculate | submit | admin-check | asst-check | approve | close   (+ return ใน ReturnPeriodSheet)
 //   ปีเป็น ค.ศ. ทุก route · สร้าง/แก้ได้เฉพาะงวดร่าง (นอกนั้น backend ตอบ 409 — ปุ่มปิดไว้ก่อน)
-//   ผู้จัดการ (hr.payroll.period.approve) มีแท็บย่อย "รออนุมัติ" (HRPayrollReviewPanel)
+//   ใครกดอะไรได้ตัดสินที่ periodActionOf (lib/payroll.js) จุดเดียว — หัวหน้าฝ่ายบัญชี (view.accounting) ไม่มีปุ่มเลย
+//   ผู้ตรวจ/ผู้อนุมัติมีแท็บย่อย "รอตรวจสอบ/อนุมัติ" (HRPayrollReviewPanel) · รายการหักภายนอกอยู่ใน HRPayrollExternalPanel
+//   ส่งตรวจสอบได้เมื่อ period.external_missing = 0 (ไม่มี field = backend รุ่นเก่า ไม่บล็อก)
+//   403 = ผช.ผจก./หัวหน้าฝ่ายบัญชีเปิดเดือนที่ยังไม่ผ่านการตรวจขั้นแรก → แจ้งข้อความ backend ไม่ใช่ error และไม่ถือเป็นร่าง
 //   ลูกจ้างรายวัน (3C daily-paid): GET/PUT /hr/payroll/days-worked/{y}/{m} ผ่าน DaysWorkedSheet — ต้องบันทึกวันก่อนสร้าง
 //     generate-bulk / recalculate ตอบ `errors` = คนที่ถูกข้าม (เช่น ยังไม่บันทึกวัน) → แสดงรายชื่อใต้การ์ดงวด
 //     settings.daily_wage ใช้แสดงค่าจ้างโดยประมาณ · backend ยังไม่ migrate (404) → ซ่อนส่วนรายวันทั้งหมด
 // ─────────────────────────────────────────────────────────────────────────────
-import { useCallback, useEffect, useId, useState } from "react"
+import { useCallback, useEffect, useId, useRef, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { AlertTriangle, CalendarDays, ChevronRight, Info, RotateCcw, X } from "lucide-react"
 import { apiAuth, apiDownload } from "../../../lib/api"
 import { useCan } from "../../../lib/permissions"
 import { useIsPhone } from "../../../hooks/useMediaQuery"
 import {
-  PERIOD_TONE, daysWorkedText, fmtDateTime, fmtPayMonth, money, netOf, periodLabel, periodList, skippedFrom, toNum, totalDeductions,
+  PERIOD_STEP_ACTIONS, PERIOD_TONE, daysWorkedText, fmtDateTime, fmtPayMonth, money, netOf, periodActionOf, periodLabel, periodList, periodPerms,
+  periodWaitingOn, skippedFrom, toNum, totalDeductions,
 } from "../../../lib/payroll"
 import { cx, baseField, errorTextCls, labelCls, neutralBtnCls, primaryBtnCls, focusRingCls } from "../../../lib/styles"
 import SelectDropdown from "../../../components/SelectDropdown"
@@ -31,6 +35,7 @@ import DaysWorkedSheet from "../../../components/hr/DaysWorkedSheet"
 import StatusMsg from "../../../components/hr/StatusMsg"
 import HRPayrollPayoutSheet from "./HRPayrollPayoutSheet"
 import HRPayrollReviewPanel from "./HRPayrollReviewPanel"
+import HRPayrollExternalPanel from "./HRPayrollExternalPanel"
 import { keepBackState, useDrill } from "../../../lib/drill"
 
 const PAYROLL_COLS = 5
@@ -60,21 +65,16 @@ const ACTIONS = {
   recalc: {
     path: ({ year, month }) => `/hr/payroll/periods/${year}/${month}/recalculate`,
     title: (l) => `คำนวณเงินเดือน ${l} ใหม่ทั้งงวด`,
-    description: "ระบบจะคำนวณทุกรายการใหม่จากข้อมูลและการตั้งค่าปัจจุบัน การปรับรายการด้วยมือในงวดนี้จะถูกเขียนทับทั้งหมด และย้อนคืนไม่ได้",
+    description: "ระบบจะคำนวณทุกรายการใหม่จากข้อมูลและการตั้งค่าปัจจุบัน การปรับรายการด้วยมือในงวดนี้จะถูกเขียนทับทั้งหมด และย้อนคืนไม่ได้ ส่วนรายการหักภายนอกที่บันทึกแล้วยังอยู่ครบ",
     confirmLabel: "คำนวณใหม่ทั้งงวด", loadingLabel: "กำลังคำนวณ…", tone: "danger", success: "คำนวณใหม่แล้ว",
   },
   submit: {
     path: ({ year, month }) => `/hr/payroll/periods/${year}/${month}/submit`,
-    title: (l) => `ส่งงวด ${l} ให้ผู้จัดการตรวจสอบ`,
-    description: "ระหว่างรอตรวจสอบจะสร้างหรือแก้ไขเงินเดือนของเดือนนี้ไม่ได้ ถ้าผู้จัดการส่งกลับ งวดจะกลับเป็นร่างพร้อมเหตุผล",
+    title: (l) => `ส่งงวด ${l} ให้หัวหน้าฝ่ายอำนวยการตรวจสอบ`,
+    description: "ระหว่างรอตรวจสอบจะสร้างหรือแก้ไขเงินเดือนของเดือนนี้ไม่ได้ ถ้าผู้ตรวจส่งกลับ งวดจะกลับเป็นร่างพร้อมเหตุผล และต้องตรวจใหม่ตั้งแต่ขั้นแรก",
     confirmLabel: "ส่งตรวจสอบ", loadingLabel: "กำลังส่ง…", success: "ส่งตรวจสอบแล้ว",
   },
-  approve: {
-    path: ({ year, month }) => `/hr/payroll/periods/${year}/${month}/approve`,
-    title: (l) => `อนุมัติงวด ${l}`,
-    description: "เมื่ออนุมัติ พนักงานจะเห็นสลิปของเดือนนี้ทันที และฝ่ายบุคคลจะแก้ไขเงินเดือนไม่ได้จนกว่าจะส่งกลับ",
-    confirmLabel: "อนุมัติ", loadingLabel: "กำลังอนุมัติ…", success: "อนุมัติงวดแล้ว",
-  },
+  ...PERIOD_STEP_ACTIONS,
   close: {
     path: ({ year, month }) => `/hr/payroll/periods/${year}/${month}/close`,
     title: (l) => `ปิดงวด ${l}`,
@@ -85,22 +85,32 @@ const ACTIONS = {
 
 // ─── Period card ─────────────────────────────────────────────────────────────
 
-function PeriodCard({ ym, period, loading, error, onRetry, rows, perms, daily, onAction, onReturn, onGenerateOne, onDaysWorked }) {
+function PeriodCard({ ym, period, loading, error, onRetry, rows, perms, daily, onAction, onReturn, onGenerateOne, onDaysWorked, onOpenExternal }) {
   const status = period?.status ?? "draft"
   const isDraft = status === "draft"
   const label = fmtPayMonth(ym.year, ym.month, { long: true })
   const count = period?.payouts ?? rows.length
   const totalNet = period?.total_net ?? (rows.length ? rows.reduce((s, r) => s + toNum(netOf(r)), 0) : null)
+  // ยังไม่รู้สถานะงวดจริง (กำลังโหลด/โหลดพลาด) → ห้ามแสดงปุ่มของงวดร่างเป็นค่าเริ่มต้น
+  const known = !loading && !error
+  const step = known ? periodActionOf(period ?? { status }, perms) : { action: null, canReturn: false }
+  const externalMissing = toNum(period?.external_missing)
+  const waitingOn = periodWaitingOn(period ?? { status })
 
   const meta = [
     period?.submitted_at && `ส่งตรวจสอบ ${fmtDateTime(period.submitted_at)}`,
+    period?.admin_checked_at && `หัวหน้าฝ่ายอำนวยการตรวจ ${fmtDateTime(period.admin_checked_at)}`,
+    period?.asst_checked_at && `ผช.ผจก.ตรวจ ${fmtDateTime(period.asst_checked_at)}`,
     period?.approved_at && `อนุมัติ ${fmtDateTime(period.approved_at)}`,
     period?.closed_at && `ปิดงวด ${fmtDateTime(period.closed_at)}`,
   ].filter(Boolean)
 
   const hrBtns = []
   const mgrBtns = []
-  if (isDraft) {
+  if (known && isDraft) {
+    if (perms.generate && count > 0) {
+      hrBtns.push(<button key="external" type="button" onClick={onOpenExternal} className={neutralBtnCls}>รายการหักภายนอก</button>)
+    }
     if (perms.daysWorked && daily?.total > 0) {
       hrBtns.push(
         <button key="days" type="button" onClick={onDaysWorked} className={neutralBtnCls}>
@@ -116,24 +126,39 @@ function PeriodCard({ ym, period, loading, error, onRetry, rows, perms, daily, o
           <RotateCcw aria-hidden="true" className="size-4" strokeWidth={1.75} /> คำนวณใหม่
         </button>,
       )
-      hrBtns.push(<button key="submit" type="button" onClick={() => onAction("submit")} className={primaryBtnCls}>ส่งตรวจสอบ</button>)
+      hrBtns.push(
+        <button
+          key="submit"
+          type="button"
+          onClick={() => onAction("submit")}
+          disabled={externalMissing > 0}
+          aria-describedby={externalMissing > 0 ? "payroll-external-missing" : undefined}
+          className={primaryBtnCls}
+        >
+          ส่งตรวจสอบ
+        </button>,
+      )
     }
   }
-  if (status === "approved" && perms.generate) {
+  if (known && status === "approved" && perms.generate) {
     hrBtns.push(<button key="close" type="button" onClick={() => onAction("close")} className={primaryBtnCls}>ปิดงวด</button>)
   }
-  if ((status === "review" || status === "approved") && perms.approve) {
-    mgrBtns.push(<button key="return" type="button" onClick={onReturn} className={neutralBtnCls}>ส่งกลับแก้ไข</button>)
-    if (status === "review") mgrBtns.push(<button key="approve" type="button" onClick={() => onAction("approve")} className={primaryBtnCls}>อนุมัติ</button>)
+  if (step.canReturn) mgrBtns.push(<button key="return" type="button" onClick={onReturn} className={neutralBtnCls}>ส่งกลับแก้ไข</button>)
+  if (step.action) {
+    mgrBtns.push(
+      <button key={step.action} type="button" onClick={() => onAction(step.action)} className={primaryBtnCls}>{PERIOD_STEP_ACTIONS[step.action].confirmLabel}</button>,
+    )
   }
   const buttons = [...hrBtns, ...mgrBtns]
 
   let note = null
-  if (status === "review" && !perms.approve) note = "รอผู้จัดการตรวจสอบ — ระหว่างนี้สร้างหรือแก้ไขเงินเดือนของเดือนนี้ไม่ได้"
-  else if (status === "approved" && !perms.generate) note = "อนุมัติแล้ว รอฝ่ายบุคคลปิดงวด"
-  else if (status === "approved") note = "อนุมัติแล้ว — พนักงานเห็นสลิปของเดือนนี้แล้ว แก้ไขไม่ได้จนกว่าผู้จัดการจะส่งกลับ"
-  else if (status === "closed") note = "ปิดงวดแล้ว — ค่างวดเงินกู้ของเดือนนี้ถูกบันทึกเป็นชำระแล้ว"
-  else if (isDraft && count === 0 && (perms.bulk || perms.generate)) note = "ยังไม่มีรายการ — สร้างเงินเดือนก่อน แล้วจึงส่งตรวจสอบได้"
+  if (known) {
+    if (waitingOn && !step.action) note = `${waitingOn} — ระหว่างนี้สร้างหรือแก้ไขเงินเดือนของเดือนนี้ไม่ได้`
+    else if (status === "approved" && !perms.generate) note = "อนุมัติแล้ว รอฝ่ายบุคคลปิดงวด"
+    else if (status === "approved") note = "อนุมัติแล้ว — เจ้าหน้าที่เห็นสลิปของเดือนนี้แล้ว แก้ไขไม่ได้จนกว่าผู้จัดการจะส่งกลับ"
+    else if (status === "closed") note = "ปิดงวดแล้ว — ค่างวดเงินกู้ของเดือนนี้ถูกบันทึกเป็นชำระแล้ว"
+    else if (isDraft && count === 0 && (perms.bulk || perms.generate)) note = "ยังไม่มีรายการ — สร้างเงินเดือนก่อน แล้วจึงส่งตรวจสอบได้"
+  }
 
   return (
     <section aria-labelledby="payroll-period-h" className="rounded-2xl bg-white p-4 ring-1 ring-gray-200/70 shadow-sm dark:bg-surface dark:ring-line dark:shadow-none md:p-5">
@@ -163,7 +188,7 @@ function PeriodCard({ ym, period, loading, error, onRetry, rows, perms, daily, o
 
       {isDraft && period?.returned_reason && (
         <div role="note" className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-400/25">
-          <p className="font-semibold">ผู้จัดการส่งกลับให้แก้ไข</p>
+          <p className="font-semibold">งวดนี้ถูกส่งกลับให้แก้ไข</p>
           <p className="mt-0.5 whitespace-pre-line">{period.returned_reason}</p>
         </div>
       )}
@@ -182,6 +207,16 @@ function PeriodCard({ ym, period, loading, error, onRetry, rows, perms, daily, o
               ? <> · ยังไม่บันทึกวันทำงาน <span className="font-semibold tabular-nums">{daily.missing}</span> คน{isDraft && " — จะถูกข้ามตอนสร้างเงินเดือน"}</>
               : " · บันทึกวันทำงานครบแล้ว"}
           </span>
+        </p>
+      )}
+
+      {known && isDraft && perms.generate && count > 0 && externalMissing > 0 && (
+        <p id="payroll-external-missing" className="mt-4 flex flex-wrap items-start gap-x-2 gap-y-1 text-sm text-amber-800 dark:text-amber-200">
+          <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} />
+          <span>ยังไม่ได้บันทึกรายการหักภายนอก <span className="font-semibold tabular-nums">{externalMissing}</span> คน — ส่งตรวจสอบได้เมื่อบันทึกครบ</span>
+          <button type="button" onClick={onOpenExternal} className={cx("inline-flex min-h-touch items-center rounded font-semibold underline md:min-h-0 underline-offset-2 hover:no-underline cursor-pointer", focusRingCls)}>
+            ไปบันทึก
+          </button>
         </p>
       )}
 
@@ -314,13 +349,13 @@ function GenerateOneSheet({ open, ym, onClose, onDone }) {
 
 // ─── Month view ──────────────────────────────────────────────────────────────
 
-function PayrollMonthPanel({ filterMonth, setFilterMonth }) {
+function PayrollMonthPanel({ filterMonth, setFilterMonth, onOpenExternal, onPeriodChanged }) {
   const { can } = useCan()
   const isPhone = useIsPhone()
   const perms = {
     generate: can("hr.payroll.generate"),
     bulk: can("hr.payroll.generateBulk"),
-    approve: can("hr.payroll.period.approve"),
+    ...periodPerms(can),
     slip: can("hr.payroll.payslip"),
     daysWorked: can("hr.payroll.daysWorked"),
   }
@@ -347,28 +382,43 @@ function PayrollMonthPanel({ filterMonth, setFilterMonth }) {
   // ลูกจ้างรายวันของเดือน { total, missing } — null = ไม่มีสิทธิ์ / backend ยังไม่รองรับ
   const [daily, setDaily] = useState(null)
   const [dailyWage, setDailyWage] = useState(null)
+  // ข้อความ 403 จาก backend — เดือนนี้ยังไม่ผ่านการตรวจขั้นแรก (ผช.ผจก./หัวหน้าฝ่ายบัญชี)
+  const [notVisible, setNotVisible] = useState("")
+  // กันคำตอบของเดือนก่อนมาทับเดือนที่เพิ่งเลือก
+  const latest = useRef({ list: 0, period: 0 })
 
   const fetchPayrolls = useCallback(() => {
     const { year, month } = splitMonth(filterMonth)
+    const req = ++latest.current.list
+    const current = () => req === latest.current.list
     setLoading(true)
     setError("")
     apiAuth(`/hr/payroll?month=${month}&year=${year}`)
-      .then((data) => setPayrolls(Array.isArray(data) ? data : []))
-      .catch((e) => setError(e.message || "โหลดข้อมูลไม่สำเร็จ"))
-      .finally(() => setLoading(false))
+      .then((data) => { if (current()) setPayrolls(Array.isArray(data) ? data : []) })
+      .catch((e) => {
+        if (!current()) return
+        setPayrolls([])
+        if (e.status === 403) setNotVisible(e.message || "ยังดูงวดนี้ไม่ได้")
+        else setError(e.message || "โหลดข้อมูลไม่สำเร็จ")
+      })
+      .finally(() => { if (current()) setLoading(false) })
   }, [filterMonth])
 
   const fetchPeriod = useCallback(() => {
     const { year, month } = splitMonth(filterMonth)
+    const req = ++latest.current.period
+    const current = () => req === latest.current.period
     setPeriodLoading(true)
     setPeriodError("")
     apiAuth(`/hr/payroll/periods/${year}/${month}`)
-      .then((d) => setPeriod(d && typeof d === "object" ? d : null))
+      .then((d) => { if (current()) setPeriod(d && typeof d === "object" ? d : null) })
       .catch((e) => {
+        if (!current()) return
         setPeriod(null)
-        if (e.status !== 404) setPeriodError(e.message || "โหลดสถานะงวดไม่สำเร็จ") // 404 = ยังไม่มีงวด → ร่าง
+        if (e.status === 403) setNotVisible(e.message || "ยังดูงวดนี้ไม่ได้")
+        else if (e.status !== 404) setPeriodError(e.message || "โหลดสถานะงวดไม่สำเร็จ") // 404 = ยังไม่มีงวด → ร่าง
       })
-      .finally(() => setPeriodLoading(false))
+      .finally(() => { if (current()) setPeriodLoading(false) })
   }, [filterMonth])
 
   const summarizeDaily = useCallback((list) => {
@@ -384,7 +434,7 @@ function PayrollMonthPanel({ filterMonth, setFilterMonth }) {
       .catch(() => setDaily(null)) // 404 = backend ยังไม่ migrate → ซ่อนส่วนรายวัน
   }, [filterMonth, perms.daysWorked, summarizeDaily])
 
-  const refresh = useCallback(() => { fetchPayrolls(); fetchPeriod(); fetchDaily() }, [fetchPayrolls, fetchPeriod, fetchDaily])
+  const refresh = useCallback(() => { setNotVisible(""); fetchPayrolls(); fetchPeriod(); fetchDaily() }, [fetchPayrolls, fetchPeriod, fetchDaily])
   useEffect(() => { refresh() }, [refresh])
   useEffect(() => { setSkipped([]) }, [filterMonth])
 
@@ -414,8 +464,10 @@ function PayrollMonthPanel({ filterMonth, setFilterMonth }) {
       if (action === "bulk" || action === "recalc") setSkipped(skip)
       setAction(null)
       refresh()
+      onPeriodChanged?.()
     } catch (err) {
       setActionErr(err.message || "ทำรายการไม่สำเร็จ")
+      if (err.status === 409) { fetchPeriod(); onPeriodChanged?.() } // สถานะงวด/ยอดที่ค้างอาจเปลี่ยนไปแล้ว
     } finally {
       setActionBusy(false)
     }
@@ -455,17 +507,34 @@ function PayrollMonthPanel({ filterMonth, setFilterMonth }) {
     />
   )
   const a = action ? ACTIONS[action] : null
+  // แถวที่ยังไม่บันทึกหักภายนอกในงวดร่าง — false จริง ๆ เท่านั้น (backend รุ่นเก่าไม่มี field นี้)
+  const notKeyed = (p) => isDraft && p.external_keyed === false
 
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="w-44">
-          <SelectDropdown value={filterMonth} onChange={setFilterMonth} options={MONTH_OPTIONS} placeholder="เลือกเดือน" />
-        </div>
+  const monthPicker = (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="w-44">
+        <SelectDropdown value={filterMonth} onChange={setFilterMonth} options={MONTH_OPTIONS} placeholder="เลือกเดือน" />
+      </div>
+      {!notVisible && (
         <p className="text-sm text-gray-500 dark:text-gray-400" aria-live="polite">
           {loading ? "กำลังโหลด…" : `${payrolls.length} รายการ`}
         </p>
+      )}
+    </div>
+  )
+
+  if (notVisible) {
+    return (
+      <div className="space-y-4">
+        {monthPicker}
+        <EmptyState title={`ยังดูงวด ${monthLabel} ไม่ได้`} description={notVisible} />
       </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {monthPicker}
 
       <PeriodCard
         ym={ym}
@@ -480,6 +549,7 @@ function PayrollMonthPanel({ filterMonth, setFilterMonth }) {
         onReturn={() => setReturning(ym)}
         onGenerateOne={() => setGenOpen(true)}
         onDaysWorked={() => setDaysOpen(true)}
+        onOpenExternal={onOpenExternal}
       />
 
       <SkippedPanel
@@ -495,7 +565,12 @@ function PayrollMonthPanel({ filterMonth, setFilterMonth }) {
           items={payrolls}
           keyOf={(p) => p.id}
           title={(p) => p.employee_name}
-          subtitle={(p) => [p.branch_name || `รหัส ${p.user_id}`, p.days_worked != null && `รายวัน ${daysWorkedText(p)}`].filter(Boolean).join(" · ")}
+          subtitle={(p) => (
+            <>
+              {[p.branch_name || `รหัส ${p.user_id}`, p.days_worked != null && `รายวัน ${daysWorkedText(p)}`].filter(Boolean).join(" · ")}
+              {notKeyed(p) && <span className="block text-amber-700 dark:text-amber-300">ยังไม่บันทึกหักภายนอก</span>}
+            </>
+          )}
           fields={[
             { label: "รายได้รวม", value: (p) => money(gross(p)), align: "right" },
             { label: "รายการหัก", value: (p) => (ded(p) == null ? "—" : money(ded(p))), align: "right" },
@@ -534,6 +609,7 @@ function PayrollMonthPanel({ filterMonth, setFilterMonth }) {
                           <span className="block text-xs text-gray-500 dark:text-gray-400">
                             {p.branch_name || `รหัส ${p.user_id}`}
                             {p.days_worked != null && <span className="tabular-nums"> · รายวัน {daysWorkedText(p)}</span>}
+                            {notKeyed(p) && <span className="text-amber-700 dark:text-amber-300"> · ยังไม่บันทึกหักภายนอก</span>}
                           </span>
                         </span>
                         <ChevronRight aria-hidden="true" className="size-4 text-gray-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100" />
@@ -617,58 +693,96 @@ function PayrollMonthPanel({ filterMonth, setFilterMonth }) {
 
 export default function HRPayrollTab() {
   const { can } = useCan()
-  const canApprove = can("hr.payroll.period.approve")
-  const canList = can("hr.payroll.list")
+  const actor = periodPerms(can)
+  const canAct = actor.checkAdmin || actor.checkAsst || actor.approve
+  const canView = can("hr.payroll.month.view")
   const [params, setParams] = useSearchParams()
   const [filterMonth, setFilterMonth] = useState(MONTH_OPTIONS[0].value)
   const [reviewCount, setReviewCount] = useState(null)
+  const [countTick, setCountTick] = useState(0)
+  // ตัวเลขที่ยังไม่บันทึกในแผงหักภายนอก — ถามก่อนสลับเดือน/แท็บย่อย
+  const externalGuard = useRef(null)
+  const [pendingLeave, setPendingLeave] = useState(null)
+  const guarded = (go) => {
+    if (externalGuard.current?.dirty > 0) setPendingLeave({ go, count: externalGuard.current.dirty })
+    else go()
+  }
 
-  // แท็บย่อย "รออนุมัติ" เฉพาะผู้อนุมัติ — ผู้อนุมัติที่ไม่ได้สร้างเงินเดือนเริ่มที่รออนุมัติ
+  // แท็บย่อย "รอตรวจสอบ/อนุมัติ" เฉพาะผู้ตรวจ/ผู้อนุมัติ — คนที่ไม่ได้สร้างเงินเดือนเริ่มที่แท็บนี้
+  // (หัวหน้าฝ่ายบัญชีไม่มีแท็บนี้จึงเริ่มที่งวดประจำเดือน)
   const subs = [
-    ...(canList ? [{ value: "month", label: "งวดประจำเดือน" }] : []),
-    ...(canApprove ? [{ value: "review", label: "รออนุมัติ", count: reviewCount || undefined }] : []),
+    ...(canView ? [{ value: "month", label: "งวดประจำเดือน" }] : []),
+    ...(canView ? [{ value: "external", label: "รายการหักภายนอก" }] : []),
+    ...(canAct ? [{ value: "review", label: "รอตรวจสอบ/อนุมัติ", count: reviewCount || undefined }] : []),
   ]
-  const fallback = canApprove && !can("hr.payroll.generate") ? "review" : subs[0]?.value
+  const fallback = canAct && !can("hr.payroll.generate") ? "review" : subs[0]?.value
   const raw = params.get("sub")
   const sub = subs.some((s) => s.value === raw) ? raw : fallback
 
-  const changeSub = (next) =>
+  const setSubParam = (next) =>
     setParams((prev) => { const p = new URLSearchParams(prev); p.set("sub", String(next)); return p }, { replace: true, state: keepBackState() })
+  const changeSub = (next) => guarded(() => setSubParam(next))
 
-  // รออนุมัติ → งวดของเดือนนั้น = drill-down: Topbar "‹ งวดรออนุมัติ" พากลับ
+  // รอตรวจสอบ/อนุมัติ → งวดของเดือนนั้น = drill-down: Topbar "‹ รอตรวจสอบ/อนุมัติ" พากลับ
   const { drillParams } = useDrill()
   const openMonth = (year, month) => {
     setFilterMonth(`${year}-${String(month).padStart(2, "0")}`)
-    drillParams((p) => { p.set("sub", "month"); return p }, "งวดรออนุมัติ")
+    drillParams((p) => { p.set("sub", "month"); return p }, "รอตรวจสอบ/อนุมัติ")
   }
+  const openExternal = () => drillParams((p) => { p.set("sub", "external"); return p }, "งวดประจำเดือน")
 
   const onCountChange = useCallback((n) => setReviewCount(n), [])
+  const onPeriodChanged = useCallback(() => setCountTick((t) => t + 1), [])
+  const { checkAdmin, checkAsst, approve } = actor
 
-  // จำนวนงวดที่รออนุมัติของปีนี้ บนหัวแท็บย่อย (แผง "รออนุมัติ" อัปเดตต่อเองเมื่ออนุมัติ/ส่งกลับ)
+  // จำนวนงวดที่รอผู้ใช้คนนี้ของปีนี้ บนหัวแท็บย่อย (แผงรอตรวจสอบ/อนุมัติ อัปเดตต่อเองเมื่อลงมือ)
   useEffect(() => {
-    if (!canApprove) return
+    if (!canAct) return
     let alive = true
     apiAuth(`/hr/payroll/periods?year=${now.getFullYear()}`)
-      .then((d) => { if (alive) setReviewCount(periodList(d).filter((p) => p.status === "review").length) })
+      .then((d) => { if (alive) setReviewCount(periodList(d).filter((p) => periodActionOf(p, { checkAdmin, checkAsst, approve }).action).length) })
       .catch(() => {})
     return () => { alive = false }
-  }, [canApprove])
+  }, [canAct, checkAdmin, checkAsst, approve, countTick])
 
-  if (subs.length <= 1) {
-    return sub === "review"
-      ? <HRPayrollReviewPanel onOpenMonth={openMonth} onCountChange={onCountChange} />
-      : <PayrollMonthPanel filterMonth={filterMonth} setFilterMonth={setFilterMonth} />
-  }
+  const panel = sub === "review"
+    ? <HRPayrollReviewPanel onOpenMonth={openMonth} onCountChange={onCountChange} />
+    : sub === "external"
+      ? (
+        <HRPayrollExternalPanel
+          filterMonth={filterMonth}
+          ym={splitMonth(filterMonth)}
+          monthOptions={MONTH_OPTIONS}
+          onMonthChange={(v) => guarded(() => setFilterMonth(v))}
+          guardRef={externalGuard}
+          onOpenMonth={() => setSubParam("month")}
+        />
+      )
+      : <PayrollMonthPanel filterMonth={filterMonth} setFilterMonth={setFilterMonth} onOpenExternal={openExternal} onPeriodChanged={onPeriodChanged} />
 
   return (
     <div className="space-y-5">
-      <Tabs items={subs} value={sub} onChange={changeSub} ariaLabel="จ่ายเงินเดือน" idBase={ID_BASE} />
-      <div role="tabpanel" id={panelId(ID_BASE, sub)} aria-labelledby={tabId(ID_BASE, sub)} tabIndex={0}
-        className="rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40">
-        {sub === "review"
-          ? <HRPayrollReviewPanel onOpenMonth={openMonth} onCountChange={onCountChange} />
-          : <PayrollMonthPanel filterMonth={filterMonth} setFilterMonth={setFilterMonth} />}
-      </div>
+      {subs.length > 1 && <Tabs items={subs} value={sub} onChange={changeSub} ariaLabel="จ่ายเงินเดือน" idBase={ID_BASE} />}
+      {subs.length > 1 ? (
+        <div role="tabpanel" id={panelId(ID_BASE, sub)} aria-labelledby={tabId(ID_BASE, sub)} tabIndex={0}
+          className="rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40">
+          {panel}
+        </div>
+      ) : panel}
+      <ConfirmDialog
+        open={!!pendingLeave}
+        title="ทิ้งตัวเลขที่ยังไม่บันทึก?"
+        description={`รายการหักภายนอกที่แก้ไว้ ${pendingLeave?.count ?? 0} คนยังไม่ได้บันทึก ถ้าออกตอนนี้ตัวเลขที่พิมพ์จะหายไป`}
+        confirmLabel="ทิ้งแล้วออก"
+        cancelLabel="กลับไปบันทึก"
+        tone="danger"
+        onConfirm={() => {
+          externalGuard.current?.discard()
+          pendingLeave?.go()
+          setPendingLeave(null)
+        }}
+        onCancel={() => setPendingLeave(null)}
+      />
     </div>
   )
 }

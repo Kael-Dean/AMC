@@ -11,7 +11,7 @@ import { Link } from "react-router-dom"
 import { ChevronRight } from "lucide-react"
 import { apiAuth } from "../../lib/api"
 import { useCan } from "../../lib/permissions"
-import { money, toNum } from "../../lib/payroll"
+import { money, reserveRateText, toNum } from "../../lib/payroll"
 import { fmtDate, fmtLevel, reasonLabel } from "../../components/hr/positionUtils"
 import { cardCls, cx, focusRingCls } from "../../lib/styles"
 import { EmptyState, ErrorState, SkeletonText } from "../../components/ui"
@@ -22,6 +22,7 @@ import { getTenure, tenureText } from "../../lib/tenure"
 
 // ─── a) ค่าที่บันทึกไว้ ────────────────────────────────────────────────────────
 // `always` = แสดงแม้เป็น 0 (ให้เห็นว่าไม่มีรายการนี้), ไม่งั้นแสดงเฉพาะที่มีค่า
+// `onlyIfPresent` = ซ่อนเมื่อ backend ยังไม่ส่ง field นี้ · `text` = แสดงเป็นข้อความแทนจำนวนเงิน (ไม่มีเครื่องหมายลบ)
 const INCOME_ON_FILE = [
   { key: "current_salary", label: "เงินเดือน", always: true, strong: true },
   { key: "position_allowance", label: "ค่าตำแหน่ง", always: true },
@@ -29,13 +30,11 @@ const INCOME_ON_FILE = [
 ]
 
 const DEDUCTIONS_ON_FILE = [
+  // null = ไม่ได้ขอให้หัก (0)
+  { key: "tax_withholding_override", label: "ภาษีเงินได้", always: true, onlyIfPresent: true, nullIsZero: true },
+  { key: "reserve_rate_pct", label: "เงินสะสม", always: true, onlyIfPresent: true, text: reserveRateText },
   { key: "current_ss", label: "ประกันสังคม", always: true },
-  // 0 = ใช้อัตรา % ตามการตั้งค่าการคำนวณเงินเดือน (ดู FinancialEditSheet)
-  { key: "current_reserve", label: "เงินสะสม", always: true, zeroText: "ตามอัตรา % ที่ตั้งไว้" },
-  { key: "current_prov", label: "กองทุนสงเคราะห์พนักงาน", always: true },
-  { key: "current_loan", label: "เงินกู้สหกรณ์", always: true },
-  { key: "current_slf", label: "กยศ.", always: true },
-  { key: "current_wg", label: "รายการหักอื่น ๆ" },
+  { key: "current_loan", label: "หนี้เงินกู้กองทุนสงเคราะห์เจ้าหน้าที่", always: true },
 ]
 
 function fmtUpdated(iso) {
@@ -46,14 +45,14 @@ function fmtUpdated(iso) {
 }
 
 function OnFileLines({ title, lines, fin, minus }) {
-  const shown = lines.filter((l) => l.always || toNum(fin[l.key]) !== 0)
+  const shown = lines.filter((l) => (l.onlyIfPresent && fin[l.key] === undefined ? false : l.always || toNum(fin[l.key]) !== 0))
   return (
     <section aria-label={title}>
       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400">{title}</h3>
       <dl className="mt-1.5 divide-y divide-gray-100 dark:divide-line">
         {shown.map((l) => {
-          const v = fin[l.key]
-          const zero = toNum(v) === 0
+          const v = l.nullIsZero ? (fin[l.key] ?? 0) : fin[l.key]
+          const zero = !l.text && toNum(v) === 0
           return (
             <div key={l.key} className="flex items-baseline justify-between gap-4 py-2 text-sm">
               <dt className={cx(l.strong ? "font-medium text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300")}>{l.label}</dt>
@@ -64,7 +63,7 @@ function OnFileLines({ title, lines, fin, minus }) {
                   l.strong && "text-base font-semibold",
                 )}
               >
-                {v == null && !l.strong ? "—" : zero && l.zeroText ? l.zeroText : zero && !l.strong ? "ไม่มี" : `${minus ? "−" : ""}${money(v ?? 0)}`}
+                {l.text ? l.text(v) : v == null && !l.strong ? "—" : zero && !l.strong ? "ไม่มี" : `${minus ? "−" : ""}${money(v ?? 0)}`}
               </dd>
             </div>
           )
@@ -137,7 +136,12 @@ function OnFileCard() {
         ) : (
           <div className="grid gap-5 md:grid-cols-2 md:gap-8">
             <OnFileLines title="รายได้ประจำ" lines={INCOME_ON_FILE} fin={data} />
-            <OnFileLines title="รายการหักประจำ" lines={DEDUCTIONS_ON_FILE} fin={data} minus />
+            <div>
+              <OnFileLines title="รายการหักประจำ" lines={DEDUCTIONS_ON_FILE} fin={data} minus />
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                กยศ. สหกรณ์ออมทรัพย์ ชมรมเจ้าหน้าที่ และอื่นๆ เปลี่ยนทุกเดือน ดูยอดจริงได้ในสลิปเงินเดือน
+              </p>
+            </div>
           </div>
         )}
       </div>

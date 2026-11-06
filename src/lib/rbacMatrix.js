@@ -126,6 +126,9 @@ export const PERMISSION_MATRIX = Object.freeze({
   // งวด 3 (3C) — เพิ่มตาม api-handoff ระหว่างรอ rbac_matrix.py ฉบับใหม่ (ยังไม่มีเลขฟังก์ชัน) — คัดลอกไฟล์จาก backend ทับได้เลย
   "payroll.settings": { no: null, roles: [117] },
   "payroll.period.approve": { no: null, roles: [101] },
+  "payroll.check.admin": { no: null, roles: [106] },
+  "payroll.check.asst": { no: null, roles: [102, 103] },
+  "payroll.view.accounting": { no: null, roles: [104] },
   "position.view": { no: 68, roles: [101, 102, 103, 117] },
   "position.edit": { no: 69, roles: [101, 106, 117] },
   "position.change": { no: 70, roles: [101, 117] },

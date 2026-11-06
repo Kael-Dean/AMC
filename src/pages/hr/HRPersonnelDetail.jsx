@@ -27,11 +27,37 @@ import PersonnelDisciplineTab from "./tabs/PersonnelDisciplineTab"
 import PersonnelPayBasisTab from "./tabs/PersonnelPayBasisTab"
 import PersonnelActivitiesTab from "./tabs/PersonnelActivitiesTab"
 import { getTenure, tenureText } from "../../lib/tenure"
+import { reserveRateText } from "../../lib/payroll"
 import PrefixedNameInput from "../../components/PrefixedNameInput"
 import SelectDropdown from "../../components/SelectDropdown"
 import { ALL_PREFIX_OPTIONS, genderOfPrefix, prefixOf } from "../../lib/namePrefix"
 
 const CHILD_PREFIX_GENDER = { ชาย: "male", หญิง: "female" }
+// value "" = ยังไม่เลือก — คงตัวเลือกนี้ไว้เพื่อล้างค่าที่เลือกไปแล้วได้
+const SPOUSE_MARRIAGE_OPTIONS = [
+  { value: "", label: "— เลือกสถานภาพ —" },
+  { value: "registered", label: "จดทะเบียนสมรส" },
+  { value: "unregistered", label: "ไม่ได้จดทะเบียน" },
+]
+const CHILD_LEGAL_STATUS_OPTIONS = [
+  { value: "", label: "— เลือกสถานะ —" },
+  { value: "legitimate", label: "บุตรชอบด้วยกฎหมาย" },
+  { value: "illegitimate", label: "บุตรนอกกฎหมาย" },
+  { value: "adopted", label: "บุตรบุญธรรม" },
+]
+const PARENT_TYPE_OPTIONS = [
+  { value: "", label: "— เลือก —" },
+  { value: "father", label: "บิดา" },
+  { value: "mother", label: "มารดา" },
+]
+const PARENT_EMPLOYMENT_OPTIONS = [
+  { value: "", label: "— เลือกสถานะ —" },
+  { value: "working", label: "ทำงาน" },
+  { value: "retired", label: "เกษียณ" },
+  { value: "deceased", label: "เสียชีวิต" },
+  { value: "unknown", label: "ไม่ทราบ" },
+]
+
 const CHILD_GENDER_OPTIONS = [
   { value: "male", label: "ชาย" },
   { value: "female", label: "หญิง" },
@@ -378,15 +404,11 @@ export default function HRPersonnelDetail() {
           <InfoRow label="เงินเดือนปัจจุบัน" value={fmt(fin.current_salary)} />
           <InfoRow label="เงินกู้คงเหลือ" value={fmt(fin.current_loan)} />
           <InfoRow label="ประกันสังคม" value={fmt(fin.current_ss)} />
-          <InfoRow label="กองทุนสงเคราะห์พนักงาน" value={fmt(fin.current_prov)} />
-          {fin.current_reserve !== undefined && (
-            <InfoRow label="เงินสะสม/เดือน" value={Number(fin.current_reserve) > 0 ? fmt(fin.current_reserve) : "ตามอัตรา % ในการตั้งค่า"} />
-          )}
           {fin.tax_withholding_override !== undefined && (
-            <InfoRow label="ภาษีหัก ณ ที่จ่ายคงที่/เดือน" value={fin.tax_withholding_override != null ? fmt(fin.tax_withholding_override) : "ใช้ภาษีที่ระบบคำนวณ"} />
+            <InfoRow label="ภาษีเงินได้" value={fmt(fin.tax_withholding_override ?? 0)} />
           )}
-          {fin.tax_extra_allowance !== undefined && (
-            <InfoRow label="ค่าลดหย่อนเพิ่มเติม/ปี" value={fmt(fin.tax_extra_allowance ?? 0)} />
+          {fin.reserve_rate_pct !== undefined && (
+            <InfoRow label="เงินสะสม %" value={reserveRateText(fin.reserve_rate_pct)} />
           )}
         </div>
       )}
@@ -622,16 +644,16 @@ export default function HRPersonnelDetail() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">สถานภาพการสมรส</label>
-                    <select
-                      className={inputCls}
+                    <label htmlFor="family-spouse-marriage" className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">สถานภาพการสมรส</label>
+                    <SelectDropdown
+                      size="sm"
                       value={familyForm.spouse?.spouse_marriage_status ?? ""}
-                      onChange={(e) => setFamilyForm((p) => ({ ...p, spouse: { ...p.spouse, spouse_marriage_status: e.target.value } }))}
-                    >
-                      <option value="">— เลือกสถานภาพ —</option>
-                      <option value="registered">จดทะเบียนสมรส</option>
-                      <option value="unregistered">ไม่ได้จดทะเบียน</option>
-                    </select>
+                      onChange={(v) => setFamilyForm((p) => ({ ...p, spouse: { ...p.spouse, spouse_marriage_status: v } }))}
+                      placeholder="— เลือกสถานภาพ —"
+                      id="family-spouse-marriage" ariaLabel="สถานภาพการสมรส"
+                      showSwatch={false}
+                      options={SPOUSE_MARRIAGE_OPTIONS}
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">เบอร์โทรคู่สมรส</label>
@@ -707,17 +729,16 @@ export default function HRPersonnelDetail() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">สถานะบุตร</label>
-                      <select
-                        className={inputCls}
-                        value={child.child_legal_status}
-                        onChange={(e) => setFamilyForm((p) => { const next = [...p.children]; next[i] = { ...next[i], child_legal_status: e.target.value }; return { ...p, children: next } })}
-                      >
-                        <option value="">— เลือกสถานะ —</option>
-                        <option value="legitimate">บุตรชอบด้วยกฎหมาย</option>
-                        <option value="illegitimate">บุตรนอกกฎหมาย</option>
-                        <option value="adopted">บุตรบุญธรรม</option>
-                      </select>
+                      <label htmlFor={`family-child-${i}-legal-status`} className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">สถานะบุตร</label>
+                      <SelectDropdown
+                        size="sm"
+                        value={child.child_legal_status ?? ""}
+                        onChange={(v) => setFamilyForm((p) => { const next = [...p.children]; next[i] = { ...next[i], child_legal_status: v }; return { ...p, children: next } })}
+                        placeholder="— เลือกสถานะ —"
+                        id={`family-child-${i}-legal-status`} ariaLabel="สถานะบุตร"
+                        showSwatch={false}
+                        options={CHILD_LEGAL_STATUS_OPTIONS}
+                      />
                     </div>
                   </div>
                 </div>
@@ -750,16 +771,16 @@ export default function HRPersonnelDetail() {
                     </button>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">ประเภท</label>
-                        <select
-                          className={inputCls}
-                          value={parent.parent_type}
-                          onChange={(e) => setFamilyForm((p) => { const next = [...p.parents]; next[i] = { ...next[i], parent_type: e.target.value }; return { ...p, parents: next } })}
-                        >
-                          <option value="">— เลือก —</option>
-                          {!usedTypes.includes("father") || parent.parent_type === "father" ? <option value="father">บิดา</option> : null}
-                          {!usedTypes.includes("mother") || parent.parent_type === "mother" ? <option value="mother">มารดา</option> : null}
-                        </select>
+                        <label htmlFor={`family-parent-${i}-type`} className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">ประเภท</label>
+                        <SelectDropdown
+                          size="sm"
+                          value={parent.parent_type ?? ""}
+                          onChange={(v) => setFamilyForm((p) => { const next = [...p.parents]; next[i] = { ...next[i], parent_type: v }; return { ...p, parents: next } })}
+                          placeholder="— เลือก —"
+                          id={`family-parent-${i}-type`} ariaLabel="ประเภทบิดามารดา"
+                          showSwatch={false}
+                          options={PARENT_TYPE_OPTIONS.filter((o) => o.value === "" || !usedTypes.includes(o.value) || parent.parent_type === o.value)}
+                        />
                       </div>
                       <div>
                         <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">ชื่อ-นามสกุล</label>
@@ -782,18 +803,16 @@ export default function HRPersonnelDetail() {
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">สถานะการทำงาน</label>
-                        <select
-                          className={inputCls}
-                          value={parent.parent_employment_status}
-                          onChange={(e) => setFamilyForm((p) => { const next = [...p.parents]; next[i] = { ...next[i], parent_employment_status: e.target.value }; return { ...p, parents: next } })}
-                        >
-                          <option value="">— เลือกสถานะ —</option>
-                          <option value="working">ทำงาน</option>
-                          <option value="retired">เกษียณ</option>
-                          <option value="deceased">เสียชีวิต</option>
-                          <option value="unknown">ไม่ทราบ</option>
-                        </select>
+                        <label htmlFor={`family-parent-${i}-employment`} className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">สถานะการทำงาน</label>
+                        <SelectDropdown
+                          size="sm"
+                          value={parent.parent_employment_status ?? ""}
+                          onChange={(v) => setFamilyForm((p) => { const next = [...p.parents]; next[i] = { ...next[i], parent_employment_status: v }; return { ...p, parents: next } })}
+                          placeholder="— เลือกสถานะ —"
+                          id={`family-parent-${i}-employment`} ariaLabel="สถานะการทำงาน"
+                          showSwatch={false}
+                          options={PARENT_EMPLOYMENT_OPTIONS}
+                        />
                       </div>
                     </div>
                   </div>

@@ -1,5 +1,6 @@
 // src/components/hr/ReturnPeriodSheet.jsx
-// ผู้จัดการส่งงวดเงินเดือนกลับเป็น "ร่าง" — POST /hr/payroll/periods/{y}/{m}/return { reason } (ต้องระบุเหตุผล)
+// ผู้ตรวจ/ผู้อนุมัติส่งงวดเงินเดือนกลับเป็น "ร่าง" — POST /hr/payroll/periods/{y}/{m}/return { reason } (ต้องระบุเหตุผล)
+// ใครส่งกลับได้ในขั้นไหน ตัดสินที่ periodActionFor (lib/payroll.js); ผลการตรวจทุกขั้นจะถูกล้าง
 import { useEffect, useId, useRef, useState } from "react"
 import { apiAuth } from "../../lib/api"
 import { fmtPayMonth } from "../../lib/payroll"
@@ -61,7 +62,7 @@ export default function ReturnPeriodSheet({ period, onClose, onDone }) {
     >
       <div ref={bodyRef} className="space-y-3">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          งวดจะกลับเป็น <span className="font-medium text-gray-900 dark:text-gray-100">ร่าง</span> เพื่อให้ฝ่ายบุคคลแก้ไขแล้วส่งตรวจสอบใหม่
+          งวดจะกลับเป็น <span className="font-medium text-gray-900 dark:text-gray-100">ร่าง</span> และผลการตรวจทุกขั้นจะถูกล้าง ฝ่ายบุคคลแก้ไขแล้วส่งตรวจสอบใหม่ตั้งแต่ขั้นแรก
         </p>
         <div>
           <label htmlFor={id} className={cx(labelCls, "md:!text-sm")}>เหตุผลที่ส่งกลับ <span className="text-red-600 dark:text-red-400">*</span></label>

@@ -3,9 +3,12 @@
 // ข้อมูลกลางของงานเงินเดือน (งวด 3 · 3C) — ใช้ร่วมกันระหว่างหน้า HR, ผู้จัดการ และสลิปของพนักงาน
 //
 //   ปีใน /hr/payroll* เป็น ค.ศ. เสมอ (ส่ง พ.ศ. → 422) — แปลงเป็น พ.ศ. เฉพาะตอนแสดงผล
-//   งวด: draft (ร่าง) → review (ตรวจสอบ) → approved (อนุมัติ) → closed (ปิดงวด)
+//   งวด: draft (ร่าง: HR สร้าง + บันทึกหักภายนอก) → review (หัวหน้าฝ่ายอำนวยการตรวจ) → admin_checked (ผช.ผจก. ตรวจ)
+//        → asst_checked (ผจก. อนุมัติ) → approved (HR ปิดงวด) → closed — ส่งกลับได้เฉพาะคนที่ถึงขั้นของตน (periodActionFor)
 //   gross_income = เงินเดือน + ค่าตำแหน่ง + add_pending + add_holiday_pay + add_back_pay + add_welfare (3P)
-//   สุทธิ = gross − (ภาษี + ประกันสังคม + เงินสะสม + กองทุนสงเคราะห์พนักงาน + เงินกู้ + กยศ. + งดจ่ายเงิน + งดจ่าย (พักงาน) 3Q)
+//   สุทธิ = gross − (หักภายใน: ภาษีเงินได้ + เงินสะสม + ประกันสังคม + กองทุนสงเคราะห์เจ้าหน้าที่ + หนี้เงินกู้กองทุนฯ
+//                  + หักภายนอก: กยศ. + สหกรณ์ออมทรัพย์ + เงินกู้ชมรม + อื่นๆ
+//                  + งดจ่ายเงิน (ลาเกินสิทธิ์) + งดจ่าย (พักงาน) 3Q)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const TH_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
@@ -46,14 +49,19 @@ export function fmtDateTime(iso) {
 
 // ─── งวดเงินเดือน ─────────────────────────────────────────────────────────────
 
+/** ป้ายสั้นบน stepper — ป้ายสถานะจริงบน badge ใช้ status_label ของ backend เสมอ (periodLabel) */
 export const PERIOD_STEPS = [
   { key: "draft", label: "ร่าง" },
-  { key: "review", label: "ตรวจสอบ" },
-  { key: "approved", label: "อนุมัติ" },
+  { key: "review", label: "ฝ่ายอำนวยการตรวจ" },
+  { key: "admin_checked", label: "ผช.ผจก.ตรวจ" },
+  { key: "asst_checked", label: "ผจก.อนุมัติ" },
+  { key: "approved", label: "อนุมัติแล้ว" },
   { key: "closed", label: "ปิดงวด" },
 ]
 
-export const PERIOD_TONE = { draft: "neutral", review: "pending", approved: "info", closed: "success" }
+export const PERIOD_TONE = {
+  draft: "neutral", review: "pending", admin_checked: "pending", asst_checked: "pending", approved: "info", closed: "success",
+}
 
 export const periodStepIndex = (status) => Math.max(0, PERIOD_STEPS.findIndex((s) => s.key === status))
 
@@ -61,6 +69,72 @@ export const periodLabel = (p) => p?.status_label || PERIOD_STEPS.find((s) => s.
 
 /** GET /hr/payroll/periods อาจตอบเป็น array หรือ { items } */
 export const periodList = (d) => (Array.isArray(d) ? d : Array.isArray(d?.items) ? d.items : Array.isArray(d?.periods) ? d.periods : [])
+
+/** สิทธิ์ที่ตัดสินว่าใครลงมือในขั้นไหน — ส่ง can จาก useCan() เข้ามา */
+export const periodPerms = (can) => ({
+  checkAdmin: can("hr.payroll.check.admin"),
+  checkAsst: can("hr.payroll.check.asst"),
+  approve: can("hr.payroll.period.approve"),
+})
+
+/**
+ * งวดจาก backend รุ่นก่อน PR 74 (ไม่มี external_missing): ยังเป็น review → approve ขั้นเดียว
+ * หน้าเว็บอาจ deploy ก่อน backend — ถ้าไม่แยก ผู้จัดการจะกดอนุมัติงวดไม่ได้เลย
+ */
+export const isLegacyPeriod = (p) => p != null && p.external_missing === undefined
+
+/**
+ * จุดเดียวที่ตัดสินว่าผู้ใช้คนนี้ทำอะไรกับงวดได้ — ไม่มีคีย์นี้ = ไม่มีปุ่ม (หัวหน้าฝ่ายบัญชีจึงไม่มีปุ่มเสมอ)
+ * ตรงกับ _RETURN_FROM ของ backend: แต่ละคนส่งกลับได้เฉพาะขั้นของตน + ผู้จัดการที่ approved
+ * @returns {{ action: "adminCheck"|"asstCheck"|"approve"|null, canReturn: boolean }}
+ */
+export function periodActionFor(status, perms, { legacy = false } = {}) {
+  const act = (allowed, action) => (allowed ? { action, canReturn: true } : { action: null, canReturn: false })
+  switch (status) {
+    case "review": return legacy ? act(perms.approve, "approve") : act(perms.checkAdmin, "adminCheck")
+    case "admin_checked": return act(perms.checkAsst, "asstCheck")
+    case "asst_checked": return act(perms.approve, "approve")
+    case "approved": return act(perms.approve, null)
+    default: return { action: null, canReturn: false }
+  }
+}
+
+export const periodActionOf = (period, perms) => periodActionFor(period?.status, perms, { legacy: isLegacyPeriod(period) })
+
+/** ข้อความสำหรับคนที่ไม่ได้อยู่ในขั้นนี้ — บอกว่ากำลังรอใคร */
+export function periodWaitingOn(period) {
+  switch (period?.status) {
+    case "review": return isLegacyPeriod(period) ? "รอผู้จัดการตรวจสอบ" : "รอหัวหน้าฝ่ายอำนวยการตรวจสอบ"
+    case "admin_checked": return "รอผู้ช่วยผู้จัดการตรวจสอบ"
+    case "asst_checked": return "รอผู้จัดการอนุมัติ"
+    default: return null
+  }
+}
+
+/** ปุ่มขั้นตรวจสอบ/อนุมัติ — ใช้ร่วมกันระหว่างการ์ดงวดและแผงรอตรวจสอบ/อนุมัติ */
+export const PERIOD_STEP_ACTIONS = {
+  adminCheck: {
+    path: ({ year, month }) => `/hr/payroll/periods/${year}/${month}/admin-check`,
+    title: (l) => `ยืนยันการตรวจสอบงวด ${l}`,
+    description: "งวดจะส่งต่อให้ผู้ช่วยผู้จัดการตรวจสอบ และหัวหน้าฝ่ายบัญชีจะเริ่มดูและดาวน์โหลดรายงานของเดือนนี้ได้",
+    confirmLabel: "ตรวจสอบผ่าน", loadingLabel: "กำลังบันทึก…", success: "ตรวจสอบงวดแล้ว", next: "ส่งต่อให้ผู้ช่วยผู้จัดการแล้ว",
+  },
+  asstCheck: {
+    path: ({ year, month }) => `/hr/payroll/periods/${year}/${month}/asst-check`,
+    title: (l) => `ยืนยันการตรวจสอบงวด ${l}`,
+    description: "งวดจะส่งต่อให้ผู้จัดการอนุมัติ",
+    confirmLabel: "ตรวจสอบผ่าน", loadingLabel: "กำลังบันทึก…", success: "ตรวจสอบงวดแล้ว", next: "ส่งต่อให้ผู้จัดการแล้ว",
+  },
+  approve: {
+    path: ({ year, month }) => `/hr/payroll/periods/${year}/${month}/approve`,
+    title: (l) => `อนุมัติงวด ${l}`,
+    description: "เมื่ออนุมัติ เจ้าหน้าที่จะเห็นสลิปของเดือนนี้ทันที และฝ่ายบุคคลจะแก้ไขเงินเดือนไม่ได้จนกว่าจะส่งกลับ",
+    confirmLabel: "อนุมัติ", loadingLabel: "กำลังอนุมัติ…", success: "อนุมัติงวดแล้ว", next: "เจ้าหน้าที่เห็นสลิปของเดือนนี้แล้ว",
+  },
+}
+
+/** เงินสะสมของคนนี้ (reserve_rate_pct) — null = อัตราขั้นต่ำ */
+export const reserveRateText = (v) => (v == null || v === "" ? "5% (ขั้นต่ำ)" : `${Number(v)}%`)
 
 // ─── บรรทัดในสลิป ────────────────────────────────────────────────────────────
 
@@ -81,18 +155,33 @@ export const EXTRA_LEAVE_LABEL = "งดจ่ายเงิน (ลาเก�
 /** deduct_suspension (3Q) — ใช้คำว่า "งดจ่าย" เช่นเดียวกัน */
 export const SUSPENSION_LABEL = "งดจ่าย (พักงาน)"
 
-/** รายการหัก — ลำดับเดียวกับสลิป PDF */
-export const DEDUCTION_LINES = [
-  { key: "income_tax", label: "ภาษีหัก ณ ที่จ่าย" },
-  { key: "deduct_ss", label: "ประกันสังคม" },
+/** รายการหักภายใน — ระบบรู้ยอดเอง · ลำดับและป้ายเดียวกับสลิป PDF */
+export const INTERNAL_DEDUCTION_LINES = [
+  { key: "income_tax", label: "ภาษีเงินได้" },
   { key: "deduct_reserve", label: "เงินสะสม" },
-  { key: "deduct_prov", label: "กองทุนสงเคราะห์พนักงาน" },
-  { key: "deduct_loan", label: "เงินกู้" },
+  { key: "deduct_ss", label: "ประกันสังคม" },
+  // ชื่อ field เดิม deduct_prov (เคยเป็นกองทุนสำรองเลี้ยงชีพ) — backend คงไว้
+  { key: "deduct_prov", label: "กองทุนสงเคราะห์เจ้าหน้าที่" },
+  { key: "deduct_loan", label: "หนี้เงินกู้กองทุนสงเคราะห์เจ้าหน้าที่" },
+]
+
+/** รายการหักภายนอก — ฝ่ายบุคคลบันทึกรายเดือนจากเอกสาร (HRPayrollExternalPanel) */
+export const EXTERNAL_DEDUCTION_LINES = [
   { key: "deduct_slf", label: "กยศ." },
+  { key: "deduct_coop", label: "เงินนำส่งสหกรณ์ออมทรัพย์" },
+  { key: "deduct_club_loan", label: "เงินกู้ชมรมเจ้าหน้าที่" },
+  { key: "deduct_other", label: "อื่นๆ", noteKey: "deduct_other_note" },
+]
+
+/** งดจ่าย — ไม่ใช่ "หักเงิน" (ดู EXTRA_LEAVE_LABEL) */
+export const UNPAID_DEDUCTION_LINES = [
   { key: "deduct_extra_leave", label: EXTRA_LEAVE_LABEL },
   // 3Q — คำสั่งพักงาน (ขั้น 6): อัตรารายวัน × วันทำงานที่ถูกพักในเดือนนั้น
   { key: "deduct_suspension", label: SUSPENSION_LABEL },
 ]
+
+/** ทุกบรรทัดที่หักจากรายได้รวม */
+export const DEDUCTION_LINES = [...INTERNAL_DEDUCTION_LINES, ...EXTERNAL_DEDUCTION_LINES, ...UNPAID_DEDUCTION_LINES]
 
 /** ยอดหักรวม — ใช้ค่าจาก backend ถ้ามี, ไม่งั้นรวมจากบรรทัด, ไม่มีบรรทัดเลย → gross − net */
 export function totalDeductions(p) {
@@ -105,6 +194,93 @@ export function totalDeductions(p) {
 }
 
 export const netOf = (p) => p?.final_payout ?? p?.net_payout ?? null
+
+// ─── บันทึกรายการหักภายนอก (GET/PUT /hr/payroll/external/{y}/{m}) ───────────────
+//   คิดเป็นสตางค์ (จำนวนเต็ม) ทั้งหมด เพื่อไม่ให้ทศนิยมลอยตัวทำยอดเพี้ยน
+//   ฟอร์มหนึ่งคน = { slf, coop, club_loan, other, other_note } เป็น string ตามที่พิมพ์
+
+export const EXTERNAL_AMOUNT_COLUMNS = [
+  { key: "slf", label: "กยศ.", short: "กยศ." },
+  { key: "coop", label: "เงินนำส่งสหกรณ์ออมทรัพย์", short: "สหกรณ์ออมทรัพย์" },
+  { key: "club_loan", label: "เงินกู้ชมรมเจ้าหน้าที่", short: "ชมรมเจ้าหน้าที่" },
+  { key: "other", label: "อื่นๆ", short: "อื่นๆ" },
+]
+
+const AMOUNT_KEYS = EXTERNAL_AMOUNT_COLUMNS.map((c) => c.key)
+const AMOUNT_PATTERN = /^(\d+(\.\d{0,2})?|\.\d{1,2})$/
+const MAX_AMOUNT_CENTS = 999999999999 // Numeric(12, 2)
+const cleanAmount = (v) => String(v ?? "").replace(/,/g, "").trim()
+const savedCents = (v) => Math.round(toNum(v) * 100)
+
+/** ที่พิมพ์ → สตางค์ · ว่าง = 0 · รูปแบบผิด = NaN ("1,500" และ "700.5" ใช้ได้) */
+export function amountCents(v) {
+  const s = cleanAmount(v)
+  if (s === "") return 0
+  if (!AMOUNT_PATTERN.test(s)) return NaN
+  const [whole, frac = ""] = s.split(".")
+  return Number(whole || 0) * 100 + Number(frac.padEnd(2, "0"))
+}
+
+const amountInputText = (v) => {
+  const n = toNum(v)
+  return Number.isInteger(n) ? String(n) : n.toFixed(2)
+}
+
+/** แถวจาก backend → ค่าในฟอร์ม — ยังไม่ keyed แสดงช่องว่าง (backend ส่ง 0 มา แต่ยังไม่ได้แปลว่ากรอก 0) */
+export const externalFormFrom = (row) => ({
+  ...Object.fromEntries(AMOUNT_KEYS.map((k) => [k, row.keyed ? amountInputText(row[k]) : ""])),
+  other_note: row.other_note ?? "",
+})
+
+export const externalIsBlank = (f) => AMOUNT_KEYS.every((k) => cleanAmount(f?.[k]) === "")
+
+/** ใช้รายละเอียดเฉพาะเมื่อ "อื่นๆ" > 0 (ช่องปิดเมื่อเป็น 0) */
+const effectiveNote = (f) => (amountCents(f?.other) > 0 ? String(f?.other_note ?? "").trim() : "")
+
+/**
+ * ต้องบันทึกแถวนี้ไหม — ยังไม่ keyed: พิมพ์อะไรก็นับ รวมถึง 0 (ว่างทุกช่อง = ไม่ส่ง)
+ * keyed แล้ว: เทียบตัวเลข ("700.50" == "700.5"), ช่องว่าง = 0
+ */
+export function externalIsDirty(row, f) {
+  if (!f) return false
+  if (!row.keyed) return !externalIsBlank(f)
+  if (AMOUNT_KEYS.some((k) => amountCents(f[k]) !== savedCents(row[k]))) return true
+  const savedNote = savedCents(row.other) > 0 ? String(row.other_note ?? "").trim() : ""
+  return effectiveNote(f) !== savedNote
+}
+
+/** ข้อผิดพลาดของแถว { slf?, coop?, club_loan?, other?, other_note? } — ไม่มี = {} */
+export function externalErrors(f) {
+  const errs = {}
+  for (const k of AMOUNT_KEYS) {
+    const c = amountCents(f[k])
+    if (Number.isNaN(c)) errs[k] = "ตัวเลข ≥ 0 ทศนิยมไม่เกิน 2 ตำแหน่ง"
+    else if (c > MAX_AMOUNT_CENTS) errs[k] = "ยอดสูงเกินไป"
+  }
+  if (!errs.other && amountCents(f.other) > 0 && !effectiveNote(f)) errs.other_note = "ระบุรายละเอียด"
+  return errs
+}
+
+/** แถวที่ผ่าน externalErrors → entry ของ PUT — ส่งครบทุกช่องเสมอ เพราะ entry แทนที่ยอดทั้งสี่ของคนนั้น */
+export const externalEntry = (row, f) => ({
+  employee_id: row.employee_id,
+  ...Object.fromEntries(AMOUNT_KEYS.map((k) => [k, (amountCents(f[k]) / 100).toFixed(2)])),
+  other_note: effectiveNote(f) || null,
+})
+
+/** รวมสตางค์รายช่อง + total — ช่องที่พิมพ์ผิดนับเป็น 0 (จะถูก externalErrors กันก่อนบันทึก) */
+export function externalTotals(forms) {
+  const totals = { total: 0, ...Object.fromEntries(AMOUNT_KEYS.map((k) => [k, 0])) }
+  for (const f of forms) {
+    for (const k of AMOUNT_KEYS) {
+      const c = amountCents(f?.[k])
+      if (!Number.isNaN(c)) { totals[k] += c; totals.total += c }
+    }
+  }
+  return totals
+}
+
+export const moneyFromCents = (c) => money(c / 100)
 
 // ─── ลูกจ้างรายวัน (3C daily-paid, migration section21C2_payroll_daily) ─────────
 //   financial.pay_basis "monthly" | "daily" — รายวันได้ ค่าจ้างรายวัน (settings.daily_wage, ค่าเริ่มต้น 351) × วันที่ HR บันทึก

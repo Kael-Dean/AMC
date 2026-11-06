@@ -1,12 +1,14 @@
 // src/components/hr/FinancialEditSheet.jsx
 // ─────────────────────────────────────────────────────────────────────────────
 // แก้ไขข้อมูลการเงินพื้นฐานของเจ้าหน้าที่ — ใช้ร่วมกันใน HRFinance และ HRPersonnelDetail
-//   GET  /hr/employees/{id}/financial   (ค่าล่าสุด รวม field ภาษีใหม่ของงวด 3 · 3C)
-//   POST /hr/financial/{id}             (บันทึก)
+//   GET  /hr/employees/{id}/financial   (ค่าล่าสุด)
+//   POST /hr/financial/{id}             (บันทึก — backend ทิ้งค่า null ยกเว้น tax_withholding_override)
 //
-//   current_reserve            เงินสะสม บาท/เดือน — 0 = ใช้อัตรา % ในการตั้งค่าการคำนวณเงินเดือน
-//   tax_withholding_override   ภาษีหัก ณ ที่จ่ายคงที่/เดือน — ว่าง = null (ใช้ภาษีที่ระบบคำนวณ)
-//   tax_extra_allowance        ค่าลดหย่อนเพิ่มเติม/ปี (จาก ล.ย.01) — default 0
+//   tax_withholding_override   ภาษีเงินได้ที่ขอให้หักต่อเดือน (ไม่คำนวณ) — ว่าง = null = ล้างค่า = 0
+//                              ส่ง null เฉพาะเมื่อเคยมีค่าแล้วถูกลบ — กันการล้างยอดของคนอื่นเมื่อโหลดค่าล่าสุดไม่สำเร็จ
+//   reserve_rate_pct           เงินสะสม % ของคนนี้ ≥ อัตราขั้นต่ำ (ต่ำกว่า → 422 + detail ไทย) · null = อัตราขั้นต่ำ
+//                              ส่ง null ไม่มีผล (backend ทิ้ง) จึงล้างค่าที่เคยตั้งไม่ได้ → แจ้ง error แทนการบันทึกหลอก ๆ
+//                              ซ่อนช่องเมื่อ backend ยังไม่ส่ง field นี้ · ส่งเฉพาะเมื่อค่าเปลี่ยน (ขั้นต่ำขยับแล้ว ไม่ขวางการแก้ช่องอื่น)
 //   pay_basis                  "monthly" | "daily" (3C daily-paid) — รายวัน: payroll ไม่ใช้ current_salary
 //                              แสดง/ส่งเฉพาะเมื่อ GET คืน field นี้ (backend ที่ยังไม่ migrate จะไม่มี)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -29,26 +31,29 @@ const FIELDS = [
   // job_age = ค่าเดิมที่ HR พิมพ์เอง (ปีเต็ม) — 3G: อายุงานจริงคำนวณจากวันที่เริ่มงาน (tenure) แล้ว
   // จึงไม่แสดงในฟอร์ม แต่ยังเก็บค่าเดิมไว้ใน form และส่งกลับตอนบันทึก (ไม่ล้างข้อมูลเก่า)
   { key: "job_age", label: "อายุงานที่บันทึกเดิม (ปี)", placeholder: "0", integer: true, hidden: true },
-  { key: "current_reserve", label: "เงินสะสม (บาท/เดือน)", placeholder: "0", hint: "ใส่ 0 = ใช้อัตรา % ตามการตั้งค่าการคำนวณเงินเดือน" },
-  { key: "tax_withholding_override", label: "ภาษีหัก ณ ที่จ่ายคงที่/เดือน (บาท)", placeholder: "เว้นว่าง", hint: "เว้นว่าง = ใช้ภาษีที่ระบบคำนวณ (ภ.ง.ด.1)", nullable: true },
-  { key: "tax_extra_allowance", label: "ค่าลดหย่อนเพิ่มเติม/ปี (บาท)", placeholder: "0", hint: "จากแบบ ล.ย.01 เช่น คู่สมรส บุตร เบี้ยประกัน" },
+  { key: "tax_withholding_override", label: "ภาษีเงินได้ที่ขอให้หักต่อเดือน", placeholder: "0.00", hint: "เจ้าหน้าที่แจ้งเอง — ปรับเมื่อรายได้เปลี่ยน", nullable: true },
+  { key: "reserve_rate_pct", label: "เงินสะสม (%)", placeholder: "5", hint: "เว้นว่าง = อัตราขั้นต่ำ 5%", percent: true, optional: true },
 ]
 const GROUPS = [
   { title: "ข้อมูลพื้นฐาน", keys: ["current_salary", "current_loan"] },
-  { title: "เงินสะสมและภาษี", keys: ["current_reserve", "tax_withholding_override", "tax_extra_allowance"] },
+  { title: "เงินสะสมและภาษี", keys: ["tax_withholding_override", "reserve_rate_pct"] },
 ]
 
 const str = (v) => (v == null ? "" : String(v))
 const formFrom = (fin = {}) => Object.fromEntries(FIELDS.map((f) => [f.key, str(fin[f.key])]))
 
-function validate(form) {
+function validate(form, baseline, hasRate) {
   const errs = {}
   for (const f of FIELDS) {
-    if (f.hidden) continue // ไม่มีช่องให้แก้ — ค่าเดิมส่งกลับตามเดิม
+    if (f.hidden || (f.optional && !hasRate)) continue // ไม่มีช่องให้แก้ — ไม่ตรวจ
     const v = form[f.key].trim()
-    if (v === "") continue
+    if (v === "") {
+      if (f.percent && baseline?.[f.key] != null) errs[f.key] = "ล้างค่าไม่ได้ — ใส่อัตราขั้นต่ำถ้าต้องการกลับไปใช้ค่าเริ่มต้น"
+      continue
+    }
     const n = Number(v)
     if (!Number.isFinite(n) || n < 0) errs[f.key] = "กรอกตัวเลขตั้งแต่ 0 ขึ้นไป"
+    else if (f.percent && n > 100) errs[f.key] = "กรอก 0–100"
     else if (f.integer && !Number.isInteger(n)) errs[f.key] = "กรอกเป็นจำนวนเต็ม"
   }
   return errs
@@ -70,12 +75,16 @@ export default function FinancialEditSheet({ open, employeeId, employeeName, fin
   // null = backend ไม่ส่ง pay_basis มา → ซ่อนตัวเลือก
   const [payBasis, setPayBasis] = useState(financial?.pay_basis ?? null)
   const isDaily = payBasis === "daily"
+  // ค่าที่บันทึกอยู่ — ใช้ตัดสินว่า "ช่องว่าง" แปลว่าล้างค่าหรือแค่ไม่เคยตั้ง
+  const [baseline, setBaseline] = useState(financial ?? {})
+  const hasRate = baseline?.reserve_rate_pct !== undefined
 
-  // เปิดใหม่ทุกครั้ง: เติมค่าจากหน้ารายการก่อน แล้วดึงค่าล่าสุด (มี field ภาษีใหม่) มาทับ
+  // เปิดใหม่ทุกครั้ง: เติมค่าจากหน้ารายการก่อน แล้วดึงค่าล่าสุดมาทับ
   useEffect(() => {
     if (!open || employeeId == null) return
     let alive = true
     setForm(formFrom(financial))
+    setBaseline(financial ?? {})
     setPayBasis(financial?.pay_basis ?? null)
     setErrors({})
     setMsg(null)
@@ -83,7 +92,9 @@ export default function FinancialEditSheet({ open, employeeId, employeeName, fin
     apiAuth(`/hr/employees/${employeeId}/financial`)
       .then((d) => {
         if (!alive || !d || typeof d !== "object") return
-        setForm(formFrom({ ...financial, ...d }))
+        const merged = { ...financial, ...d }
+        setForm(formFrom(merged))
+        setBaseline(merged)
         if ("pay_basis" in d) setPayBasis(d.pay_basis || "monthly")
       })
       .catch(() => { /* ไม่มีสิทธิ์/ยังไม่มีข้อมูล → ใช้ค่าจากหน้ารายการ */ })
@@ -98,7 +109,8 @@ export default function FinancialEditSheet({ open, employeeId, employeeName, fin
   }
 
   const save = async () => {
-    const errs = validate(form)
+    if (loadingLatest) return // ยังไม่รู้ค่าล่าสุด — ห้ามเขียนทับด้วยค่าจากหน้ารายการ
+    const errs = validate(form, baseline, hasRate)
     setErrors(errs)
     if (Object.keys(errs).length) {
       setMsg({ tone: "warning", text: "ตรวจช่องที่มีข้อความสีแดงก่อนบันทึก" })
@@ -108,9 +120,15 @@ export default function FinancialEditSheet({ open, employeeId, employeeName, fin
     const body = {}
     for (const f of FIELDS) {
       const v = form[f.key].trim()
-      if (f.nullable) body[f.key] = v === "" ? null : Number(v)
-      else if (v !== "") body[f.key] = f.integer ? parseInt(v, 10) : Number(v)
-      else if (f.key === "current_reserve" || f.key === "tax_extra_allowance") body[f.key] = 0
+      if (f.optional) {
+        // ส่งเฉพาะเมื่อเปลี่ยน — validate กันกรณีลบค่าเดิมไว้แล้ว
+        if (hasRate && v !== "" && (baseline[f.key] == null || Number(v) !== Number(baseline[f.key]))) body[f.key] = Number(v)
+      } else if (f.nullable) {
+        if (v !== "") body[f.key] = Number(v)
+        else if (baseline?.[f.key] != null) body[f.key] = null
+      } else if (v !== "") {
+        body[f.key] = f.integer ? parseInt(v, 10) : Number(v)
+      }
     }
     if (payBasis) body.pay_basis = payBasis
     saveState.start()
@@ -136,7 +154,7 @@ export default function FinancialEditSheet({ open, employeeId, employeeName, fin
       footer={
         <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
           <button type="button" onClick={onClose} disabled={saving} className={cx(neutralBtnCls, btnCls)}>ยกเลิก</button>
-          <SaveButton status={saveState.status} onClick={save} className={cx(btnCls, "!rounded-xl")}>บันทึก</SaveButton>
+          <SaveButton status={saveState.status} onClick={save} disabled={loadingLatest} className={cx(btnCls, "!rounded-xl")}>บันทึก</SaveButton>
         </div>
       }
     >
@@ -188,10 +206,11 @@ export default function FinancialEditSheet({ open, employeeId, employeeName, fin
             <legend className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{g.title}</legend>
             {g.keys.map((key) => {
               const f = FIELDS.find((x) => x.key === key)
+              if (f.optional && !hasRate) return null
               const id = `${uid}-${key}`
               // ลูกจ้างรายวัน: payroll ไม่ใช้เงินเดือน → ล็อกช่องไว้ (ค่าเดิมยังถูกส่งกลับไปเหมือนเดิม)
               const salaryUnused = key === "current_salary" && isDaily
-              const hint = salaryUnused ? "ไม่ใช้กับลูกจ้างรายวัน" : f.hint
+              const hint = salaryUnused ? "ไม่ใช้กับลูกจ้างรายวัน" : errors[key] ? undefined : f.hint
               const hintId = hint ? `${id}-hint` : undefined
               const errId = errors[key] ? `${id}-err` : undefined
               return (
@@ -202,6 +221,7 @@ export default function FinancialEditSheet({ open, employeeId, employeeName, fin
                     type="number"
                     inputMode={f.integer ? "numeric" : "decimal"}
                     min="0"
+                    max={f.percent ? "100" : undefined}
                     step={f.integer ? "1" : "0.01"}
                     value={form[key]}
                     onChange={(e) => set(key, e.target.value)}
