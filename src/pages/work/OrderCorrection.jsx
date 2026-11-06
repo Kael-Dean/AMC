@@ -15,7 +15,8 @@ import useBranchLock, { scopedBranchId } from "../../hooks/useBranchLock";
 import BranchLockNote from "../../components/BranchLockNote";
 import DateInput from "../../components/ThaiDateField";
 import PageTitle from "../../components/PageTitle"
-import AllTimeToggle, { ALL_TIME_START, ALL_TIME_END } from "../../components/AllTimeToggle"
+import AllTimeToggle from "../../components/AllTimeToggle"
+import { ALL_TIME_START, ALL_TIME_END, firstOfMonthIso, todayIso } from "../../lib/allTime"
 
 /* ---------------- Utilities (ทนทานต่อค่าที่ไม่ใช่สตริง) ---------------- */
 const asString = (v) => (v === null || v === undefined ? "" : String(v));
@@ -51,8 +52,8 @@ const PAGE_SIZE = 100;
 function OrderCorrection() {
   const isPhone = useIsPhone();
   /* Dates */
-  const today = new Date().toISOString().slice(0, 10);
-  const firstDayThisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+  const today = todayIso();
+  const firstDayThisMonth = firstOfMonthIso();
 
   /* Buy/Sell toggle */
   const [mode, setMode] = useState("buy"); // buy | sell
@@ -95,7 +96,7 @@ function OrderCorrection() {
   const [filters, setFilters] = useState({
     startDate: firstDayThisMonth,
     endDate: today,
-    allTime: false,
+    allTime: true,
     branchId: branchLock.activeKey,
     branchName: "",
     klangId: "",
@@ -331,7 +332,7 @@ function OrderCorrection() {
     setFilters({
       startDate: firstDayThisMonth,
       endDate: today,
-      allTime: false,
+      allTime: true,
       branchId: branchLock.activeKey,
       branchName: "",
       klangId: "",

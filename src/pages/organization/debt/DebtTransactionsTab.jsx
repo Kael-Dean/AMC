@@ -2,6 +2,8 @@ import { useEffect, useState } from "react"
 import { apiAuth } from "../../../lib/api"
 import Portal from "../../../components/Portal"
 import SelectDropdown from "../../../components/SelectDropdown"
+import AllTimeToggle from "../../../components/AllTimeToggle"
+import { firstOfMonthIso, todayIso } from "../../../lib/allTime"
 import {
   cx, baseField, modalCardCls, modalTitleCls,
   resetBtnCls, secondaryBtnCls, cardCls, badgeCls,
@@ -114,16 +116,21 @@ export default function DebtTransactionsTab({ roleId, branches, programs, fiscal
             <input type="date" className={baseField} value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </div>
         </div>
-        {hasFilters && (
-          <div className="mt-3 flex justify-end">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <AllTimeToggle
+            size="sm"
+            active={!dateFrom && !dateTo}
+            onChange={(on) => { setDateFrom(on ? "" : firstOfMonthIso()); setDateTo(on ? "" : todayIso()) }}
+          />
+          {hasFilters && (
             <button
               onClick={() => { setTypeFilter(""); setDateFrom(""); setDateTo("") }}
               className="rounded-xl px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
             >
               ล้างตัวกรอง
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-between">

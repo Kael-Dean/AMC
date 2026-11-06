@@ -4,6 +4,8 @@
 import { useEffect, useState, useCallback } from "react"
 import { apiAuth, apiDownload } from "../../../lib/api"
 import { cardCls, cx, tabPanelCls } from "../../../lib/styles"
+import AllTimeToggle from "../../../components/AllTimeToggle"
+import { firstOfMonthIso, todayIso } from "../../../lib/allTime"
 import { PageLoader, ErrorState, EmptyState, SkeletonTableRows, Tabs, tabId, panelId, useSubTab } from "../../../components/ui"
 import { FolderOpen, List } from "lucide-react"
 import ExcelDownloadButton from "../../../components/ExcelDownloadButton"
@@ -164,6 +166,11 @@ export default function HRRelocationHistoryTab() {
                   className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/60" />
               </div>
               <div className="flex flex-wrap items-end gap-2">
+                <AllTimeToggle
+                  size="sm"
+                  active={!fromDate && !toDate}
+                  onChange={(on) => { setFromDate(on ? "" : firstOfMonthIso()); setToDate(on ? "" : todayIso()) }}
+                />
                 <button onClick={fetchHistory} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition cursor-pointer">
                   ค้นหา
                 </button>

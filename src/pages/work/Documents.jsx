@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { apiAuth, apiDownload } from "../../lib/api"   // helper แนบ token + BASE URL
 import { cx, baseField, labelCls, helpTextCls, errorTextCls, secondaryBtnCls } from "../../lib/styles"
 import ExcelDownloadButton from "../../components/ExcelDownloadButton"
+import AllTimeToggle from "../../components/AllTimeToggle"
+import { ALL_TIME_START, allTimeEnd, firstOfMonthIso, todayIso } from "../../lib/allTime"
 import { can } from "../../lib/permissions"
 import { checkDocumentReports } from "../../lib/functionCatalogue"
 import ComboBox from "../../components/ComboBox"
@@ -793,12 +795,8 @@ function Documents() {
 
   const [, setPreviewJson] = useState(null)
 
-  const today = new Date().toISOString().slice(0, 10)
-  const firstDayThisMonth = useMemo(() => {
-    const d = new Date()
-    d.setDate(1)
-    return d.toISOString().slice(0, 10)
-  }, [])
+  const today = todayIso()
+  const firstDayThisMonth = useMemo(() => firstOfMonthIso(), [])
 
   /** สาขา: scope "own_branch" → ล็อกที่สาขาที่ใช้งานอยู่ */
   const branchLock = useBranchLock()
@@ -807,6 +805,7 @@ function Documents() {
   const [filters, setFilters] = useState({
     startDate: firstDayThisMonth,
     endDate: today,
+    allTime: true,
     productId: "",
     specId: "",
     branchId: branchLock.activeKey,
@@ -849,6 +848,7 @@ function Documents() {
     const e = pickQS(qs, ["end_date", "endDate"])
     if (s) patch.startDate = s
     if (e) patch.endDate = e
+    if (s || e) patch.allTime = false
 
     // share identity
     const memberId = pickQS(qs, ["member_id", "memberId"]) 
@@ -1009,7 +1009,7 @@ function Documents() {
     if (!report) return e
 
     const needDate = report.require.includes("startDate") || report.require.includes("endDate")
-    if (needDate) {
+    if (needDate && !filters.allTime) {
       if (!filters.startDate) e.startDate = "กรุณาเลือกวันที่เริ่มต้น"
       if (!filters.endDate) e.endDate = "กรุณาเลือกวันที่สิ้นสุด"
       if (filters.startDate && filters.endDate) {
@@ -1076,8 +1076,16 @@ function Documents() {
 
     // HR ใช้ from_date/to_date (P-reports ใช้ start_date/end_date)
     const isHr = report?.type === "hr_pdf"
-    if (wants("startDate") && filters.startDate) p.set(isHr ? "from_date" : "start_date", filters.startDate)
-    if (wants("endDate") && filters.endDate) p.set(isHr ? "to_date" : "end_date", filters.endDate)
+    // All time: fill only the bounds the report requires. An optional bound stays
+    // empty so the backend does not filter on it at all.
+    const startValue = filters.allTime
+      ? (report?.require || []).includes("startDate") ? ALL_TIME_START : ""
+      : filters.startDate
+    const endValue = filters.allTime
+      ? (report?.require || []).includes("endDate") ? allTimeEnd() : ""
+      : filters.endDate
+    if (wants("startDate") && startValue) p.set(isHr ? "from_date" : "start_date", startValue)
+    if (wants("endDate") && endValue) p.set(isHr ? "to_date" : "end_date", endValue)
 
     if (wants("planId") && effectivePlanId) p.set("plan_id", effectivePlanId)
 
@@ -1188,7 +1196,7 @@ function Documents() {
         const { blob, filename } = await apiDownload(`${endpoint}?${params.toString()}`)
         const link = document.createElement("a")
         link.href = URL.createObjectURL(blob)
-        link.download = filename || `${report.key}_${filters.startDate || ""}_${filters.endDate || ""}.xlsx`
+        link.download = filename || `${report.key}_${filters.allTime ? "all-time" : `${filters.startDate || ""}_${filters.endDate || ""}`}.xlsx`
         document.body.appendChild(link)
         link.click()
         link.remove()
@@ -1260,7 +1268,8 @@ function Documents() {
   const resetForm = () =>
     setFilters({
       startDate: firstDayThisMonth,
-      endDate: new Date().toISOString().slice(0, 10),
+      endDate: todayIso(),
+      allTime: true,
       productId: "",
       specId: "",
       branchId: branchLock.activeKey,
@@ -1304,13 +1313,16 @@ function Documents() {
       <>
         <div>
           <label className={labelCls}>วันที่เริ่มต้น</label>
-          <DateInput value={filters.startDate} onChange={(e) => setFilter("startDate", e.target.value)} error={!!errors.startDate} />
-          <FieldError name="startDate" />
+          <DateInput value={filters.startDate} onChange={(e) => setFilter("startDate", e.target.value)} error={!filters.allTime && !!errors.startDate} disabled={filters.allTime} />
+          {!filters.allTime && <FieldError name="startDate" />}
         </div>
         <div>
           <label className={labelCls}>วันที่สิ้นสุด</label>
-          <DateInput value={filters.endDate} onChange={(e) => setFilter("endDate", e.target.value)} error={!!errors.endDate} />
-          <FieldError name="endDate" />
+          <DateInput value={filters.endDate} onChange={(e) => setFilter("endDate", e.target.value)} error={!filters.allTime && !!errors.endDate} disabled={filters.allTime} />
+          {!filters.allTime && <FieldError name="endDate" />}
+        </div>
+        <div className="flex items-end">
+          <AllTimeToggle size="sm" active={filters.allTime} onChange={(v) => setFilter("allTime", v)} className="w-full md:min-h-[46px]" />
         </div>
       </>
     )
@@ -1713,13 +1725,16 @@ function Documents() {
               <>
                 <div>
                   <label className={labelCls}>ตั้งแต่วันที่{star("startDate")}</label>
-                  <DateInput value={filters.startDate} onChange={(e) => setFilter("startDate", e.target.value)} error={!!errors.startDate} />
-                  <FieldError name="startDate" />
+                  <DateInput value={filters.startDate} onChange={(e) => setFilter("startDate", e.target.value)} error={!filters.allTime && !!errors.startDate} disabled={filters.allTime} />
+                  {!filters.allTime && <FieldError name="startDate" />}
                 </div>
                 <div>
                   <label className={labelCls}>ถึงวันที่{star("endDate")}</label>
-                  <DateInput value={filters.endDate} onChange={(e) => setFilter("endDate", e.target.value)} error={!!errors.endDate} />
-                  <FieldError name="endDate" />
+                  <DateInput value={filters.endDate} onChange={(e) => setFilter("endDate", e.target.value)} error={!filters.allTime && !!errors.endDate} disabled={filters.allTime} />
+                  {!filters.allTime && <FieldError name="endDate" />}
+                </div>
+                <div className="flex items-end">
+                  <AllTimeToggle size="sm" active={filters.allTime} onChange={(v) => setFilter("allTime", v)} className="w-full md:min-h-[46px]" />
                 </div>
               </>
             )}
@@ -2010,7 +2025,7 @@ function Documents() {
                   key={reportObj.key}
                   label="ดาวน์โหลด Excel"
                   getPdfPath={() => excelPdfPath(reportObj)}
-                  fallbackName={`${reportObj.key}${reportObj.require.includes("startDate") ? `_${filters.startDate}_${filters.endDate}` : ""}.xlsx`}
+                  fallbackName={`${reportObj.key}${reportObj.require.includes("startDate") ? (filters.allTime ? "_all-time" : `_${filters.startDate}_${filters.endDate}`) : ""}.xlsx`}
                   className={cx(secondaryBtnCls, "disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100")}
                 />
               )}
