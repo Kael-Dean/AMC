@@ -1,0 +1,79 @@
+// Leave types come from the backend `Leaves` table. Screens must not keep their own
+// list of type names: use GET /hr/leave-types (the catalogue) or the leave-balance
+// endpoints (the catalogue plus one person's figures).
+import { useEffect, useState } from "react"
+import { apiAuth } from "./api"
+import { leaveTypeName, parseDays } from "./leaveDays"
+
+// Display order only. Most-used first; "ขาดงาน" and "อื่นๆ" always last. Types not
+// listed keep the backend order, between the known ones and the last two.
+const LEAVE_TYPE_ORDER = [
+  "ลาป่วย", "ลากิจ", "ลาพักผ่อน", "ลาพักชดเชย", "ลาคลอด", "ลาเพื่อดูแลบุตร", "ลาทำหมัน",
+  "ลาอุปสมบท", "ลาฮัจย์", "ลาเกณฑ์ทหาร", "ลาฝึกอบรม", "ลาติดตามคู่สมรส", "ลาฟื้นฟู",
+]
+const LEAVE_TYPE_LAST = ["ขาดงาน", "อื่น"]
+
+function leaveTypeRank(lt) {
+  const n = String(leaveTypeName(lt)).trim()
+  const last = LEAVE_TYPE_LAST.findIndex((k) => n.startsWith(k))
+  if (last !== -1) return 1000 + last
+  const i = LEAVE_TYPE_ORDER.findIndex((k) => n.startsWith(k))
+  return i === -1 ? 500 : i
+}
+
+export const sortLeaveTypes = (list) =>
+  list
+    .map((t, i) => ({ t, i }))
+    .sort((a, b) => leaveTypeRank(a.t) - leaveTypeRank(b.t) || a.i - b.i)
+    .map(({ t }) => t)
+
+/** ลาพักผ่อน — its figures include carry-over, so profile pages show it separately. */
+export const isAnnualLeave = (name) => /^ลาพัก(ผ่อน|ร้อน)/.test(String(name ?? "").trim())
+
+/** ลาทำหมัน is granted "ตามแพทย์สั่ง": no cap, so its quota figure means nothing. */
+export const isPrescribedLeave = (name) => String(name ?? "").trim().startsWith("ลาทำหมัน")
+
+/**
+ * Normalise a leave-balance response: `{ year, balance: [{ leave_type_id,
+ * leave_type_name, is_active, quota, used, remaining }] }`.
+ * A switched-off type is dropped unless days were already taken against it.
+ */
+export function parseLeaveBalance(data) {
+  const list = Array.isArray(data) ? data : data?.balance
+  if (!Array.isArray(list)) return []
+  return sortLeaveTypes(
+    list
+      .map((x) => ({
+        id: x?.leave_type_id ?? null,
+        name: x?.leave_type_name ?? x?.leave_type ?? "",
+        isActive: x?.is_active !== false,
+        quota: x?.quota,
+        used: x?.used,
+        remaining: x?.remaining,
+      }))
+      .filter((x) => x.name && (x.isActive || (parseDays(x.used) ?? 0) > 0)),
+  )
+}
+
+/**
+ * @param {string|null} path  a leave-balance endpoint; null waits (nothing is fetched)
+ * @returns {{ rows: object[]|null, error: string }} `rows` is null while loading
+ */
+export function useLeaveBalance(path) {
+  const [state, setState] = useState({ path: null, rows: null, error: "" })
+  useEffect(() => {
+    if (!path) return undefined
+    let alive = true
+    apiAuth(path)
+      .then((d) => {
+        if (alive) setState({ path, rows: parseLeaveBalance(d), error: "" })
+      })
+      .catch((e) => {
+        if (alive) setState({ path, rows: [], error: e?.message || "โหลดประเภทการลาไม่สำเร็จ" })
+      })
+    return () => {
+      alive = false
+    }
+  }, [path])
+  return state.path === path ? state : { rows: null, error: "" }
+}

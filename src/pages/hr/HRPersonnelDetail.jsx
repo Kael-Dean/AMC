@@ -5,13 +5,14 @@ import { useEffect, useState, useCallback } from "react"
 import ReactDOM from "react-dom"
 import { useParams } from "react-router-dom"
 import { apiAuth } from "../../lib/api"
-import { PageLoader, ErrorState, Badge } from "../../components/ui"
+import { PageLoader, ErrorState, Badge, Skeleton } from "../../components/ui"
 import BranchAssignmentCard from "./BranchAssignmentCard"
 import EmployeePositionCard from "../../components/hr/EmployeePositionCard"
 import { currentPositionLabel } from "../../components/hr/positionUtils"
 import RelocationPanel from "../../components/hr/RelocationPanel"
 import lineIcon from "../../assets/line-icon.png"
 import { fmtDaysUnit } from "../../lib/leaveDays"
+import { isAnnualLeave, isPrescribedLeave, useLeaveBalance } from "../../lib/leaveTypes"
 import StatusMsg from "../../components/hr/StatusMsg"
 import useModalDismiss from "../../lib/useModalDismiss"
 import { roleLabel } from "../../lib/roles"
@@ -63,24 +64,6 @@ const CHILD_GENDER_OPTIONS = [
   { value: "female", label: "หญิง" },
 ]
 
-// LeaveQuotaOut (backend v1.1.0) — ทุกค่าเป็นทศนิยม ส่งมาเป็น string
-// สิทธิ์เป็นค่าคงที่ ระบบคำนวณ "วันที่ใช้ไป" จากใบลาที่อนุมัติแล้วในปีงบประมาณเดียวกัน
-const QUOTA_ROWS = [
-  { key: "sick_leave",      label: "ลาป่วย" },
-  { key: "business_leave",  label: "ลากิจส่วนตัว" },
-  { key: "maturity_leave",  label: "ลาคลอดบุตร" },
-  { key: "paternity_leave", label: "ลาช่วยภริยาคลอดบุตร" },
-  { key: "religious_leave", label: "ลาอุปสมบท" },
-  { key: "military_leave",  label: "ลารับราชการทหาร" },
-  { key: "training_leave",  label: "ลาไปฝึกอบรม" },
-  { key: "ow_leave",        label: "ลา อว." },
-  { key: "accompany_leave", label: "ลาติดตามคู่สมรส" },
-  { key: "rehab_leave",     label: "ลาฟื้นฟูสมรรถภาพ" },
-  { key: "other_leave",     label: "อื่นๆ" },
-  { key: "absent",          label: "ขาดงาน" },
-]
-
-
 function fmt(n) {
   if (n == null) return "—"
   return Number(n).toLocaleString("th-TH", { minimumFractionDigits: 2 }) + " บาท"
@@ -115,6 +98,11 @@ const inputCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm")
 export default function HRPersonnelDetail() {
   const { id } = useParams()
   const [data, setData] = useState(null)
+  // ประเภทการลามาจากตาราง Leaves ของ backend — ปีเดียวกับ leave_quota
+  const quotaYear = data?.leave_quota?.year
+  const { rows: leaveRows, error: leaveRowsError } = useLeaveBalance(
+    quotaYear ? `/hr/employees/${id}/leave-balance?year=${quotaYear}` : null,
+  )
   usePageTitle("ข้อมูลเจ้าหน้าที่")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -417,12 +405,17 @@ export default function HRPersonnelDetail() {
       {Object.keys(quota).length > 0 && (
         <div className="rounded-2xl bg-white dark:bg-gray-800 ring-1 ring-gray-200/70 dark:ring-gray-700/70 shadow-sm p-5">
           <SectionTitle>สิทธิ์การลา (ปีงบประมาณ {quota.year})</SectionTitle>
-          <InfoRow label="ลาพักผ่อนประจำปี" value={fmtDaysUnit(quota.annual_leave)} />
+          <InfoRow label={leaveRows?.find((r) => isAnnualLeave(r.name))?.name ?? "ลาพักผ่อน"} value={fmtDaysUnit(quota.annual_leave)} />
           <InfoRow label="ยกมาจากปีก่อน" value={fmtDaysUnit(quota.annual_leave_carried_over)} />
-          {QUOTA_ROWS.map((q) => (
-            <InfoRow key={q.key} label={q.label} value={fmtDaysUnit(quota[q.key])} />
+          {leaveRows === null && <Skeleton className="mt-2 h-24 rounded-xl" />}
+          {leaveRows?.filter((r) => !isAnnualLeave(r.name)).map((r) => (
+            <InfoRow
+              key={r.id ?? r.name}
+              label={r.name}
+              value={isPrescribedLeave(r.name) ? "ตามแพทย์สั่ง (ไม่จำกัดวัน)" : fmtDaysUnit(r.quota)}
+            />
           ))}
-          <InfoRow label="ลาทำหมัน" value="ตามแพทย์สั่ง (ไม่จำกัดวัน)" />
+          {leaveRowsError && <p className="mt-2 text-sm text-red-600 dark:text-red-400">โหลดสิทธิ์การลาแต่ละประเภทไม่สำเร็จ ลองเปิดหน้านี้ใหม่</p>}
         </div>
       )}
 

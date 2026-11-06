@@ -22,7 +22,7 @@ import Portal from "../Portal"
 import Celebration from "./Celebration"
 import Mascot from "../ui/Mascot"
 import { toast } from "../ui"
-import { apiAuth } from "../../lib/api"
+import { useLeaveBalance } from "../../lib/leaveTypes"
 import {
   completeOnboarding,
   getOnboardingState,
@@ -52,29 +52,13 @@ const topbarH = () =>
   parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--topbar-h")) || 64
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
-/** Leave quota chips — the person's own figures (fails silently; field names vary). */
+/** Leave quota chips — the person's own figures, only types they hold days in (fails silently). */
 function LeaveQuota() {
-  const [items, setItems] = useState(null)
-  useEffect(() => {
-    let alive = true
-    apiAuth("/personnel/me/leave-balance")
-      .then((d) => {
-        if (!alive || !Array.isArray(d)) return
-        const list = d
-          .map((x) => ({
-            label: x?.leave_type_name ?? x?.leave_type ?? x?.name ?? x?.type_name ?? x?.label,
-            remaining: x?.remaining ?? x?.balance ?? x?.left,
-            quota: x?.quota ?? x?.entitled ?? x?.total ?? x?.days,
-          }))
-          .filter((x) => x.label && (x.remaining != null || x.quota != null))
-        setItems(list)
-      })
-      .catch(() => {})
-    return () => {
-      alive = false
-    }
-  }, [])
-  if (!items?.length) return null
+  const { rows } = useLeaveBalance("/personnel/me/leave-balance")
+  const items = (rows ?? [])
+    .filter((r) => Number(r.quota) > 0)
+    .map((r) => ({ label: r.name, remaining: r.remaining, quota: r.quota }))
+  if (!items.length) return null
   const num = (v) => (v == null || v === "" ? null : Number(v).toLocaleString("th-TH", { maximumFractionDigits: 1 }))
   return (
     <div className="mt-3">

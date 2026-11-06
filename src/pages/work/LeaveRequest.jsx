@@ -4,6 +4,7 @@ import { cx, baseField } from "../../lib/styles"
 import { useEffect, useState, useCallback, useId, Children, cloneElement, isValidElement } from "react"
 import { apiAuth, apiDownload } from "../../lib/api"
 import { countLeaveDays, countsCalendarDays, fmtDays, currentFiscalYearBE } from "../../lib/leaveDays"
+import { sortLeaveTypes } from "../../lib/leaveTypes"
 import { getUser } from "../../lib/auth"
 import useFormDefaults from "../../hooks/useFormDefaults"
 import { STATUS_LABEL as APPROVAL_STATUS_LABEL, isPendingStatus } from "../../lib/approval"
@@ -385,26 +386,6 @@ function PrintDocument({ form, totalDays }) {
 }
 
 // ─── main component ──────────────────────────────────────────────────────────
-// Most-used leave types first; "ขาดงาน" and "อื่นๆ" always last. Types not listed keep
-// the backend order, between the known ones and the last two.
-const LEAVE_TYPE_ORDER = [
-  "ลาป่วย", "ลากิจ", "ลาพักผ่อน", "ลาพักชดเชย", "ลาคลอด", "ลาเพื่อดูแลบุตร", "ลาทำหมัน",
-  "ลาอุปสมบท", "ลาฮัจย์", "ลาเกณฑ์ทหาร", "ลาฝึกอบรม", "ลาติดตามคู่สมรส", "ลาฟื้นฟู",
-]
-const LEAVE_TYPE_LAST = ["ขาดงาน", "อื่น"]
-function leaveTypeRank(lt) {
-  const n = String(lt?.leave_name ?? lt?.type ?? lt?.name ?? lt?.title ?? lt?.label ?? "").trim()
-  const last = LEAVE_TYPE_LAST.findIndex((k) => n.startsWith(k))
-  if (last !== -1) return 1000 + last
-  const i = LEAVE_TYPE_ORDER.findIndex((k) => n.startsWith(k))
-  return i === -1 ? 500 : i
-}
-const sortLeaveTypes = (list) =>
-  list
-    .map((t, i) => ({ t, i }))
-    .sort((a, b) => leaveTypeRank(a.t) - leaveTypeRank(b.t) || a.i - b.i)
-    .map(({ t }) => t)
-
 export default function LeaveRequest() {
   const user = getUser() || {}
 

@@ -1,7 +1,9 @@
 // src/pages/hr/tabs/HRLeaveRegisterTab.jsx
 // 13C — Leave Register: annual summary table + 2 PDF downloads
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { apiAuth, apiDownload } from "../../../lib/api"
+import { leaveTypeName } from "../../../lib/leaveDays"
+import { sortLeaveTypes } from "../../../lib/leaveTypes"
 import { SkeletonTableRows, ErrorState, EmptyState } from "../../../components/ui"
 import ExcelDownloadButton from "../../../components/ExcelDownloadButton"
 import SelectDropdown from "../../../components/SelectDropdown"
@@ -16,27 +18,50 @@ function currentFiscalYear() {
   return m >= 4 ? y : y - 1
 }
 
-const LEAVE_COLS = [
-  { key: "sick_leave_days",       label: "ลาป่วย" },
-  { key: "business_leave_days",   label: "ลากิจ" },
-  { key: "annual_leave_days",     label: "ลาพักผ่อน" },
-  { key: "maternity_leave_days",  label: "ลาคลอด" },
-  { key: "paternity_leave_days",  label: "ลาบิดา" },
-  { key: "religious_leave_days",  label: "ลาบวช" },
-  { key: "military_leave_days",   label: "ลาทหาร" },
-  { key: "training_leave_days",   label: "ลาอบรม" },
-  { key: "ow_leave_days",         label: "ลา อว." },
-  { key: "accompany_leave_days",  label: "ลาติดตาม" },
-  { key: "rehab_leave_days",      label: "ลาฟื้นฟู" },
-  { key: "absent_days",           label: "ขาดงาน" },
-  { key: "total_days",            label: "รวม" },
-]
+// GET /hr/leave/annual-summary ส่งยอดเป็น field ตายตัว ไม่มีชื่อประเภท → ชื่อคอลัมน์มาจาก GET /hr/leave-types
+// แผนผังนี้ต้องตรงกับ LEAVE_QUOTA_MAP + leave_cols ของ backend (reports_router.py)
+const SUMMARY_FIELD_BY_TYPE = {
+  "ลาป่วย":          "sick_leave_days",
+  "ลากิจ":           "business_leave_days",
+  "ลาพักผ่อน":       "annual_leave_days",
+  "ลาคลอด":          "maternity_leave_days",
+  "ลาเพื่อดูแลบุตร":  "paternity_leave_days",
+  "ลาอุปสมบท":       "religious_leave_days",
+  "ลาเกณฑ์ทหาร":     "military_leave_days",
+  "ลาฝึกอบรม":       "training_leave_days",
+  "ลาพักชดเชย":      "ow_leave_days",
+  "ลาติดตามคู่สมรส":  "accompany_leave_days",
+  "ลาฟื้นฟู":         "rehab_leave_days",
+  "ขาดงาน":          "absent_days",
+}
+const TOTAL_COL = { key: "total_days", label: "รวม" }
 
 export default function HRLeaveRegisterTab() {
   const [fiscalYear, setFiscalYear] = useState(currentFiscalYear())
   const [rows,       setRows]       = useState([])
   const [loading,    setLoading]    = useState(false)
   const [error,      setError]      = useState("")
+  const [leaveTypes, setLeaveTypes] = useState(null) // null = ยังโหลดไม่เสร็จ
+
+  useEffect(() => {
+    apiAuth("/hr/leave-types")
+      .then((data) => setLeaveTypes(sortLeaveTypes(Array.isArray(data) ? data : [])))
+      .catch((e) => {
+        setLeaveTypes([])
+        setError(e.message || "โหลดประเภทการลาไม่สำเร็จ")
+      })
+  }, [])
+
+  // ประเภทที่ปิดใช้งานยังแสดงถ้ามีวันลาที่อนุมัติแล้วในปีนี้ ไม่งั้นยอดรวมจะไม่ตรงกับคอลัมน์
+  const leaveCols = useMemo(() => {
+    const cols = (leaveTypes ?? []).flatMap((lt) => {
+      const label = leaveTypeName(lt)
+      const key = SUMMARY_FIELD_BY_TYPE[label]
+      if (!key) return []
+      return lt.is_active !== false || rows.some((r) => r[key] > 0) ? [{ key, label }] : []
+    })
+    return [...cols, TOTAL_COL]
+  }, [leaveTypes, rows])
 
   const [pdfLoading, setPdfLoading] = useState({})
   const [pdfErr,     setPdfErr]     = useState("")
@@ -196,14 +221,14 @@ export default function HRLeaveRegisterTab() {
                 <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-3 whitespace-nowrap">รหัสเดิม</th>
                 <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-3 whitespace-nowrap">ตำแหน่ง</th>
                 <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-3 whitespace-nowrap">สาขา</th>
-                {LEAVE_COLS.map((c) => (
+                {leaveCols.map((c) => (
                   <th key={c.key} className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 py-3 whitespace-nowrap">{c.label}</th>
                 ))}
               </tr>
             </thead>
             <tbody aria-busy={loading}>
-              {loading ? (
-                <SkeletonTableRows rows={8} cols={4 + LEAVE_COLS.length} />
+              {loading || leaveTypes === null ? (
+                <SkeletonTableRows rows={8} cols={4 + leaveCols.length} />
               ) : (
                 rows.map((row, i) => (
                   <tr key={row.user_id} className={i % 2 === 1 ? "bg-gray-50 dark:bg-gray-700/30" : ""}>
@@ -211,7 +236,7 @@ export default function HRLeaveRegisterTab() {
                     <td className="px-3 py-2 text-gray-500 dark:text-gray-400 text-xs tabular-nums">{row.legacy_user_id ?? "—"}</td>
                     <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{row.position_title ?? "—"}</td>
                     <td className="px-3 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">{row.branch_name}</td>
-                    {LEAVE_COLS.map((c) => (
+                    {leaveCols.map((c) => (
                       <td key={c.key} className={`px-2 py-2 text-center tabular-nums ${c.key === "total_days" ? "font-bold text-indigo-700 dark:text-indigo-300" : "text-gray-700 dark:text-gray-300"} ${row[c.key] > 0 && c.key !== "total_days" ? "text-amber-600 dark:text-amber-400 font-medium" : ""}`}>
                         {row[c.key] > 0 ? row[c.key] : ""}
                       </td>
