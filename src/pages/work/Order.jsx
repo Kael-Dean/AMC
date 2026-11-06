@@ -197,7 +197,7 @@ const Order = () => {
   const [filters, setFilters] = useState({
     startDate: firstDayThisMonth,
     endDate: today,
-    allTime: true,
+    allTime: false,
 
     branchId: branchLock.activeKey, branchName: "",
     klangId: "", klangName: "",
@@ -498,7 +498,7 @@ const Order = () => {
     setFilters({
       startDate: firstDayThisMonth,
       endDate: today,
-      allTime: true,
+      allTime: false,
 
       branchId: branchLock.activeKey, branchName: "",
       klangId: "", klangName: "",
@@ -520,9 +520,11 @@ const Order = () => {
   const setAllTime = (v) => setFilters((p) => ({ ...p, allTime: v }))
   const statsLoading = loading && rows.length === 0
 
-  // Active filters (badge on the phone disclosure). All time is the default, so a date range counts as one filter.
+  // Active filters (badge on the phone disclosure). Dates count only when changed from the default range.
   const activeFilterCount =
-    (!filters.allTime ? 1 : 0) +
+    (filters.allTime ? 1 : 0) +
+    (!filters.allTime && filters.startDate !== firstDayThisMonth ? 1 : 0) +
+    (!filters.allTime && filters.endDate !== today ? 1 : 0) +
     (filters.branchId && !branchLock.locked ? 1 : 0) +
     (filters.klangId ? 1 : 0) +
     (filters.specId ? 1 : 0) +
