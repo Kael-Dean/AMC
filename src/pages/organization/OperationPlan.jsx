@@ -36,48 +36,41 @@ const PLAN_TYPES = [
   { id: "thonthun", label: "ต้นทุนสินค้า", subLabel: "ตารางฝั่งต้นทุนสินค้า" },
 ]
 
-/* ---------------- ตาราง (เพิ่ม file ตามรูปโฟลเดอร์จริง) ---------------- */
+/* ---------------- ตาราง ---------------- */
 const SALES_TABLES = [
   {
     key: "procurement-plan-detail",
     label: "รายละเอียดแผนการจัดหาสินค้า",
-    file: "sell/ProcurementPlanDetail.jsx",
     Component: ProcurementPlanDetail,
   },
   {
     key: "agri-collection-plan-table",
     label: "รายละเอียดแผนการรวบรวมผลผลิตการเกษตร",
-    file: "sell/AgriCollectionPlanTable.jsx",
     Component: AgriCollectionPlanTable,
   },
   {
     key: "agri-processing-plan-detail",
     label: "รายละเอียดแผนการแปรรูปผลผลิตการเกษตร",
-    file: "sell/AgriProcessingPlanDetail.jsx",
     Component: AgriProcessingPlanDetail,
   },
   {
     key: "seed-project-sales-plan-detail",
     label: "รายละเอียดแผนโครงการผลิตเมล็ดพันธุ์",
-    file: "sell/SeedProjectSalesPlanDetail.jsx",
     Component: SeedProjectSalesPlanDetail,
   },
   {
     key: "service-business-plan-detail",
     label: "รายละเอียดแผนธุรกิจบริการ",
-    file: "sell/ServiceBusinessPlanDetail.jsx",
     Component: ServiceBusinessPlanDetail,
   },
   {
     key: "business-plan-revenue-by-business",
     label: "รายได้เฉพาะธุรกิจ (สรุป รายเดือน)",
-    file: "sell/BusinessPlanRevenueByBusinessTable.jsx",
     Component: BusinessPlanRevenueByBusinessTable,
   },
   {
     key: "business-plan-other-income",
     label: "รายได้อื่นๆ (รายเดือน)",
-    file: "sell/BusinessPlanOtherIncomeTable.jsx",
     Component: BusinessPlanOtherIncomeTable,
   },
 ]
@@ -86,55 +79,47 @@ const COST_TABLES = [
   {
     key: "business-plan-expense-table-detail",
     label: "ค่าใช้จ่ายเฉพาะ ธุรกิจจัดหาสินค้า (รายเดือน)",
-    file: "cost/BusinessPlanExpenseTableDetail.jsx",
     Component: BusinessPlanExpenseTableDetail,
   },
   {
     key: "business-plan-expense-oil-table-detail",
     label: "ค่าใช้จ่ายเฉพาะ ธุรกิจจัดหาสินค้า ปั๊มน้ำมัน (รายเดือน)",
-    file: "cost/BusinessPlanExpenseOilTableDetail.jsx",
     Component: BusinessPlanExpenseOilTableDetail,
   },
   {
     key: "business-plan-expense-collection-table-detail",
     label: "ค่าใช้จ่ายเฉพาะ ธุรกิจรวบรวม (รายเดือน)",
-    file: "cost/BusinessPlanExpenseCollectionTableDetail.jsx",
     Component: BusinessPlanExpenseCollectionTableDetail,
   },
   {
     key: "business-plan-expense-processing-table-detail",
     label: "ค่าใช้จ่ายเฉพาะ ธุรกิจแปรรูป (รายเดือน)",
-    file: "cost/BusinessPlanExpenseProcessingTableDetail.jsx",
     Component: BusinessPlanExpenseProcessingTableDetail,
   },
   {
     key: "business-plan-expense-seed-processing-table-detail",
     label: "ค่าใช้จ่ายเฉพาะ ธุรกิจแปรรูปเมล็ดพันธุ์ (รายเดือน)",
-    file: "cost/BusinessPlanExpenseSeedProcessingTableDetail.jsx",
     Component: BusinessPlanExpenseSeedProcessingTableDetail,
   },
   {
     key: "business-plan-expense-service-table-detail",
     label: "ค่าใช้จ่ายเฉพาะ ธุรกิจบริการ (รายเดือน)",
-    file: "cost/BusinessPlanExpenseServiceTableDetail.jsx",
     Component: BusinessPlanExpenseServiceTableDetail,
   },
   {
     key: "business-plan-expense-support-work-table-detail",
     label: "ค่าใช้จ่ายดำเนินงาน (รายเดือน)",
-    file: "cost/BusinessPlanExpenseSupportWorkTableDetail.jsx",
     Component: BusinessPlanExpenseSupportWorkTableDetail,
   },
   {
     key: "business-plan-rep-cost-summary-detail",
     label: "ต้นทุนขายเฉพาะธุรกิจ (รายเดือน)",
-    file: "cost/BusinessPlanRepCostSummaryTableDetail.jsx",
     Component: BusinessPlanRepCostSummaryTableDetail,
   },
 ]
 
 const THONTHUN_TABLES = [
-  { key: "thonthun", label: "ประมาณการต้นทุนสินค้า (รายปี)", file: "thonthun/Thonthun.jsx", Component: Thonthun },
+  { key: "thonthun", label: "ประมาณการต้นทุนสินค้า (รายปี)", Component: Thonthun },
 ]
 
 const OperationPlan = () => {
@@ -335,12 +320,6 @@ const OperationPlan = () => {
                 <span className="font-semibold">ประเภท:</span> {planTypeLabel || "—"}
                 <span className="mx-2 text-slate-400">|</span>
                 <span className="font-semibold">ตาราง:</span> {activeTable?.label || "—"}
-                {activeTable?.file ? (
-                  <>
-                    <span className="mx-2 text-slate-400">|</span>
-                    <span className="font-semibold">ไฟล์:</span> {activeTable.file}
-                  </>
-                ) : null}
               </div>
 
               <button
