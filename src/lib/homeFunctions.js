@@ -75,7 +75,7 @@ export const ALL_FUNCTIONS = [
     items: [
       { label: "สมัครสมาชิก", path: "/member-signup", perm: "members.create" },
       { label: "เพิ่มลูกค้าทั่วไป", path: "/customer-add", perm: "customers.create" },
-      { label: "เพิ่มบริษัท", path: "/company-add", perm: "customers.create", allow: canSeeAddCompany },
+      { label: "แก้ไขคู่ค้า/บริษัท", path: "/company-add", perm: "customers.create", allow: canSeeAddCompany },
       { label: "ค้นหาสมาชิก", path: "/search", perm: "members.search" },
       { label: "ค้นหาลูกค้าทั่วไป", path: "/customer-search", perm: "members.search" },
       { label: "สมาชิกสิ้นสภาพ", path: "/member-termination", perm: "members.status" },

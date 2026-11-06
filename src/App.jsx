@@ -19,6 +19,7 @@ const Stock = lazyWithReload(() => import("./pages/work/Stock"))
 
 const CustomerAdd = lazyWithReload(() => import("./pages/work/CustomerAdd"))
 const CompanyAdd = lazyWithReload(() => import("./pages/work/CompanyAdd"))
+const CompanyList = lazyWithReload(() => import("./pages/work/CompanyList"))
 const CustomerSearch = lazyWithReload(() => import("./pages/work/CustomerSearch"))
 
 const StockTransferOut = lazyWithReload(() => import("./pages/work/StockTransferOut"))
@@ -122,8 +123,9 @@ function App() {
 
         <Route path="/customer-search" element={guard("members.search", <CustomerSearch />)} />
         <Route path="/customer-add" element={guard("customers.create", <CustomerAdd />)} />
-        {/* เพิ่มบริษัท: customer.register เหมือน backend (canSeeAddCompany) */}
-        <Route path="/company-add" element={guard("customers.create", <CompanyAdd />)} />
+        {/* แก้ไขคู่ค้า/บริษัท: รายชื่อ + ฟอร์มเพิ่ม — customer.register เหมือน backend (canSeeAddCompany) */}
+        <Route path="/company-add" element={guard("customers.create", <CompanyList />)} />
+        <Route path="/company-add/new" element={guard("customers.create", <CompanyAdd />)} />
         <Route path="/member-termination" element={guard("members.status", <MemberTermination />)} />
         <Route path="/share" element={guard("shares.buy", <Share />)} />
 
