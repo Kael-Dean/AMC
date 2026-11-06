@@ -1,5 +1,4 @@
 // src/pages/Documents.jsx
-import { ChevronDown } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { apiAuth, apiDownload } from "../../lib/api"   // helper แนบ token + BASE URL
 import { cx, baseField, labelCls, helpTextCls, errorTextCls, secondaryBtnCls } from "../../lib/styles"
@@ -14,8 +13,6 @@ import useBranchLock, { scopedBranchId } from "../../hooks/useBranchLock"
 import { toast } from "../../components/ui"
 import DateInput from "../../components/ThaiDateField"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
-import { createPortal } from "react-dom"
-import useAnchoredPanel from "../../lib/useAnchoredPanel"
 import PageTitle from "../../components/PageTitle"
 import { canGoBack, useDrill } from "../../lib/drill"
 import SelectDropdown from "../../components/SelectDropdown"
@@ -138,12 +135,32 @@ const personLabel = (r) => {
   return "ไม่ทราบชื่อ"
 }
 
+/** Selected record shown in the trigger: not one of the search results. */
+const CURRENT_MEMBER = "__current__"
+
+const memberOption = (r) => {
+  const ok = r && r.asso_id !== null && r.asso_id !== undefined && String(r.asso_id).trim() !== ""
+  const sub = (r?.type === "company"
+    ? ["บริษัท", r?.tax_id ? `เลขภาษี ${r.tax_id}` : ""]
+    : [
+        r?.type === "member" ? `สมาชิก${r?.member_id ? ` ${r.member_id}` : ""}` : "ลูกค้า",
+        r?.citizen_id ? `บัตร ${r.citizen_id}` : "",
+      ])
+    .filter(Boolean)
+    .join(" · ")
+  return {
+    value: `${r?.type ?? "person"}:${r?.asso_id ?? r?.member_id ?? r?.citizen_id ?? personLabel(r)}`,
+    label: personLabel(r),
+    subLabel: ok ? sub : `${sub} · เลือกไม่ได้ ข้อมูลรายนี้ไม่ครบ`,
+    disabled: !ok,
+    rec: r,
+  }
+}
+
 /**
- * ช่องค้นหาสมาชิกแบบ autocomplete — reuse endpoint /order/customers/search (เหมือนหน้าซื้อ)
- * เลือกแล้วส่ง asso_id กลับผ่าน onPick. เป็น component ระดับบนสุด (identity คงที่)
- * เพื่อไม่ให้ remount ทุกครั้งที่ parent re-render (กัน input เสีย focus)
- * includeCompanies = ค้นบริษัทด้วย (/order/companies/search) สำหรับช่อง "คู่ค้า":
- *   กดช่องแล้วเปิดเป็นดรอปดาวน์รายชื่อบริษัททันที พิมพ์ 2 ตัวขึ้นไปจึงค้นสมาชิก/ลูกค้าด้วย
+ * ดรอปดาวค้นหาสมาชิก/ลูกค้า → asso_id ใช้ ComboBox ตัวมาตรฐาน ค้นที่ server
+ * (/order/customers/search เหมือนหน้าซื้อ). พิมพ์อย่างน้อย 2 ตัวอักษรจึงเริ่มค้น
+ * includeCompanies = ช่อง "คู่ค้า": เปิดมาเห็นรายชื่อบริษัททันที พิมพ์แล้วค้นทั้งบริษัทและสมาชิก
  */
 function MemberSearchBox({
   valueLabel = "",
@@ -152,40 +169,31 @@ function MemberSearchBox({
   onClear,
   includeCompanies = false,
   inputId,
-  placeholder = "พิมพ์ชื่อ / รหัสสมาชิก / เลขบัตร แล้วเลือกจากรายการ",
+  ariaLabel,
+  placeholder = "เลือกสมาชิก",
+  searchPlaceholder = "พิมพ์ชื่อ / รหัสสมาชิก / เลขบัตร",
   emptyText = "ไม่พบสมาชิกที่ตรงกับคำค้น",
 }) {
   const [q, setQ] = useState("")
   const [results, setResults] = useState([])
-  const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
-  const [highlight, setHighlight] = useState(-1)
-  const [browsing, setBrowsing] = useState(false)
-  const boxRef = useRef(null)
-  const inputRef = useRef(null)
-  const panelRef = useRef(null)
   const epochRef = useRef(0)
-  const { style: panelStyle } = useAnchoredPanel(inputRef, { open, maxH: 288, maxW: 1200 })
-
-  const selectable = (r) =>
-    r && r.asso_id !== null && r.asso_id !== undefined && String(r.asso_id).trim() !== ""
 
   // debounce + ค้นหา
   useEffect(() => {
     const term = q.trim()
     const my = ++epochRef.current
-    const companiesOnly = includeCompanies && browsing && term.length < 2
+    const companiesOnly = includeCompanies && term.length < 2
     if (term.length < 2 && !companiesOnly) {
       setResults([])
       setLoading(false)
       setFailed(false)
-      setOpen(false)
       return
     }
     setLoading(true)
     const t = setTimeout(async () => {
-      const qs = encodeURIComponent(term)
+      const qs = encodeURIComponent(companiesOnly ? "" : term)
       const settled = await Promise.allSettled([
         ...(companiesOnly ? [] : [apiAuth(`/order/customers/search?q=${qs}`)]),
         ...(includeCompanies ? [apiAuth(`/order/companies/search?q=${qs}`)] : []),
@@ -195,181 +203,38 @@ function MemberSearchBox({
       setResults(arr)
       // ค้นไม่สำเร็จแล้วไม่มีผล ห้ามขึ้น "ไม่พบ" — ผู้ใช้จะเข้าใจผิดว่าไม่มีข้อมูล
       setFailed(arr.length === 0 && settled.some((s) => s.status === "rejected"))
-      setOpen(true)
-      setHighlight(arr.length ? 0 : -1)
       setLoading(false)
     }, term ? 300 : 0)
     return () => clearTimeout(t)
-  }, [q, includeCompanies, browsing])
+  }, [q, includeCompanies])
 
-  // ปิดเมื่อคลิกนอกกล่อง — panel อยู่ใน portal จึงต้องเช็คทั้งสองฝั่ง
-  useEffect(() => {
-    const onClick = (e) => {
-      if (boxRef.current?.contains(e.target)) return
-      if (panelRef.current?.contains(e.target)) return
-      setOpen(false)
-      setHighlight(-1)
-      setBrowsing(false)
-    }
-    document.addEventListener("click", onClick)
-    return () => document.removeEventListener("click", onClick)
-  }, [])
+  const options = useMemo(() => {
+    const list = results.map(memberOption)
+    return valueLabel && !q.trim() ? [{ value: CURRENT_MEMBER, label: valueLabel }, ...list] : list
+  }, [results, valueLabel, q])
 
-  // เลื่อนรายการตามคีย์บอร์ด
-  useEffect(() => {
-    if (!open || highlight < 0) return
-    panelRef.current?.children[highlight]?.scrollIntoView({ block: "nearest" })
-  }, [open, highlight])
-
-  const pick = (r) => {
-    if (!selectable(r)) return
-    onPick?.(r)
-    setQ("")
-    setResults([])
-    setOpen(false)
-    setHighlight(-1)
-    setBrowsing(false)
-  }
-
-  const onKeyDown = (e) => {
-    if (!open && e.key === "ArrowDown") {
-      if (results.length) setOpen(true)
-      else if (includeCompanies) setBrowsing(true)
-      return
-    }
-    if (!open) return
-    if (e.key === "ArrowDown") {
-      e.preventDefault()
-      setHighlight((h) => (h < results.length - 1 ? h + 1 : 0))
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault()
-      setHighlight((h) => (h > 0 ? h - 1 : results.length - 1))
-    } else if (e.key === "Enter") {
-      e.preventDefault()
-      if (highlight >= 0 && highlight < results.length) pick(results[highlight])
-    } else if (e.key === "Escape") {
-      e.preventDefault()
-      setOpen(false)
-      setHighlight(-1)
-      setBrowsing(false)
-    }
-  }
-
-  // สถานะ "เลือกแล้ว" — แสดงชิปพร้อมปุ่มเปลี่ยน
-  if (valueLabel) {
-    return (
-      <div
-        className={cx(
-          "flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition",
-          "border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20"
-        )}
-      >
-        <div className="flex min-w-0 items-center gap-2">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" className="shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true">
-            <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z" />
-          </svg>
-          <span className="truncate font-medium text-emerald-800 dark:text-emerald-100">{valueLabel}</span>
-        </div>
-        <button
-          type="button"
-          onClick={() => onClear?.()}
-          className="shrink-0 rounded-xl border border-emerald-300 bg-white px-3 py-1.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-700 dark:bg-slate-800 dark:text-emerald-200 dark:hover:bg-slate-700 cursor-pointer"
-        >
-          เปลี่ยน
-        </button>
-      </div>
-    )
-  }
+  const needsMoreChars = !includeCompanies && q.trim().length < 2
 
   return (
-    <div className="relative" ref={boxRef}>
-      <input
-        ref={inputRef}
-        id={inputId}
-        className={cx(baseField, includeCompanies && "!pr-10", error && "border-red-400 ring-2 ring-red-300/70")}
-        placeholder={placeholder}
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        onFocus={() => {
-          if (includeCompanies) setBrowsing(true)
-          if (results.length) setOpen(true)
-        }}
-        onClick={() => {
-          if (includeCompanies) setBrowsing(true)
-          if (results.length) setOpen(true)
-        }}
-        onKeyDown={onKeyDown}
-        autoComplete="off"
-        role="combobox"
-        aria-autocomplete="list"
-        aria-expanded={open}
-        aria-invalid={error ? true : undefined}
-      />
-      {includeCompanies && (
-        <ChevronDown
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-slate-400"
-          strokeWidth={2}
-        />
-      )}
-      {open && createPortal(
-        <div
-          ref={panelRef}
-          role="listbox"
-          style={{ ...panelStyle, zIndex: 10050 }}
-          className="overflow-auto rounded-2xl border border-slate-200 bg-white text-black shadow-lg dark:border-line dark:bg-raised dark:text-white"
-        >
-          {loading && (
-            <div className="px-3 py-2.5 text-sm text-slate-500 dark:text-slate-300">กำลังค้นหา…</div>
-          )}
-          {!loading && failed && (
-            <div className="px-3 py-2.5 text-sm text-red-600 dark:text-red-300">ค้นหาไม่สำเร็จ ลองอีกครั้ง</div>
-          )}
-          {!loading && !failed && results.length === 0 && (
-            <div className="px-3 py-2.5 text-sm text-slate-500 dark:text-slate-300">{emptyText}</div>
-          )}
-          {!loading &&
-            results.map((r, idx) => {
-              const ok = selectable(r)
-              const isActive = idx === highlight
-              const label = personLabel(r)
-              const sub = (r?.type === "company"
-                ? ["บริษัท", r?.tax_id ? `เลขภาษี ${r.tax_id}` : ""]
-                : [
-                    r?.type === "member" ? `สมาชิก${r?.member_id ? ` ${r.member_id}` : ""}` : "ลูกค้า",
-                    r?.citizen_id ? `บัตร ${r.citizen_id}` : "",
-                  ])
-                .filter(Boolean)
-                .join(" · ")
-              return (
-                <button
-                  key={`${r?.asso_id ?? "na"}-${idx}`}
-                  type="button"
-                  role="option"
-                  aria-selected={isActive}
-                  disabled={!ok}
-                  onMouseEnter={() => setHighlight(idx)}
-                  onClick={() => pick(r)}
-                  className={cx(
-                    "flex w-full flex-col items-start gap-0.5 rounded-xl px-3 py-2.5 text-left transition",
-                    !ok && "cursor-not-allowed opacity-50",
-                    ok && isActive && "bg-emerald-100 dark:bg-emerald-400/20",
-                    ok && !isActive && "hover:bg-emerald-50 dark:hover:bg-emerald-900/30",
-                    ok && "cursor-pointer"
-                  )}
-                >
-                  <span className="text-[15px] font-medium">{label}</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    {sub}
-                    {!ok ? " · เลือกไม่ได้ ข้อมูลรายนี้ไม่ครบ" : ""}
-                  </span>
-                </button>
-              )
-            })}
-        </div>,
-        document.body
-      )}
-    </div>
+    <ComboBox
+      id={inputId}
+      ariaLabel={ariaLabel}
+      options={options}
+      value={valueLabel ? CURRENT_MEMBER : ""}
+      onChange={(_, opt) => { if (opt?.rec) onPick?.(opt.rec) }}
+      onClear={onClear}
+      placeholder={placeholder}
+      searchable
+      remoteSearch
+      searching={loading}
+      searchFailed={failed}
+      onQueryChange={setQ}
+      searchPlaceholder={searchPlaceholder}
+      emptyText={needsMoreChars ? "พิมพ์อย่างน้อย 2 ตัวอักษรเพื่อค้นหา" : emptyText}
+      error={error}
+      panelMaxW={1200}
+      title={ariaLabel ?? placeholder}
+    />
   )
 }
 
@@ -1642,7 +1507,9 @@ function Documents() {
                 <MemberSearchBox
                   inputId="report-partner"
                   includeCompanies
-                  placeholder="เลือกบริษัท หรือพิมพ์ชื่อ / รหัสสมาชิก / เลขบัตร / เลขภาษี"
+                  ariaLabel="คู่ค้า"
+                  placeholder="ทุกคู่ค้า"
+                  searchPlaceholder="พิมพ์ชื่อ / รหัสสมาชิก / เลขบัตร / เลขภาษี"
                   emptyText="ไม่พบคู่ค้าที่ตรงกับคำค้น"
                   valueLabel={filters.assoName || (filters.assoId ? "เลือกคู่ค้าแล้ว" : "")}
                   onPick={(r) => setFilters((p) => ({ ...p, assoId: String(r.asso_id), assoName: personLabel(r) }))}
@@ -1661,10 +1528,12 @@ function Documents() {
             {hasSpecs && <FormSpecMulti note={report.specNote} />}
             {report.memberSearch ? (
               <div className="md:col-span-3">
-                <label className={labelCls}>
+                <label htmlFor="report-member" className={labelCls}>
                   ค้นหาสมาชิก <span className="text-red-500">*</span>
                 </label>
                 <MemberSearchBox
+                  inputId="report-member"
+                  ariaLabel="ค้นหาสมาชิก"
                   valueLabel={filters.assoName || (filters.assoId ? "เลือกสมาชิกแล้ว" : "")}
                   error={!!errors.assoId}
                   onPick={(r) => {

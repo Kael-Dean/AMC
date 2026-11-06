@@ -30,6 +30,15 @@
 //   title          heading of the phone picker sheet (falls back to ariaLabel,
 //                  then placeholder)
 //   ref            imperative { focus(), open(), close() }
+//   remoteSearch   the caller filters on the server: skip the local filter and always
+//                  show emptyText when nothing matches; onQueryChange feeds the request
+//   searching / searchFailed  status row in the list while remoteSearch is working
+//   onClear        adds a clear (×) button on the trigger while a value is selected
+//   filterFn(opt, q)  custom matcher; default = label + sublabel + value + keywords
+//   size           "md" (default) | "sm" — compact trigger for dense filter bars
+//   showSubInTrigger  second line in the trigger with the selected sublabel (default true)
+//   ariaLabelledby, required  → applied to the trigger
+//   Option: { value, label, subLabel?, keywords?, disabled? } (disabled = listed, not pickable)
 //
 // Desktop (≥md): portaled listbox, position: fixed at z 10050 (above the
 // Sheet 10040 and StickyTableScrollbar 10000), flips above when out of room.
@@ -70,6 +79,11 @@ const defaultGetLabel = (o) => o?.label ?? ""
 const defaultGetValue = (o) => o?.value ?? o?.id ?? ""
 const defaultGetSubLabel = (o) => o?.subLabel ?? o?.sublabel ?? o?.subtitle ?? ""
 
+const defaultFilter = (hay, opt, q) => {
+  const kw = Array.isArray(opt?.keywords) ? opt.keywords.join(" ") : opt?.keywords ?? ""
+  return norm(`${hay} ${kw}`).includes(q)
+}
+
 const ComboBox = forwardRef(function ComboBox(
   {
     options = [],
@@ -100,6 +114,15 @@ const ComboBox = forwardRef(function ComboBox(
     panelMaxW = 512,
     onQueryChange,
     wrapLabels = false, // wrap option labels (and the selected trigger text) instead of truncating them
+    remoteSearch = false,
+    searching = false,
+    searchFailed = false,
+    onClear,
+    filterFn,
+    size = "md",
+    showSubInTrigger = true,
+    ariaLabelledby,
+    required = false,
   },
   ref,
 ) {
@@ -142,14 +165,21 @@ const ComboBox = forwardRef(function ComboBox(
     [options, value, getValue],
   )
   const selectedLabel = selectedObj ? getLabel(selectedObj) : ""
-  const selectedSub = selectedObj ? getSubLabel(selectedObj) || "" : ""
+  const selectedSub = selectedObj && showSubInTrigger ? getSubLabel(selectedObj) || "" : ""
   const hasValue = !(value === null || value === undefined || String(value) === "")
 
   const filtered = useMemo(() => {
     const q = norm(query)
-    if (!hasSearch || !q) return options
-    return options.filter((o) => norm(`${getLabel(o)} ${getSubLabel(o)} ${getValue(o)}`).includes(q))
-  }, [options, query, hasSearch, getLabel, getSubLabel, getValue])
+    if (!hasSearch || !q || remoteSearch) return options
+    if (filterFn) return options.filter((o) => filterFn(o, q))
+    return options.filter((o) => defaultFilter(`${getLabel(o)} ${getSubLabel(o)} ${getValue(o)}`, o, q))
+  }, [options, query, hasSearch, remoteSearch, filterFn, getLabel, getSubLabel, getValue])
+
+  // Server results arrive after the list opened: keep a row highlighted so Enter works.
+  useEffect(() => {
+    if (!remoteSearch || !open) return
+    setHighlight((h) => (filtered.length === 0 ? -1 : h < 0 || h >= filtered.length ? 0 : h))
+  }, [remoteSearch, open, filtered.length])
 
   const close = useCallback((refocus = false) => {
     setOpen(false)
@@ -183,6 +213,7 @@ const ComboBox = forwardRef(function ComboBox(
   )
 
   const commit = (opt) => {
+    if (opt?.disabled) return
     const v = String(getValue(opt))
     onChange?.(v, opt)
     close(false)
@@ -369,13 +400,15 @@ const ComboBox = forwardRef(function ComboBox(
         id={optId(idx)}
         role="option"
         aria-selected={isChosen}
+        aria-disabled={opt?.disabled ? true : undefined}
         tabIndex={phone ? (idx === rovingIdx ? 0 : -1) : undefined}
         onKeyDown={phone ? (e) => onPhoneOptionKey(e, opt, idx) : undefined}
         onMouseDown={(e) => e.preventDefault()}
         onMouseMove={() => { if (!phone && !isActive) setHighlight(idx) }}
         onClick={() => commit(opt)}
         className={cx(
-          "flex w-full cursor-pointer items-center gap-3 text-left transition-colors duration-100",
+          "flex w-full items-center gap-3 text-left transition-colors duration-100",
+          opt?.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
           phone
             ? "min-h-touch px-4 py-2.5 text-base outline-none focus-visible:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500 dark:focus-visible:bg-indigo-500/15 dark:focus-visible:ring-indigo-400"
             : "min-h-10 rounded-xl px-3 py-2 text-[15px]",
@@ -397,14 +430,31 @@ const ComboBox = forwardRef(function ComboBox(
     )
   }
 
+  const emptyMessage = options.length === 0 && !remoteSearch ? "ไม่มีตัวเลือก" : emptyText
   const emptyNode = (phone) =>
     phone ? (
-      <EmptyState title={options.length === 0 ? "ไม่มีตัวเลือก" : emptyText} icon={<span />} className="py-10" />
+      <EmptyState title={emptyMessage} icon={<span />} className="py-10" />
     ) : (
-      <li className="px-3 py-5 text-center text-sm text-slate-500 dark:text-slate-400">
-        {options.length === 0 ? "ไม่มีตัวเลือก" : emptyText}
-      </li>
+      <li className="px-3 py-5 text-center text-sm text-slate-500 dark:text-slate-400">{emptyMessage}</li>
     )
+
+  // Remote search state replaces the rows: stale results must not look like the answer.
+  const listBody = (phone) => {
+    if (searching || searchFailed) {
+      return (
+        <li
+          role="status"
+          className={cx(
+            "px-3 py-5 text-center text-sm",
+            searchFailed && !searching ? "text-red-600 dark:text-red-300" : "text-slate-500 dark:text-slate-400",
+          )}
+        >
+          {searching ? "กำลังค้นหา…" : "ค้นหาไม่สำเร็จ ลองอีกครั้ง"}
+        </li>
+      )
+    }
+    return filtered.length === 0 ? emptyNode(phone) : filtered.map((opt, idx) => renderOption(opt, idx, phone))
+  }
 
   const searchBox = (phone) => (
     <div className={cx("relative", phone ? "sticky top-0 z-10 -mx-4 -mt-4 bg-white px-4 py-3 dark:bg-surface" : "shrink-0 border-b border-slate-200 dark:border-line")}>
@@ -469,11 +519,15 @@ const ComboBox = forwardRef(function ComboBox(
         aria-controls={open && !isPhone ? listId : undefined}
         aria-activedescendant={!hasSearch ? activeDesc : undefined}
         aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledby}
+        aria-required={required || undefined}
         aria-describedby={ariaDescribedBy || undefined}
         aria-invalid={error || hintRed ? true : undefined}
         title={selectedLabel || undefined}
         className={cx(
-          "flex w-full min-h-12 items-center gap-2 rounded-2xl border p-3 text-left text-base outline-none transition-colors duration-150 md:min-h-0 md:text-[15px]",
+          "flex w-full items-center gap-2 border text-left text-base outline-none transition-colors duration-150 md:min-h-0",
+          size === "sm" ? "min-h-11 rounded-lg px-3 py-2 md:text-sm" : "min-h-12 rounded-2xl p-3 md:text-[15px]",
+          onClear && hasValue && !isDisabled && "pr-20 md:pr-16",
           isDisabled
             ? cx("border-slate-300 dark:border-line-strong", fieldDisabled)
             : "cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-field dark:hover:bg-field",
@@ -509,6 +563,18 @@ const ComboBox = forwardRef(function ComboBox(
         />
       </button>
 
+      {/* Sibling of the trigger: a button cannot nest inside a button */}
+      {onClear && hasValue && !isDisabled && (
+        <button
+          type="button"
+          aria-label="ล้างที่เลือก"
+          onClick={() => { close(false); onClear(); triggerRef.current?.focus({ preventScroll: true }) }}
+          className="absolute top-1/2 right-9 flex size-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors duration-200 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 md:size-8 dark:text-slate-500 dark:hover:text-slate-200"
+        >
+          <X aria-hidden="true" className="size-4" strokeWidth={2} />
+        </button>
+      )}
+
       {/* Phone: full picker sheet (z 10050 → above a parent Sheet at 10040) */}
       {isPhone ? (
         <Sheet
@@ -526,7 +592,7 @@ const ComboBox = forwardRef(function ComboBox(
             aria-label={ariaLabel}
             className={cx("-mx-4 divide-y divide-gray-100 dark:divide-line", hasSearch ? "mt-1" : "-mt-2")}
           >
-            {filtered.length === 0 ? emptyNode(true) : filtered.map((opt, idx) => renderOption(opt, idx, true))}
+            {listBody(true)}
           </ul>
         </Sheet>
       ) : (
@@ -544,7 +610,7 @@ const ComboBox = forwardRef(function ComboBox(
               aria-label={ariaLabel}
               className="min-h-0 flex-1 overflow-auto overscroll-contain p-1"
             >
-              {filtered.length === 0 ? emptyNode(false) : filtered.map((opt, idx) => renderOption(opt, idx, false))}
+              {listBody(false)}
             </ul>
           </div>,
           document.body,

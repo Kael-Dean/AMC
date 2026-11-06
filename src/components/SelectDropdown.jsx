@@ -8,13 +8,12 @@
 // options while the user is choosing. See CLAUDE.md → "Popup / Modal ต้อง render
 // ผ่าน Portal เสมอ".
 //
+// searchable = the shared ComboBox, the one look for every searchable dropdown.
+// Without `searchable` this stays the plain select with colour swatches.
+//
 // Backward compatible: options / value / onChange / placeholder / disabled /
 // loading / error behave exactly as before. Optional additions:
-//   searchable            search box inside the panel (focus on open, resets on close)
-//   searchPlaceholder     default "ค้นหา…"
-//   filterFn(opt, q)      custom matcher; default = case-insensitive includes on
-//                         label + sublabel/subtitle + value + keywords
-//   emptyText             shown when the query matches nothing (default "ไม่พบรายการ")
+//   searchable            renders ComboBox; searchPlaceholder, filterFn(opt, q) and emptyText go with it
 //   showSwatch            colour chip per option (default true); colour is a hash
 //                         of `value`, so it never shifts when the list is filtered
 //   showSublabelInTrigger second line in the trigger with the selected sublabel
@@ -26,12 +25,12 @@
 //
 // Keyboard: closed trigger — Enter/Space/↓ open on the selected (or first) option,
 // ↑ opens on the last. Open — ↑/↓/Home/End move, Enter selects, Esc closes and
-// refocuses the trigger, Tab closes. Without `searchable`, printable keys type-ahead.
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react"
+// refocuses the trigger, Tab closes. Printable keys type-ahead.
+import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import { Check, ChevronDown, Search } from "lucide-react"
+import { Check, ChevronDown } from "lucide-react"
+import ComboBox from "./ComboBox"
 import useAnchoredPanel from "../lib/useAnchoredPanel"
-import { useIsCoarsePointer, useIsPhone } from "../hooks/useMediaQuery"
 
 // Must sit above StickyTableScrollbar (z-index 10000) and the Sheet (10040).
 // Full z-stack: see src/components/ui/Sheet.jsx header.
@@ -66,11 +65,6 @@ const subOf = (opt) => opt?.sublabel ?? opt?.subtitle ?? ""
 
 const norm = (s) => String(s ?? "").toLowerCase().trim()
 
-const defaultFilter = (opt, q) => {
-  const kw = Array.isArray(opt.keywords) ? opt.keywords.join(" ") : opt.keywords ?? ""
-  return norm(`${opt.label ?? ""} ${subOf(opt)} ${opt.value ?? ""} ${kw}`).includes(q)
-}
-
 function Swatch({ color, strong }) {
   return (
     <span
@@ -87,7 +81,23 @@ function Swatch({ color, strong }) {
   )
 }
 
-export default function SelectDropdown({
+export default function SelectDropdown({ searchable = false, ...props }) {
+  if (!searchable) return <PlainSelect {...props} />
+  // Swatches are a PlainSelect detail: the standard searchable look has none.
+  const { ariaDescribedby, showSublabelInTrigger = false, showSwatch, ...rest } = props
+  void showSwatch
+  return (
+    <ComboBox
+      {...rest}
+      searchable
+      panelMinW={PANEL_MIN_W}
+      ariaDescribedBy={ariaDescribedby}
+      showSubInTrigger={showSublabelInTrigger}
+    />
+  )
+}
+
+function PlainSelect({
   options = [],        // [{ value, label, sublabel?, subtitle?, keywords? }]
   value = "",          // currently selected value (string / number)
   onChange,            // (value: string) => void
@@ -95,10 +105,6 @@ export default function SelectDropdown({
   disabled = false,
   loading = false,
   error = false,
-  searchable = false,
-  searchPlaceholder = "ค้นหา…",
-  filterFn,
-  emptyText = "ไม่พบรายการ",
   showSwatch = true,
   showSublabelInTrigger = false,
   id,
@@ -109,40 +115,22 @@ export default function SelectDropdown({
   size = "md",
 }) {
   const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState("")
   const [activeIdx, setActiveIdx] = useState(-1)
   const ref = useRef(null)
   const triggerRef = useRef(null)
   const panelRef = useRef(null)
-  const searchRef = useRef(null)
   const typeAhead = useRef({ buf: "", timer: 0 })
   // Fixed coords for the portaled panel (flip-up, clamp, reposition on scroll).
   const { style: panelStyle } = useAnchoredPanel(triggerRef, {
     open, maxH: PANEL_MAX_H, minW: PANEL_MIN_W, maxW: PANEL_MAX_W, gap: GAP, edge: EDGE,
   })
-  // On touch devices the on-screen keyboard would cover the list before the
-  // user sees it — let them tap the search box when they actually need it.
-  const isPhone = useIsPhone()
-  const isCoarse = useIsCoarsePointer()
-  const autoFocusSearch = searchable && !isPhone && !isCoarse
-
   const uid = useId()
   const listId = `${uid}-listbox`
   const optId = (i) => `${uid}-opt-${i}`
 
   const selected = options.find((o) => String(o.value) === String(value))
 
-  const filtered = useMemo(() => {
-    const q = norm(query)
-    if (!searchable || !q) return options
-    const match = filterFn ?? defaultFilter
-    return options.filter((o) => match(o, q))
-  }, [options, query, searchable, filterFn])
-
-  useLayoutEffect(() => {
-    if (!open) return
-    if (autoFocusSearch) searchRef.current?.focus({ preventScroll: true })
-  }, [open, autoFocusSearch])
+  const filtered = options
 
   // Keep the active option visible.
   useEffect(() => {
@@ -153,7 +141,6 @@ export default function SelectDropdown({
 
   const close = (refocus = false) => {
     setOpen(false)
-    setQuery("")
     setActiveIdx(-1)
     if (refocus) triggerRef.current?.focus({ preventScroll: true })
   }
@@ -165,7 +152,6 @@ export default function SelectDropdown({
       if (ref.current?.contains(e.target)) return
       if (panelRef.current?.contains(e.target)) return
       setOpen(false)
-      setQuery("")
       setActiveIdx(-1)
     }
     document.addEventListener("mousedown", handle)
@@ -181,7 +167,6 @@ export default function SelectDropdown({
       if (e.key !== "Escape" || e.defaultPrevented || e.isComposing) return
       e.preventDefault()
       setOpen(false)
-      setQuery("")
       setActiveIdx(-1)
       const inside = ref.current?.contains(document.activeElement) || panelRef.current?.contains(document.activeElement)
       if (inside) triggerRef.current?.focus({ preventScroll: true })
@@ -205,7 +190,6 @@ export default function SelectDropdown({
       if (where === "last") idx = options.length - 1
       else idx = selIdx >= 0 ? selIdx : 0
     }
-    setQuery("")
     setActiveIdx(idx)
     setOpen(true)
   }
@@ -240,25 +224,13 @@ export default function SelectDropdown({
         if (n) setActiveIdx((i) => (i < 0 ? n - 1 : Math.max(i - 1, 0)))
         return true
       case "Home":
-        if (!searchable) {
-          e.preventDefault()
-          if (n) setActiveIdx(0)
-          return true
-        }
-        // In the search box Home/End move the caret unless Ctrl is held.
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault()
-          if (n) setActiveIdx(0)
-          return true
-        }
-        return false
+        e.preventDefault()
+        if (n) setActiveIdx(0)
+        return true
       case "End":
-        if (!searchable || e.ctrlKey || e.metaKey) {
-          e.preventDefault()
-          if (n) setActiveIdx(n - 1)
-          return true
-        }
-        return false
+        e.preventDefault()
+        if (n) setActiveIdx(n - 1)
+        return true
       case "Enter":
         e.preventDefault()
         if (activeIdx >= 0 && filtered[activeIdx]) commit(filtered[activeIdx])
@@ -294,7 +266,7 @@ export default function SelectDropdown({
       if (activeIdx >= 0 && filtered[activeIdx]) commit(filtered[activeIdx])
       return
     }
-    if (!searchable && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault()
       runTypeAhead(e.key)
     }
@@ -340,7 +312,7 @@ export default function SelectDropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
-        aria-activedescendant={!searchable ? activeDesc : undefined}
+        aria-activedescendant={activeDesc}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledby}
         aria-describedby={ariaDescribedby}
@@ -385,36 +357,6 @@ export default function SelectDropdown({
           style={{ ...panelStyle, zIndex: PANEL_Z }}
           className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-line-strong dark:bg-raised dark:shadow-2xl dark:shadow-black/60"
         >
-          {searchable && (
-            <div className="relative shrink-0 border-b border-slate-200 dark:border-line">
-              <Search
-                aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-                strokeWidth={1.75}
-              />
-              <input
-                ref={searchRef}
-                type="text"
-                role="combobox"
-                aria-autocomplete="list"
-                aria-expanded="true"
-                aria-controls={listId}
-                aria-activedescendant={activeDesc}
-                aria-label={searchPlaceholder}
-                autoComplete="off"
-                spellCheck={false}
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value)
-                  setActiveIdx(0)
-                }}
-                onKeyDown={onListKey}
-                placeholder={searchPlaceholder}
-                className="h-11 w-full bg-transparent pl-9 pr-3 text-base text-slate-900 outline-none placeholder:text-slate-500 md:h-10 md:text-sm dark:text-slate-100 dark:placeholder:text-slate-400"
-              />
-            </div>
-          )}
-
           <div
             id={listId}
             role="listbox"
@@ -423,9 +365,7 @@ export default function SelectDropdown({
             className="min-h-0 flex-1 overflow-auto overscroll-contain p-1"
           >
             {filtered.length === 0 ? (
-              <div className="px-3 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                {options.length === 0 ? "ไม่มีตัวเลือก" : emptyText}
-              </div>
+              <div className="px-3 py-6 text-center text-sm text-slate-500 dark:text-slate-400">ไม่มีตัวเลือก</div>
             ) : (
               filtered.map((opt, idx) => {
                 const isChosen = String(opt.value) === String(value)
