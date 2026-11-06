@@ -228,13 +228,8 @@ const OperationPlan = () => {
 
   const planTypeOptions = useMemo(() => PLAN_TYPES.map((p) => ({ id: p.id, label: p.label, subLabel: p.subLabel || "" })), [])
 
-  // ✅ ดรอปดาวเลือกตาราง: subLabel = ไฟล์ที่มา
   const tableOptions = useMemo(() => {
-    return currentTables.map((t) => ({
-      id: t.key,
-      label: t.label,
-      subLabel: t.file ? `ไฟล์: ${t.file}` : "",
-    }))
+    return currentTables.map((t) => ({ id: t.key, label: t.label }))
   }, [currentTables])
 
   // Auto-open modal เมื่อเลือกตารางและครบทุก condition
@@ -324,7 +319,6 @@ const OperationPlan = () => {
                   onChange={(id) => setTableKey(String(id))}
                   placeholder={planType ? "— เลือกตาราง —" : "ต้องเลือกประเภทตารางก่อน"}
                   disabled={!planType}
-                  getSubLabel={(o) => o?.subLabel || ""}
                   buttonRef={tableRef}
                 />
               </div>
