@@ -60,6 +60,11 @@ export function getUser() {
   }
 }
 
+/** Stable per-user key for browser-side data that outlives the session (null = nobody signed in). */
+export function getUserKey() {
+  return userKey(getUser());
+}
+
 export function isTokenExpired() {
   const u = getUser();
   if (!u?.exp) return true;
@@ -80,8 +85,10 @@ const AUTH_STORAGE_KEYS = [
   'account_status', 'account_status_user',
 ];
 
-// sessionStorage flags of the onboarding flow (src/lib/onboarding.js) — per user, so drop on logout
-const AUTH_SESSION_KEYS = ['onboarding_prompted', 'onboarding_tour'];
+// sessionStorage flags of the onboarding flow (src/lib/onboarding.js) — per user, so drop on logout.
+// The gate status and the unsaved drafts (onboarding_gate:*, onboarding_draft:*) stay on purpose:
+// they are keyed per user and session expiry also comes through logout().
+const AUTH_SESSION_KEYS = ['onboarding_tour'];
 
 export function logout() {
   for (const k of AUTH_STORAGE_KEYS) localStorage.removeItem(k);

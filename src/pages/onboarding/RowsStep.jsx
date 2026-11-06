@@ -8,12 +8,22 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
 import { ConfirmDialog, StickyActionBar, toast } from "../../components/ui"
-import { LICENSE_TYPE_OPTIONS, NONE_SECTIONS, isLifetimeLicense, readValidation, saveSection, sectionMeta } from "../../lib/onboarding"
+import { LICENSE_TYPE_OPTIONS, NONE_SECTIONS, isConnectionError, isLifetimeLicense, readValidation, saveSectionSafe, sectionMeta } from "../../lib/onboarding"
+import { clearEditorDraft, writeEditorDraft } from "../../lib/onboardingDraft"
 import { cx, focusRingCls } from "../../lib/styles"
 import { AddRowButton, RowEditorSheet, RowItem } from "./RowEditor"
 import { ED_LEVEL_OPTIONS } from "../../lib/education"
-import { missingKeys, rowBody, thaiDate, useSectionFlow } from "./sectionFlow"
-import { Frame, MissingHint, ProblemPanel, SectionCard, StepHeader } from "./shared"
+import {
+  DRAFT_RESTORED_TEXT,
+  connectionMessage,
+  missingKeys,
+  restoreEditorDraft,
+  rowBody,
+  thaiDate,
+  useConnectionToast,
+  useSectionFlow,
+} from "./sectionFlow"
+import { ConnectionNote, Frame, MissingHint, ProblemPanel, SectionCard, StepHeader } from "./shared"
 
 const thaiYear = (iso) => (iso ? `พ.ศ. ${Number(String(iso).slice(0, 4)) + 543}` : "")
 const range = (a, b) => {
@@ -105,18 +115,21 @@ export default function RowsStep({ sectionKey, data, handlers, onBack, onPayload
   const addId = `ob-${sectionKey}-add`
   const flow = useSectionFlow(sectionKey, { ...handlers, fallbackId: addId })
 
-  const [editor, setEditor] = useState(null) // { row|null, key }
+  // { row|null, key, form?, restored? } — a draft left by a reload reopens the editor (not on MyProfile)
+  const [editor, setEditor] = useState(() => (embedded ? null : restoreEditorDraft(sectionKey, rows, cfg.columns)))
   const [editorBusy, setEditorBusy] = useState(false)
   const [editorErr, setEditorErr] = useState({ message: "", missing: [] })
   const [toDelete, setToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [deleteOffline, setDeleteOffline] = useState(false)
   const [noneBusy, setNoneBusy] = useState(false)
+  const connectionToast = useConnectionToast()
 
   const serverMissing = data?.sections?.[sectionKey]?.missing ?? []
   const listFlagged = !embedded && ((serverMissing.includes("rows") && rows.length === 0 && !none) || flow.problem?.missing?.includes("rows"))
 
   const put = async (body) => {
-    const payload = await saveSection(sectionKey, body)
+    const payload = await saveSectionSafe(sectionKey, body)
     onPayload?.(payload)
     flow.setProblem(null)
     return payload
@@ -127,23 +140,31 @@ export default function RowsStep({ sectionKey, data, handlers, onBack, onPayload
     setEditor({ row, key: `${row?.id ?? "new"}-${Date.now()}` })
   }
 
+  const closeEditor = () => {
+    if (!embedded) clearEditorDraft(sectionKey)
+    setEditor(null)
+  }
+
   const saveRow = async (form) => {
     const original = editor?.row ?? null
     const miss = missingKeys(cfg.columns, form, !original)
     if (miss.length) return setEditorErr({ message: "", missing: miss })
     const body = rowBody(cfg.columns, form, original)
-    if (original && Object.keys(body).length === 0) return setEditor(null)
+    if (original && Object.keys(body).length === 0) return closeEditor()
     setEditorBusy(true)
+    setEditorErr({ message: "", missing: [] })
     try {
       const row = original ? { id: original.id, ...body } : body
       await put({ rows: [row], ...(hasNone && none ? { none: false } : {}) })
-      setEditor(null)
+      closeEditor()
       toast.success(original ? "แก้ไขแล้ว" : `เพิ่ม${cfg.noun}แล้ว`)
     } catch (err) {
+      if (err?.status === 401) return // on the way to login; the draft keeps the form
       if (err?.status === 409) {
-        setEditor(null)
+        closeEditor()
         handlers?.onLocked?.()
-      } else setEditorErr(readValidation(err))
+      } else if (isConnectionError(err)) setEditorErr({ kind: "connection", message: connectionMessage("บันทึก"), missing: [] })
+      else setEditorErr(readValidation(err))
     } finally {
       setEditorBusy(false)
     }
@@ -152,11 +173,14 @@ export default function RowsStep({ sectionKey, data, handlers, onBack, onPayload
   const doDelete = async () => {
     if (!toDelete) return
     setDeleting(true)
+    setDeleteOffline(false)
     try {
       await put({ delete_ids: [toDelete.id] })
       toast.success("ลบแล้ว")
       setToDelete(null)
     } catch (err) {
+      if (err?.status === 401) return
+      if (isConnectionError(err)) return setDeleteOffline(true) // dialog stays: "ลบ" retries
       setToDelete(null)
       if (err?.status === 409) handlers?.onLocked?.()
       else toast.error("ลบไม่สำเร็จ", { description: readValidation(err).message || err?.message })
@@ -167,10 +191,13 @@ export default function RowsStep({ sectionKey, data, handlers, onBack, onPayload
 
   const toggleNone = async () => {
     setNoneBusy(true)
+    connectionToast.dismiss()
     try {
       await put({ none: !none })
     } catch (err) {
+      if (err?.status === 401) return
       if (err?.status === 409) handlers?.onLocked?.()
+      else if (isConnectionError(err)) connectionToast.show("การเชื่อมต่อกับระบบขัดข้อง ลองอีกครั้งเมื่อเน็ตกลับมา", toggleNone)
       else toast.error("บันทึกไม่สำเร็จ", { description: readValidation(err).message || err?.message })
     } finally {
       setNoneBusy(false)
@@ -269,13 +296,16 @@ export default function RowsStep({ sectionKey, data, handlers, onBack, onPayload
         open={Boolean(editor)}
         openKey={editor?.key}
         title={editor?.row ? `แก้ไข${cfg.noun}` : `เพิ่ม${cfg.noun}`}
+        subtitle={editor?.restored ? DRAFT_RESTORED_TEXT : undefined}
         columns={cfg.columns}
-        initial={editor?.row ?? null}
+        initial={editor?.form ?? editor?.row ?? null}
         busy={editorBusy}
         error={editorErr.message}
+        errorKind={editorErr.kind}
         missing={editorErr.missing}
         onSubmit={saveRow}
-        onClose={() => !editorBusy && setEditor(null)}
+        onClose={() => !editorBusy && closeEditor()}
+        onFormChange={embedded ? undefined : (form) => writeEditorDraft(sectionKey, { rowId: editor?.row?.id ?? null, form })}
       />
 
       <ConfirmDialog
@@ -287,8 +317,13 @@ export default function RowsStep({ sectionKey, data, handlers, onBack, onPayload
         loading={deleting}
         loadingLabel="กำลังลบ…"
         onConfirm={doDelete}
-        onCancel={() => setToDelete(null)}
-      />
+        onCancel={() => {
+          setDeleteOffline(false)
+          setToDelete(null)
+        }}
+      >
+        {deleteOffline && <ConnectionNote title="ยังลบไม่สำเร็จ">การเชื่อมต่อกับระบบขัดข้อง กด “ลบ” อีกครั้งเมื่อเน็ตกลับมา</ConnectionNote>}
+      </ConfirmDialog>
     </section>
   )
 }

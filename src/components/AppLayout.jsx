@@ -3,17 +3,18 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import Sidebar from "./Sidebar"
 import Topbar from "./Topbar"
 import Toaster from "./ui/Toaster"
+import PageLoader from "./ui/PageLoader"
 import { recordVisit } from "../lib/recentRoutes"
 import { loadMyPermissions, useMyPermissionsVersion } from "../lib/myPermissions"
 import { HR_HUB_PERMS, can, canAny } from "../lib/permissions"
 import { useCurrentPageTitle } from "../lib/pageTitle"
 import { ALL_ITEMS } from "../lib/homeFunctions"
 import { ONBOARDING_REQUIRED_EVENT } from "../lib/api"
-import { ONBOARDING_PROMPTED_KEY, loadOnboarding, useOnboarding } from "../lib/onboarding"
+import { loadOnboarding, useOnboarding } from "../lib/onboarding"
 import TourOverlay from "./onboarding/TourOverlay"
 import SearchIntroGate from "./onboarding/SearchIntroGate"
 import { useAppUpdateCheck } from "../lib/appUpdate"
-import { TOUR_SIDEBAR_EVENT } from "../lib/tourState"
+import { TOUR_SIDEBAR_EVENT, useTourState } from "../lib/tourState"
 
 export const SidebarContext = createContext(false)
 export const useSidebarOpen = () => useContext(SidebarContext)
@@ -51,24 +52,33 @@ const AppLayout = () => {
     loadMyPermissions()
   }, [])
 
-  // First-login onboarding (PR 59): load status; send the user to /onboarding once per session
-  // while it isn't done (job menus stay reachable — "ทำทีหลัง" brings them back here).
+  // First-login onboarding (PR 59) hard lock: nothing under this layout renders for someone who
+  // has not finished. The only part of the app they reach is the tour, which sits on the real
+  // pages behind its click shield.
+  //   wait     = a tour is resuming, or nothing is known about this user yet → loader
+  //   redirect = pending and not in a running tour → /onboarding (outside this layout, so no loop)
+  // Unknown + server trouble fails open: the store keeps retrying and gates them once it knows,
+  // and the backend's own 403 gate stays as the backstop.
   const navigate = useNavigate()
   const onboarding = useOnboarding()
+  const tour = useTourState()
+  const onboardingLoading = onboarding.status === "idle" || onboarding.status === "loading"
+  let gateMode = "open"
+  if (onboarding.gate === "pending") {
+    if (tour.active && onboardingLoading) gateMode = "wait"
+    else if (!(tour.active && onboarding.unlocked)) gateMode = "redirect"
+  } else if (onboarding.gate === "unknown" && onboardingLoading) {
+    gateMode = "wait"
+  }
   useEffect(() => {
     loadOnboarding()
   }, [])
   useEffect(() => {
-    if (!onboarding.needsOnboarding) return
-    let prompted = false
-    try {
-      prompted = sessionStorage.getItem(ONBOARDING_PROMPTED_KEY) === "1"
-      sessionStorage.setItem(ONBOARDING_PROMPTED_KEY, "1")
-    } catch {
-      // storage disabled — redirect once per mount instead
-    }
-    if (!prompted) navigate("/onboarding", { replace: true })
-  }, [onboarding.needsOnboarding, navigate])
+    if (gateMode !== "redirect") return
+    // a caller may have just pushed /onboarding?step=… — replacing it would lose the step
+    if (window.location.pathname === "/onboarding") return
+    navigate("/onboarding", { replace: true })
+  }, [gateMode, navigate])
   // Gate 403 from any self-service call → refresh status and go fill the data
   useEffect(() => {
     let last = 0
@@ -139,6 +149,14 @@ const AppLayout = () => {
     recordVisit(location.pathname)
     window.scrollTo(0, 0)
   }, [location.pathname])
+
+  if (gateMode !== "open") {
+    return (
+      <div className="min-h-dvh bg-gray-50 text-gray-900 dark:bg-canvas dark:text-gray-100">
+        <PageLoader variant="spinner" fullscreen message="กำลังโหลดข้อมูลของคุณ…" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-dvh bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-canvas dark:text-gray-100">

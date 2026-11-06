@@ -4,7 +4,7 @@
 // keys) + confirm. Missing fields (data.sections[key].missing, or the confirm 422) get the
 // amber frame until filled; fields a save rejected turn red, the first one gets focus and a
 // toast sums them up (sectionFlow → lib/formErrors).
-import { useMemo, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { CalendarDays, IdCard, Plus, X } from "lucide-react"
 import SelectDropdown from "../../components/SelectDropdown"
 import DateInput from "../../components/ThaiDateField"
@@ -13,11 +13,16 @@ import { StickyActionBar } from "../../components/ui"
 import PrefixedNameInput from "../../components/PrefixedNameInput"
 import { genderOfPrefix, prefixOf } from "../../lib/namePrefix"
 import { GENDERS, diffBody, sectionMeta } from "../../lib/onboarding"
+import { clearDraft, readDraft, writeDraft } from "../../lib/onboardingDraft"
 import { baseField, cx, focusRingCls, helpTextCls, readonlyFieldCls } from "../../lib/styles"
 import { blank, invalidInputCls, thaiDate, useSectionFlow } from "./sectionFlow"
-import { Field, Frame, MissingHint, ProblemPanel, SectionCard, StepHeader } from "./shared"
+import { DraftNotice, Field, Frame, MissingHint, ProblemPanel, SectionCard, StepHeader } from "./shared"
 
 const pick = (obj, keys) => Object.fromEntries(keys.map((k) => [k, obj?.[k] ?? ""]))
+const sameValue = (a, b) => String(a ?? "") === String(b ?? "")
+/** The keys of `form` (allowed ones only) that differ from `baseline`. */
+const changedKeys = (form, baseline, keys) =>
+  Object.fromEntries(keys.filter((k) => k in form && !sameValue(form[k], baseline[k])).map((k) => [k, form[k]]))
 
 /** `ob-<key>`, or the prefix trigger when that part is the invalid one. */
 const scalarFieldId = (k) => {
@@ -29,11 +34,45 @@ const scalarFieldId = (k) => {
  * Common wiring: form state, flags, submit.
  * flagged(k) = still empty per server (amber) or rejected by the last save (red: tone(k) "error").
  * hint(k) = the inline message; describedBy(k) = aria-describedby for the control.
+ *
+ * Drafts: baseline = what the server holds + seeds (seeds are not typing, so never a draft).
+ * The form starts as baseline + this browser's draft, and every commit stores only the keys
+ * that differ from baseline. Once a PUT lands, baseline catches up and the draft empties itself.
  */
 function useScalarSection(sectionKey, keys, data, handlers, seed, fieldId = scalarFieldId) {
   const original = useMemo(() => data?.values?.[sectionKey] ?? {}, [data, sectionKey])
-  const [form, setForm] = useState(() => ({ ...pick(original, keys), ...seed?.(original) }))
+  const baseline = { ...pick(original, keys), ...seed?.(original) }
+  const [initial] = useState(() => {
+    const restored = changedKeys(readDraft(sectionKey) ?? {}, baseline, keys)
+    return { form: { ...baseline, ...restored }, restored: Object.keys(restored).length > 0 }
+  })
+  const [form, setForm] = useState(initial.form)
+  const [restored, setRestored] = useState(initial.restored)
+  const [resetKey, setResetKey] = useState(0)
   const flow = useSectionFlow(sectionKey, { ...handlers, fieldId })
+
+  const changed = changedKeys(form, baseline, keys)
+  const changedSig = JSON.stringify(changed)
+  const storedSig = useRef(null)
+  // layout effect: written in the same tick as the keystroke, before a reload or crash can win
+  useLayoutEffect(() => {
+    if (storedSig.current === changedSig) return
+    storedSig.current = changedSig
+    writeDraft(sectionKey, JSON.parse(changedSig))
+  }, [sectionKey, changedSig])
+
+  const draft = {
+    show: restored && changedSig !== "{}",
+    resetKey,
+    clear: () => {
+      clearDraft(sectionKey)
+      setForm(baseline)
+      setRestored(false)
+      setResetKey((n) => n + 1) // controls with their own state (name prefix, address) start over
+      flow.setProblem(null)
+    },
+  }
+
   const serverMissing = data?.sections?.[sectionKey]?.missing ?? []
   const problemMissing = flow.problem?.missing ?? []
 
@@ -47,14 +86,25 @@ function useScalarSection(sectionKey, keys, data, handlers, seed, fieldId = scal
     flow.problem?.hints?.[k] ?? (blank(form[k]) || tone(k) === "warn" ? empty : "ตรวจสอบข้อมูลช่องนี้")
   const describedBy = (k) => (flagged(k) ? `ob-${k}-hint` : undefined)
   const inputCls = (k, extra) => cx(baseField, extra, flagged(k) && tone(k) === "error" && invalidInputCls)
-  return { original, form, setForm, set, flagged, tone, hint, describedBy, inputCls, flow }
+  return { original, form, setForm, set, flagged, tone, hint, describedBy, inputCls, flow, draft }
 }
 
-function StepShell({ sectionKey, flow, onSubmit, onBack, children }) {
+function StepShell({ sectionKey, flow, draft, onSubmit, onBack, children }) {
   const meta = sectionMeta(sectionKey)
   const headingId = `ob-${sectionKey}-title`
+  const formRef = useRef(null)
+  const { setResubmit } = flow
+  useEffect(() => {
+    setResubmit(onSubmit)
+  })
+  const clearDraftValues = () => {
+    draft.clear()
+    // the button that had focus is gone: hand it to the first control of the fresh form
+    requestAnimationFrame(() => formRef.current?.querySelector("input:not([type=hidden]), button:not([disabled])")?.focus())
+  }
   return (
     <form
+      ref={formRef}
       noValidate
       aria-labelledby={headingId}
       onSubmit={(e) => {
@@ -63,8 +113,9 @@ function StepShell({ sectionKey, flow, onSubmit, onBack, children }) {
       }}
     >
       <StepHeader id={headingId} title={meta.label} purpose={meta.purpose} />
+      {draft.show && <DraftNotice onClear={clearDraftValues} />}
       <div className={flow.shake ? `animate-ob-shake-${flow.shake}` : undefined}>
-        <SectionCard>{children}</SectionCard>
+        <SectionCard key={draft.resetKey}>{children}</SectionCard>
       </div>
       <ProblemPanel problem={flow.problem} />
       {/* hidden submit so Enter in a field saves */}
@@ -81,7 +132,7 @@ function StepShell({ sectionKey, flow, onSubmit, onBack, children }) {
 const ACCOUNT_KEYS = ["th_first_name", "th_last_name", "first_name", "last_name", "email"]
 
 export function AccountStep({ data, handlers, onBack }) {
-  const { original, form, set, flagged, tone, hint, describedBy, inputCls, flow } = useScalarSection(
+  const { original, form, set, flagged, tone, hint, describedBy, inputCls, flow, draft } = useScalarSection(
     "account",
     ACCOUNT_KEYS,
     data,
@@ -109,7 +160,7 @@ export function AccountStep({ data, handlers, onBack }) {
     flow.submit(diffBody(original, form, ACCOUNT_KEYS))
   }
   return (
-    <StepShell sectionKey="account" flow={flow} onBack={onBack} onSubmit={submit}>
+    <StepShell sectionKey="account" flow={flow} draft={draft} onBack={onBack} onSubmit={submit}>
       <fieldset>
         <legend className="mb-3 text-[15px] font-semibold text-gray-900 dark:text-gray-100">ภาษาไทย</legend>
         <div className="grid gap-5 md:grid-cols-2">
@@ -301,7 +352,7 @@ function DiseaseField({ id, value, onChange, invalid, error }) {
 
 export function PersonalStep({ data, handlers, onBack, onReport }) {
   // เพศยังว่าง → ตั้งตามคำนำหน้าชื่อที่เลือกไว้ในขั้น "ชื่อและอีเมล" (ผู้ใช้เปลี่ยนได้)
-  const { original, form, set, flagged, tone, hint, describedBy, inputCls, flow } = useScalarSection("personal", PERSONAL_KEYS, data, handlers, (o) => {
+  const { original, form, set, flagged, tone, hint, describedBy, inputCls, flow, draft } = useScalarSection("personal", PERSONAL_KEYS, data, handlers, (o) => {
     const g = genderOfPrefix(prefixOf(data?.values?.account?.th_first_name))
     return blank(o.gender) && g ? { gender: g } : {}
   })
@@ -338,7 +389,7 @@ export function PersonalStep({ data, handlers, onBack, onReport }) {
   const errorOf = (k) => flagged(k) && tone(k) === "error"
 
   return (
-    <StepShell sectionKey="personal" flow={flow} onBack={onBack} onSubmit={submit}>
+    <StepShell sectionKey="personal" flow={flow} draft={draft} onBack={onBack} onSubmit={submit}>
       <div className="grid gap-5 md:grid-cols-2">
         <Field id="ob-birthday" label="วันเกิด" required {...field("birthday", "ยังไม่ได้เลือก")}>
           <DateInput
@@ -467,7 +518,7 @@ const ADDRESS_KEYS = ["h_address", "mhoo", "soi", "road", "province", "district"
 const ADDRESS_REQUIRED = ["h_address", "province", "district", "sub_district", "postal_code"]
 
 export function AddressStep({ data, handlers, onBack }) {
-  const { original, form, setForm, flagged, tone, hint, flow } = useScalarSection(
+  const { original, form, setForm, flagged, tone, hint, flow, draft } = useScalarSection(
     "address",
     ADDRESS_KEYS,
     data,
@@ -489,7 +540,7 @@ export function AddressStep({ data, handlers, onBack }) {
   }
 
   return (
-    <StepShell sectionKey="address" flow={flow} onBack={onBack} onSubmit={submit}>
+    <StepShell sectionKey="address" flow={flow} draft={draft} onBack={onBack} onSubmit={submit}>
       <ThaiAddressFields
         idPrefix="ob-addr"
         value={form}

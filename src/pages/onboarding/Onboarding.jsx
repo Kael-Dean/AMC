@@ -8,22 +8,26 @@
 // Status + prefill: useOnboarding() (src/lib/onboarding.js); every PUT/confirm returns the
 // full payload and the store re-renders this page. All 8 confirmed → `unlocked` → "ready"
 // → the self-service tour starts on /home (components/onboarding/TourOverlay.jsx), whose
-// last stop completes onboarding.
+// last stop ("ส่งข้อมูลยืนยัน") completes onboarding.
+//
+// Hard lock: AppLayout keeps everyone who has not finished here (or inside the tour); the only
+// way out of this page before finishing is "ออกจากระบบ".
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from "react"
+import { WifiOff } from "lucide-react"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import ReportIssueSheet from "../../components/ReportIssueSheet"
-import { ErrorState, PageLoader, ResultSheet, Stepper, Toaster, toast } from "../../components/ui"
-import { getToken } from "../../lib/auth"
+import { ConfirmDialog, ErrorState, PageLoader, ResultSheet, Stepper, Toaster, toast } from "../../components/ui"
+import { getToken, logoutAndReload } from "../../lib/auth"
 import {
-  ONBOARDING_PROMPTED_KEY,
   SECTIONS,
   SECTION_KEYS,
   firstOpenSection,
   loadOnboarding,
   useOnboarding,
 } from "../../lib/onboarding"
-import { startTour } from "../../lib/tourState"
+import { clearAllDrafts } from "../../lib/onboardingDraft"
+import { getTourState, resumeTour, startTour } from "../../lib/tourState"
 import { cx, focusRingCls } from "../../lib/styles"
 import FamilyStep from "./FamilyStep"
 import { DoneStep, ReadyStep, WelcomeStep } from "./IntroSteps"
@@ -50,7 +54,7 @@ function nextAfter(key, payload) {
   return order.find(open) ?? "ready"
 }
 
-function Header({ confirmed, onLater, showProgress }) {
+function Header({ confirmed, actionLabel, onAction, showProgress }) {
   const total = SECTIONS.length
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200/70 bg-white/90 backdrop-blur-md dark:border-line dark:bg-canvas/85">
@@ -77,13 +81,13 @@ function Header({ confirmed, onLater, showProgress }) {
         </p>
         <button
           type="button"
-          onClick={onLater}
+          onClick={onAction}
           className={cx(
             "inline-flex min-h-touch shrink-0 cursor-pointer items-center rounded-xl px-3 text-[15px] font-medium text-gray-700 transition-colors duration-150 hover:bg-gray-100 md:min-h-10 dark:text-gray-200 dark:hover:bg-white/[.06]",
             focusRingCls,
           )}
         >
-          ทำทีหลัง
+          {actionLabel}
         </button>
       </div>
       {showProgress && (
@@ -106,6 +110,8 @@ export default function Onboarding() {
   const [failed, setFailed] = useState([])
   const [locked409, setLocked409] = useState(false)
   const [report, setReport] = useState(null) // { category, field, value }
+  const [askLogout, setAskLogout] = useState(false)
+  const [offline, setOffline] = useState(() => navigator.onLine === false)
   const mainRef = useRef(null)
 
   // ── boot: auth, theme, fresh status ────────────────────────────────────────
@@ -115,17 +121,33 @@ export default function Onboarding() {
       navigate("/", { replace: true })
       return
     }
-    try {
-      sessionStorage.setItem(ONBOARDING_PROMPTED_KEY, "1") // AppLayout must not bounce "ทำทีหลัง" back here
-    } catch {
-      // storage disabled
-    }
     loadOnboarding({ force: true })
   }, [navigate])
 
   useEffect(() => {
     if (ob.status === "out_of_scope") navigate("/home", { replace: true })
   }, [ob.status, navigate])
+
+  // finished (also on another device): nothing here can be saved any more
+  const finished = Boolean(data?.onboarded)
+  useEffect(() => {
+    if (finished) clearAllDrafts()
+  }, [finished])
+
+  // connection indicator; coming back online refreshes the status
+  useEffect(() => {
+    const onOffline = () => setOffline(true)
+    const onOnline = () => {
+      setOffline(false)
+      loadOnboarding({ force: true })
+    }
+    window.addEventListener("offline", onOffline)
+    window.addEventListener("online", onOnline)
+    return () => {
+      window.removeEventListener("offline", onOffline)
+      window.removeEventListener("online", onOnline)
+    }
+  }, [])
 
   // arrived from a locked menu → say why (once)
   const location = useLocation()
@@ -137,6 +159,12 @@ export default function Onboarding() {
       id: "onboarding-locked",
     })
   }, [lockedFrom])
+
+  // message from a page that sent the person here: AppLayout's toaster unmounts on the way out
+  const notice = location.state?.notice
+  useEffect(() => {
+    if (notice) toast.warning(notice.title, { description: notice.description, id: "onboarding-notice" })
+  }, [notice])
 
   // ── resolve the step ───────────────────────────────────────────────────────
   const requested = params.get("step")
@@ -176,7 +204,10 @@ export default function Onboarding() {
       setFailed((f) => f.filter((k) => k !== key))
       goStep(nextAfter(key, payload))
     },
-    onLocked: () => setLocked409(true),
+    onLocked: () => {
+      clearAllDrafts()
+      setLocked409(true)
+    },
     onFailed: (k) => setFailed((f) => (f.includes(k) ? f : [...f, k])),
   })
   const sectionIdx = SECTION_KEYS.indexOf(step)
@@ -187,7 +218,8 @@ export default function Onboarding() {
   const onReport = (category, field, value) => setReport({ category, field, value })
 
   const startTourNow = () => {
-    startTour(0)
+    if (getTourState().started) resumeTour()
+    else startTour(0)
     navigate("/home")
   }
 
@@ -213,7 +245,7 @@ export default function Onboarding() {
       />
     )
   } else if (step === "ready") {
-    body = <ReadyStep onStartTour={startTourNow} />
+    body = <ReadyStep onStartTour={startTourNow} onReview={() => goStep("welcome")} />
   } else if (step === "done") {
     body = <DoneStep onHome={goHome} />
   } else {
@@ -250,7 +282,23 @@ export default function Onboarding() {
       >
         ข้ามไปที่เนื้อหา
       </a>
-      <Header confirmed={ob.confirmedCount} onLater={goHome} showProgress={Boolean(data) && step !== "done"} />
+      <Header
+        confirmed={ob.confirmedCount}
+        actionLabel={finished ? "หน้าหลัก" : "ออกจากระบบ"}
+        onAction={finished ? goHome : () => setAskLogout(true)}
+        showProgress={Boolean(data) && step !== "done"}
+      />
+
+      <div role="status" aria-live="polite">
+        {offline && (
+          <div className="border-b border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-400/25 dark:bg-amber-500/10 dark:text-amber-200">
+            <p className="mx-auto flex max-w-3xl items-start gap-2 px-4 py-2 text-sm leading-relaxed md:px-6">
+              <WifiOff aria-hidden="true" className="mt-0.5 size-4 shrink-0" strokeWidth={2} />
+              ไม่มีอินเทอร์เน็ต กรอกต่อได้ ข้อมูลเก็บไว้ในเครื่องนี้ กดบันทึกเมื่อเน็ตกลับมา
+            </p>
+          </div>
+        )}
+      </div>
 
       <main
         id="ob-main"
@@ -277,7 +325,14 @@ export default function Onboarding() {
         tone="error"
         title="ข้อมูลเริ่มต้นปิดแล้ว"
         description="การแก้ไขต่อจากนี้ต้องส่งเป็นคำขอผ่านเมนูแจ้งแก้ไขข้อมูล ให้ HR ตรวจสอบและอนุมัติ"
-        primary={{ label: "ไปที่แจ้งแก้ไขข้อมูล", onClick: () => navigate("/my-profile") }}
+        primary={{
+          label: "ไปที่แจ้งแก้ไขข้อมูล",
+          // fresh status first: a stale "pending" would bounce them straight back here
+          onClick: async () => {
+            await loadOnboarding({ force: true })
+            navigate("/my-profile")
+          },
+        }}
         secondary={{
           label: "ปิด",
           onClick: () => {
@@ -289,6 +344,19 @@ export default function Onboarding() {
           setLocked409(false)
           loadOnboarding({ force: true })
         }}
+      />
+
+      <ConfirmDialog
+        open={askLogout}
+        title="ออกจากระบบ?"
+        description="หัวข้อที่บันทึกแล้วจะยังอยู่ครบ ส่วนที่กรอกค้างและยังไม่ได้บันทึกจะถูกล้าง ต้องทำให้ครบก่อนจึงจะใช้เมนูอื่นได้"
+        confirmLabel="ออกจากระบบ"
+        tone="danger"
+        onConfirm={() => {
+          clearAllDrafts()
+          logoutAndReload()
+        }}
+        onCancel={() => setAskLogout(false)}
       />
 
       <Toaster />

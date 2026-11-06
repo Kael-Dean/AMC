@@ -5,7 +5,7 @@
 // stop. Tiny external store; components read it with useTourState().
 //
 //   startTour(i = 0)   begin / jump to stop i (active)
-//   pauseTour()        hide the overlay, keep the index ("ข้าม" / Esc) → Home shows resume
+//   pauseTour()        hide the overlay, keep the index ("พักก่อน" / Esc) → the gate returns to Ready
 //   resumeTour()       show again at the kept index
 //   setTourIndex(i)    move to stop i
 //   stopTour()         forget everything (finished)

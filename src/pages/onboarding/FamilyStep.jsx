@@ -20,15 +20,17 @@ import {
   RELATIONSHIPS,
   familyDisplayName,
   familyTitleOptions,
+  isConnectionError,
   legalStatusOptions,
   readValidation,
-  saveSection,
+  saveSectionSafe,
   sectionMeta,
 } from "../../lib/onboarding"
+import { clearEditorDraft, writeEditorDraft } from "../../lib/onboardingDraft"
 import { badgeNeutral, badgePending, badgeSuccess, cx, focusRingCls } from "../../lib/styles"
 import { AddRowButton, RowEditorSheet, RowItem } from "./RowEditor"
-import { blank, missingKeys, rowBody, thaiDate, useSectionFlow } from "./sectionFlow"
-import { ProblemPanel, SectionCard, StepHeader } from "./shared"
+import { DRAFT_RESTORED_TEXT, blank, connectionMessage, missingKeys, restoreEditorDraft, rowBody, thaiDate, useSectionFlow } from "./sectionFlow"
+import { ConnectionNote, ProblemPanel, SectionCard, StepHeader } from "./shared"
 
 const todayIso = () => {
   const d = new Date()
@@ -101,19 +103,21 @@ export default function FamilyStep({ data, handlers, onBack, onGoStep, onReport,
   const missing = data?.sections?.family?.missing ?? []
   const flow = useSectionFlow("family", handlers)
 
-  const [editor, setEditor] = useState(null)
+  // { row|null, key, form?, restored? } — a draft left by a reload reopens the editor
+  const [editor, setEditor] = useState(() => restoreEditorDraft("family", rows, COLUMNS))
   const [editorBusy, setEditorBusy] = useState(false)
   const [editorErr, setEditorErr] = useState({ message: "", missing: [] })
   const [pendingEdit, setPendingEdit] = useState(null) // { form } waiting for the verified-row warning
   const [toDelete, setToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [deleteOffline, setDeleteOffline] = useState(false)
 
   const childRows = rows.filter((r) => r.relationship === "บุตร").length
   const spouseRows = rows.filter((r) => r.relationship === "คู่สมรส").length
   const detailRows = rows.filter(needsDetails)
 
   const put = async (body) => {
-    const payload = await saveSection("family", body)
+    const payload = await saveSectionSafe("family", body)
     onPayload?.(payload)
     flow.setProblem(null)
     return payload
@@ -122,6 +126,11 @@ export default function FamilyStep({ data, handlers, onBack, onGoStep, onReport,
   const openEditor = (row) => {
     setEditorErr({ message: "", missing: [] })
     setEditor({ row, key: `${row?.id ?? "new"}-${Date.now()}` })
+  }
+
+  const closeEditor = () => {
+    clearEditorDraft("family")
+    setEditor(null)
   }
 
   const buildBody = (form, original) => {
@@ -143,17 +152,20 @@ export default function FamilyStep({ data, handlers, onBack, onGoStep, onReport,
   const commit = async (form) => {
     const original = editor?.row ?? null
     const body = buildBody(form, original)
-    if (original && Object.keys(body).length === 0) return setEditor(null)
+    if (original && Object.keys(body).length === 0) return closeEditor()
     setEditorBusy(true)
+    setEditorErr({ message: "", missing: [] })
     try {
       await put({ rows: [original ? { id: original.id, ...body } : body] })
-      setEditor(null)
+      closeEditor()
       toast.success(original ? "แก้ไขแล้ว" : "เพิ่มสมาชิกครอบครัวแล้ว", { description: "รอ HR ตรวจสอบ" })
     } catch (err) {
+      if (err?.status === 401) return // on the way to login; the draft keeps the form
       if (err?.status === 409) {
-        setEditor(null)
+        closeEditor()
         handlers?.onLocked?.()
-      } else setEditorErr(readValidation(err))
+      } else if (isConnectionError(err)) setEditorErr({ kind: "connection", message: connectionMessage("บันทึก"), missing: [] })
+      else setEditorErr(readValidation(err))
     } finally {
       setEditorBusy(false)
     }
@@ -185,11 +197,14 @@ export default function FamilyStep({ data, handlers, onBack, onGoStep, onReport,
   const doDelete = async () => {
     if (!toDelete) return
     setDeleting(true)
+    setDeleteOffline(false)
     try {
       await put({ delete_ids: [toDelete.id] })
       toast.success("ลบแล้ว")
       setToDelete(null)
     } catch (err) {
+      if (err?.status === 401) return
+      if (isConnectionError(err)) return setDeleteOffline(true) // dialog stays: "ลบ" retries
       setToDelete(null)
       if (err?.status === 409) handlers?.onLocked?.()
       else
@@ -203,7 +218,11 @@ export default function FamilyStep({ data, handlers, onBack, onGoStep, onReport,
 
   const headingId = "ob-family-title"
   const editRow = editor?.row
-  const editInitial = editRow ? toEditForm(editRow) : null
+  const editInitial = editor?.form ?? (editRow ? toEditForm(editRow) : null)
+  const importedRelationship =
+    editRow && !RELATIONSHIPS.includes(editRow.relationship) && editRow.relationship
+      ? `ความสัมพันธ์เดิม: ${editRow.relationship} (เลือกใหม่เฉพาะเมื่อต้องการเปลี่ยน)`
+      : null
 
   return (
     <section aria-labelledby={headingId}>
@@ -334,19 +353,17 @@ export default function FamilyStep({ data, handlers, onBack, onGoStep, onReport,
         open={Boolean(editor)}
         openKey={editor?.key}
         title={editRow ? "แก้ไขสมาชิกครอบครัว" : "เพิ่มสมาชิกครอบครัว"}
-        subtitle={
-          editRow && !RELATIONSHIPS.includes(editRow.relationship) && editRow.relationship
-            ? `ความสัมพันธ์เดิม: ${editRow.relationship} (เลือกใหม่เฉพาะเมื่อต้องการเปลี่ยน)`
-            : undefined
-        }
+        subtitle={[editor?.restored ? DRAFT_RESTORED_TEXT : null, importedRelationship].filter(Boolean).join(" · ") || undefined}
         columns={COLUMNS}
         initial={editInitial}
         busy={editorBusy}
         error={editorErr.message}
+        errorKind={editorErr.kind}
         missing={editorErr.missing}
         hints={editorErr.hints}
         onSubmit={saveRow}
-        onClose={() => !editorBusy && setEditor(null)}
+        onClose={() => !editorBusy && closeEditor()}
+        onFormChange={(form) => writeEditorDraft("family", { rowId: editRow?.id ?? null, form })}
       />
 
       <ConfirmDialog
@@ -373,8 +390,13 @@ export default function FamilyStep({ data, handlers, onBack, onGoStep, onReport,
         loading={deleting}
         loadingLabel="กำลังลบ…"
         onConfirm={doDelete}
-        onCancel={() => setToDelete(null)}
-      />
+        onCancel={() => {
+          setDeleteOffline(false)
+          setToDelete(null)
+        }}
+      >
+        {deleteOffline && <ConnectionNote title="ยังลบไม่สำเร็จ">การเชื่อมต่อกับระบบขัดข้อง กด “ลบ” อีกครั้งเมื่อเน็ตกลับมา</ConnectionNote>}
+      </ConfirmDialog>
     </section>
   )
 }

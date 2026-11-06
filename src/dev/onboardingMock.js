@@ -345,6 +345,10 @@ export function installOnboardingMock({ demo = false } = {}) {
     localStorage.removeItem(ACT_FLAG)
     localStorage.setItem(ROLE_FLAG, "5")
     logout()
+    // "fresh person" also means no gate answer or unsaved typing kept from the previous run
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith("onboarding_gate:") || k.startsWith("onboarding_draft:"))
+      .forEach((k) => localStorage.removeItem(k))
     db = seed({ demo: true })
     const real = window.fetch.bind(window)
     window.fetch = (input, init) => {

@@ -1,10 +1,10 @@
 // src/pages/onboarding/shared.jsx
 // Small building blocks shared by the onboarding steps (components only — logic lives in
 // sectionFlow.js).
-import { CircleAlert, TriangleAlert } from "lucide-react"
+import { CircleAlert, History, TriangleAlert, WifiOff } from "lucide-react"
 import { missingLabel } from "../../lib/onboarding"
-import { cx, labelCls } from "../../lib/styles"
-import { PROBLEM_PANEL_ID } from "./sectionFlow"
+import { cx, focusRingCls, labelCls } from "../../lib/styles"
+import { CONNECTION_TITLE, DRAFT_RESTORED_TEXT, PROBLEM_PANEL_ID, connectionMessage } from "./sectionFlow"
 
 /** Step heading: title + one-line purpose. */
 export function StepHeader({ title, purpose, id }) {
@@ -91,8 +91,56 @@ export function Field({ id, label, required, optional, flagged, tone = "warn", h
   )
 }
 
+/** Connection trouble: calm and clearly not about what the person typed. */
+export function ConnectionNote({ id, title = CONNECTION_TITLE, className = "", children }) {
+  return (
+    <div
+      id={id}
+      role="alert"
+      tabIndex={-1}
+      className={cx("scroll-mb-28 rounded-2xl bg-amber-50 p-4 outline-none ring-1 ring-amber-200 dark:bg-amber-500/10 dark:ring-amber-400/25", className)}
+    >
+      <p className="flex items-center gap-2 text-[15px] font-semibold text-amber-900 dark:text-amber-200">
+        <WifiOff aria-hidden="true" className="size-5 shrink-0" strokeWidth={2} />
+        {title}
+      </p>
+      <p className="mt-1.5 pl-7 text-[15px] leading-relaxed text-amber-900 dark:text-amber-100">{children}</p>
+    </div>
+  )
+}
+
+/** Values came back from this browser's draft: says so, and offers the way back to the saved ones. */
+export function DraftNotice({ onClear }) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-x-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+      <p className="flex min-w-0 items-center gap-2">
+        <History aria-hidden="true" className="size-4 shrink-0 text-gray-500 dark:text-gray-400" strokeWidth={1.75} />
+        {DRAFT_RESTORED_TEXT}
+      </p>
+      <button
+        type="button"
+        onClick={onClear}
+        aria-label="ล้างข้อมูลที่กู้มา"
+        className={cx(
+          "inline-flex min-h-touch cursor-pointer items-center rounded-lg text-sm font-semibold text-indigo-700 underline-offset-4 hover:underline md:min-h-8 dark:text-indigo-300",
+          focusRingCls,
+        )}
+      >
+        ล้าง
+      </button>
+    </div>
+  )
+}
+
 /** Failed confirm / validation summary — announced, lists what is left in plain Thai. */
 export function ProblemPanel({ problem, id = PROBLEM_PANEL_ID }) {
+  if (problem?.kind === "connection") {
+    return (
+      <div aria-live="assertive" aria-atomic="true">
+        <ConnectionNote id={id} className="mt-5">{problem.message || connectionMessage()}</ConnectionNote>
+      </div>
+    )
+  }
   const has = problem && (problem.missing?.length || problem.message)
   return (
     <div aria-live="assertive" aria-atomic="true">

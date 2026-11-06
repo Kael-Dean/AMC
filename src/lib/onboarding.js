@@ -11,14 +11,28 @@
 // Out of scope (login-only accounts, Super Admin) → 404 → status "out_of_scope": never gated.
 // Same store pattern as myPermissions.js: in-memory, bound to the token that loaded it.
 //
-// The gate itself (403 detail.code === "ONBOARDING_REQUIRED") is detected in api.js and
-// dispatched as ONBOARDING_REQUIRED_EVENT; AppLayout listens and redirects to /onboarding.
+// The front-end gate: AppLayout keeps everyone with `gate === "pending"` on /onboarding. The last
+// real answer is cached per user (localStorage onboarding_gate:<user>) so a reload or a server
+// outage cannot open the app to someone who has not finished. The backend's own gate
+// (403 detail.code === "ONBOARDING_REQUIRED", detected in api.js and dispatched as
+// ONBOARDING_REQUIRED_EVENT) stays as the backstop.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useSyncExternalStore } from "react"
 import { apiAuth } from "./api"
-import { getToken } from "./auth"
+import { getToken, getUserKey } from "./auth"
 
 const BASE = "/personnel/me/onboarding"
+const READ_TIMEOUT_MS = 20_000
+const WRITE_TIMEOUT_MS = 30_000
+const RETRY_BASE_MS = 3_000
+const RETRY_MAX_MS = 30_000
+const CONNECTION_LOAD_MESSAGE = "เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ระบบจะลองใหม่ให้เอง ข้อมูลที่กรอกค้างไว้ยังอยู่"
+
+/** No usable answer from the server: nothing the person typed can be at fault. */
+export const isConnectionError = (err) => {
+  const s = err?.status
+  return s === 0 || s === 408 || s === 429 || s >= 500
+}
 
 /** Section keys in backend order + display data. Icons live in the page (no React here). */
 export const SECTIONS = [
@@ -133,6 +147,7 @@ export const READ_ONLY_PERSONAL = ["cid", "hired"]
 let state = { token: null, status: "idle", data: null }
 let version = 0
 let inflight = null
+let writeSeq = 0
 const listeners = new Set()
 
 function setState(next) {
@@ -147,39 +162,134 @@ function current() {
   return state
 }
 
+// ─── gate status (per user, survives logout and reload) ──────────────────────
+const gateKey = () => {
+  const id = getUserKey()
+  return id ? `onboarding_gate:${id}` : null
+}
+
+function writeGate(value) {
+  const key = gateKey()
+  if (!key) return
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // storage disabled: the live status still gates this page view
+  }
+}
+
+/** The last real answer for this user on this device: "pending" | "done" | null. */
+export function readOnboardingGate() {
+  const key = gateKey()
+  if (!key) return null
+  try {
+    const v = localStorage.getItem(key)
+    return v === "pending" || v === "done" ? v : null
+  } catch {
+    return null
+  }
+}
+
+// ─── silent retry while the first load cannot reach the server ───────────────
+const retry = { token: null, attempt: 0, timer: null, listening: false }
+
+function fireRetry() {
+  clearTimeout(retry.timer)
+  retry.timer = null
+  if (getToken() !== retry.token) return clearRetry()
+  loadOnboarding({ force: true, silent: true })
+}
+
+function clearRetry() {
+  clearTimeout(retry.timer)
+  retry.timer = null
+  retry.token = null
+  retry.attempt = 0
+  if (retry.listening) {
+    window.removeEventListener("online", fireRetry)
+    retry.listening = false
+  }
+}
+
+function scheduleRetry(token) {
+  if (retry.token !== token) {
+    clearRetry()
+    retry.token = token
+  }
+  clearTimeout(retry.timer)
+  retry.timer = setTimeout(fireRetry, Math.min(RETRY_BASE_MS * 2 ** retry.attempt, RETRY_MAX_MS))
+  retry.attempt += 1
+  if (!retry.listening) {
+    window.addEventListener("online", fireRetry)
+    retry.listening = true
+  }
+}
+
 /** Replace the cached payload (every PUT/confirm/complete returns the full payload). */
 function accept(data) {
   const token = getToken()
-  if (data && typeof data === "object" && data.sections) setState({ token, status: "ready", data })
+  if (data && typeof data === "object" && data.sections) {
+    clearRetry()
+    writeGate(data.onboarded ? "done" : "pending")
+    setState({ token, status: "ready", data })
+  }
   return data
+}
+
+/** A write's answer is newer than any GET still on the way (see loadOnboarding). */
+function acceptWrite(data) {
+  writeSeq += 1
+  return accept(data)
 }
 
 export function getOnboardingState() {
   return current()
 }
 
-export function loadOnboarding({ force = false } = {}) {
+/** `silent` = background retry: no "loading" flip, so nothing on screen flickers. */
+export function loadOnboarding({ force = false, silent = false } = {}) {
   const token = getToken()
   if (!token) {
+    clearRetry()
     if (state.token) setState({ token: null, status: "idle", data: null })
     return Promise.resolve(null)
   }
   const s = current()
   if (!force && (s.status === "ready" || s.status === "out_of_scope")) return Promise.resolve(s.data)
-  if (inflight && inflight.token === token) return inflight.promise
+  const showLoading = !silent && s.status !== "ready"
+  if (inflight && inflight.token === token) {
+    if (showLoading && s.status !== "loading") setState({ token, status: "loading", data: null })
+    return inflight.promise
+  }
 
-  if (s.status !== "ready") setState({ token, status: "loading", data: null })
-  const promise = apiAuth(BASE)
+  if (showLoading) setState({ token, status: "loading", data: null })
+  const seqAtStart = writeSeq
+  const hasGoodData = () => state.token === token && state.status === "ready"
+  const promise = apiAuth(BASE, { timeoutMs: READ_TIMEOUT_MS })
     .then((d) => {
       if (getToken() !== token) return null
-      return accept(d)
+      clearRetry()
+      if (writeSeq !== seqAtStart) return current().data // a write landed meanwhile: this answer is older
+      if (d && typeof d === "object" && d.sections) return accept(d)
+      if (hasGoodData()) return state.data
+      setState({ token, status: "error", data: null, error: "ข้อมูลที่ได้รับจากระบบไม่ครบ กรุณาลองใหม่" })
+      return null
     })
     .catch((err) => {
       if (getToken() !== token) return null
-      if (err?.status === 404) setState({ token, status: "out_of_scope", data: null })
-      else if (state.token === token && state.status === "ready") {
-        // keep the last good payload
-      } else setState({ token, status: "error", data: null, error: err?.message })
+      if (err?.status === 404) {
+        clearRetry()
+        writeGate("done")
+        setState({ token, status: "out_of_scope", data: null })
+        return null
+      }
+      if (hasGoodData()) return null // keep the last good payload
+      const connection = isConnectionError(err)
+      if (connection) scheduleRetry(token)
+      const error = connection ? CONNECTION_LOAD_MESSAGE : err?.message
+      if (!(silent && state.token === token && state.status === "error" && state.error === error)) {
+        setState({ token, status: "error", data: null, error })
+      }
       return null
     })
     .finally(() => {
@@ -189,10 +299,82 @@ export function loadOnboarding({ force = false } = {}) {
   return promise
 }
 
-export const saveSection = (key, body) => apiAuth(`${BASE}/${key}`, { method: "PUT", body }).then(accept)
-export const confirmSection = (key) => apiAuth(`${BASE}/${key}/confirm`, { method: "POST" }).then(accept)
-export const tourComplete = () => apiAuth(`${BASE}/tour-complete`, { method: "POST" }).then(accept)
-export const completeOnboarding = () => apiAuth(`${BASE}/complete`, { method: "POST" }).then(accept)
+export const saveSection = (key, body) =>
+  apiAuth(`${BASE}/${key}`, { method: "PUT", body, timeoutMs: WRITE_TIMEOUT_MS }).then(acceptWrite)
+export const confirmSection = (key) =>
+  apiAuth(`${BASE}/${key}/confirm`, { method: "POST", timeoutMs: WRITE_TIMEOUT_MS }).then(acceptWrite)
+export const tourComplete = () =>
+  apiAuth(`${BASE}/tour-complete`, { method: "POST", timeoutMs: WRITE_TIMEOUT_MS }).then(acceptWrite)
+export const completeOnboarding = () =>
+  apiAuth(`${BASE}/complete`, { method: "POST", timeoutMs: WRITE_TIMEOUT_MS }).then(acceptWrite)
+
+// ─── row writes whose response may have been lost ────────────────────────────
+// Adding a row is not idempotent: if the server saved it but the answer never arrived, a retry
+// makes a duplicate. So after a connection error (and before re-sending a write we could not
+// verify, which is the usual case when the signal is gone) read the list back and check.
+const uncertainWrites = new Map() // section key → { sig, before }
+
+const canVerify = (body) =>
+  (body?.rows ?? []).some((r) => r?.id == null) ||
+  Boolean(body?.delete_ids?.length) ||
+  (typeof body?.none === "boolean" && !body?.rows?.length)
+
+function rowIdsOf(key) {
+  const rows = current().data?.values?.[key]
+  return Array.isArray(rows) ? new Set(rows.map((r) => r.id)) : null
+}
+
+/** The fresh payload when the server already holds this write, otherwise null. */
+async function readBackWrite(key, body, before) {
+  const added = (body.rows ?? []).filter((r) => r?.id == null).length
+  if (added > 0 && !before) return null
+  let fresh
+  try {
+    fresh = await apiAuth(BASE, { timeoutMs: READ_TIMEOUT_MS })
+  } catch {
+    return null
+  }
+  const rows = fresh?.values?.[key]
+  if (!fresh?.sections || !Array.isArray(rows)) return null
+  const ids = rows.map((r) => r.id)
+  let applied
+  if (added > 0) applied = ids.filter((id) => !before.has(id)).length >= added
+  else if (body.delete_ids?.length) applied = body.delete_ids.every((id) => !ids.includes(id))
+  else applied = Boolean(fresh.none_flags?.[key]) === body.none
+  return applied ? acceptWrite(fresh) : null
+}
+
+/** saveSection for list sections: a retry after a lost response never adds the row twice. */
+export async function saveSectionSafe(key, body) {
+  const verifiable = canVerify(body)
+  const sig = JSON.stringify(body)
+  const prior = uncertainWrites.get(key)
+  const before = prior?.sig === sig ? prior.before : rowIdsOf(key)
+  if (verifiable && prior?.sig === sig) {
+    const applied = await readBackWrite(key, body, before)
+    if (applied) {
+      uncertainWrites.delete(key)
+      return applied
+    }
+  }
+  try {
+    const payload = await saveSection(key, body)
+    uncertainWrites.delete(key)
+    return payload
+  } catch (err) {
+    if (!isConnectionError(err) || !verifiable) {
+      uncertainWrites.delete(key)
+      throw err
+    }
+    const applied = await readBackWrite(key, body, before)
+    if (applied) {
+      uncertainWrites.delete(key)
+      return applied
+    }
+    uncertainWrites.set(key, { sig, before })
+    throw err
+  }
+}
 
 function subscribe(fn) {
   listeners.add(fn)
@@ -203,6 +385,7 @@ const getVersion = () => version
 /**
  * Hook. `locked` = self-service menus should show locked (only when we positively know it).
  * `needsOnboarding` = in scope and not completed/exempt (spec §6.1 redirect rule).
+ * `gate` = "pending" | "done" | "unknown": the live answer first, then the answer cached on this device.
  */
 export function useOnboarding() {
   useSyncExternalStore(subscribe, getVersion, getVersion)
@@ -210,8 +393,10 @@ export function useOnboarding() {
   const data = s.status === "ready" ? s.data : null
   const sections = data?.sections ?? {}
   const confirmedCount = SECTION_KEYS.filter((k) => sections[k]?.confirmed_at).length
+  const liveGate = data ? (data.onboarded ? "done" : "pending") : s.status === "out_of_scope" ? "done" : null
   return {
     status: s.status,
+    gate: liveGate ?? readOnboardingGate() ?? "unknown",
     error: s.error,
     data,
     sections,
@@ -276,5 +461,4 @@ export function readValidation(err) {
 export const isLockedForEdits = (err) => err?.status === 409
 
 // ─── session flags (cleared on logout via auth.js) ───────────────────────────
-export const ONBOARDING_PROMPTED_KEY = "onboarding_prompted"
 export const TOUR_STATE_KEY = "onboarding_tour"

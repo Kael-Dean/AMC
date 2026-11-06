@@ -5,13 +5,15 @@ import { Link } from "react-router-dom"
 import Celebration from "../../components/onboarding/Celebration"
 import ProgressRing from "../../components/onboarding/ProgressRing"
 import { SECTIONS } from "../../lib/onboarding"
+import { TOUR_LENGTH } from "../../lib/onboardingTour"
+import { useTourState } from "../../lib/tourState"
 import { cx, focusRingCls, neutralBtnCls, primaryBtnCls } from "../../lib/styles"
 import { firstNameOnly } from "./sectionFlow"
 
 const bigBtn = "h-12 w-full px-6 text-base md:h-12 md:w-auto"
 
 const POINTS = [
-  { icon: Clock3, text: "กรอกข้อมูลประมาณ 10 นาที", sub: "บันทึกทีละหัวข้อ หยุดกลางทางแล้วกลับมาทำต่อได้" },
+  { icon: Clock3, text: "กรอกข้อมูลประมาณ 10 นาที", sub: "บันทึกทีละหัวข้อ หยุดกลางทางแล้วกลับมาทำต่อได้ ต้องทำให้ครบก่อนจึงจะใช้เมนูอื่นได้" },
   { icon: Compass, text: "ทัวร์เมนูบริการตนเอง 1 นาที", sub: "รู้จักเมนูลา สลิปเงินเดือน เงินกู้ และสวัสดิการ" },
   { icon: FilePenLine, text: "หลังจากนี้แก้ข้อมูลผ่านเมนูแจ้งแก้ไขข้อมูล", sub: "HR จะตรวจสอบและอนุมัติให้" },
 ]
@@ -96,7 +98,8 @@ export function WelcomeStep({ data, confirmedCount, onStart, onGoStep }) {
   )
 }
 
-export function ReadyStep({ onStartTour, starting }) {
+export function ReadyStep({ onStartTour, onReview, starting }) {
+  const tour = useTourState()
   return (
     <section aria-labelledby="ob-ready-title" className="mx-auto flex max-w-md flex-col items-center pt-4 text-center md:pt-10">
       <Celebration size={144} />
@@ -104,17 +107,27 @@ export function ReadyStep({ onStartTour, starting }) {
         ข้อมูลครบแล้ว
       </h1>
       <p className="mt-2 text-base leading-relaxed text-gray-600 dark:text-gray-300">
-        ขอบคุณที่สละเวลา ไปดูเมนูบริการตนเองกัน ใช้เวลาประมาณ 1 นาที แล้วเมนูทั้งหมดจะเปิดให้ใช้
+        ขอบคุณที่สละเวลา ไปดูเมนูบริการตนเองกัน ใช้เวลาประมาณ 1 นาที จุดสุดท้ายของทัวร์กด “ส่งข้อมูลยืนยัน” แล้วเมนูทั้งหมดจะเปิดให้ใช้
       </p>
-      <button
-        type="button"
-        onClick={onStartTour}
-        disabled={starting}
-        className={cx(primaryBtnCls, bigBtn, "mt-8 md:min-w-64")}
-        data-autofocus
-      >
-        เริ่มทัวร์เมนู
-      </button>
+      {tour.started && (
+        <p className="mt-3 text-[15px] font-medium tabular-nums text-gray-700 dark:text-gray-200">
+          ค้างไว้ที่จุด {tour.index + 1} จาก {TOUR_LENGTH}
+        </p>
+      )}
+      <div className="mt-8 flex w-full flex-col gap-3 md:w-auto md:flex-row md:justify-center">
+        <button
+          type="button"
+          onClick={onStartTour}
+          disabled={starting}
+          className={cx(primaryBtnCls, bigBtn, "md:min-w-64")}
+          data-autofocus
+        >
+          {tour.started ? "ดูทัวร์ต่อ" : "เริ่มทัวร์เมนู"}
+        </button>
+        <button type="button" onClick={onReview} className={cx(neutralBtnCls, bigBtn)}>
+          ตรวจข้อมูลอีกครั้ง
+        </button>
+      </div>
     </section>
   )
 }
