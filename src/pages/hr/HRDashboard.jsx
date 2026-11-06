@@ -219,7 +219,7 @@ function StatStrip({ stats, loading, error, onRetry, onGo }) {
         const showDot = t.pending && has && Number(raw) > 0
         const Icon = t.icon
         return (
-          <button key={t.field} type="button" onClick={() => onGo(t.tab)} className={TILE_CLS}>
+          <button key={t.field} type="button" onClick={() => onGo(t.tab)} className={`${TILE_CLS} max-sm:last:col-span-2`}>
             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500 dark:bg-gray-700/60 dark:text-gray-300">
               <Icon aria-hidden="true" className="size-4" strokeWidth={1.75} />
             </span>
