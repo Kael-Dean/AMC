@@ -18,6 +18,7 @@ import { canGoBack, useDrill } from "../../lib/drill"
 import SelectDropdown from "../../components/SelectDropdown"
 import { STATUS, STATUS_LABEL } from "../../lib/approval"
 import { SPEC_API, SPECIES_LABEL_KEY, mapIdLabel, speciesUrl } from "../../lib/riceSpec"
+import PurchaseTotalPanel from "../../components/reports/PurchaseTotalPanel"
 
 /** ---------- Utils ---------- */
 
@@ -503,7 +504,7 @@ const PHASE1_REPORTS = [
 const TRADE_REPORTS = [
   { key: "phase1-p20", title: "P20 — ทะเบียนคุมสาขา (Branch RX)", endpoint: "/reports/phase1/P20/pdf", require: ["startDate", "endDate", "branchId"], optional: ["specIds"] },
   { key: "phase1-p21", title: "P21 — รายงานซื้อ-ขายแยกตามราคา", endpoint: "/reports/phase1/P21/pdf", require: ["startDate", "endDate"], optional: ["specIds", "branchId", "klangId"], allBranchesOption: true },
-  { key: "phase1-p22", title: "P22 — ทะเบียนรับซื้อ", endpoint: "/reports/phase1/P22/pdf", require: ["startDate", "endDate"], optional: ["branchId", "klangId", "speciesLike"], allBranchesOption: true },
+  { key: "phase1-p22", title: "P22 — ทะเบียนรับซื้อ", endpoint: "/reports/phase1/P22/pdf", require: ["startDate", "endDate"], optional: ["branchId", "klangId", "speciesLike"], allBranchesOption: true, purchaseTotal: true },
   { key: "phase1-p23", title: "P23 — รายงานซื้อขาย (รวม)", endpoint: "/reports/phase1/P23/pdf", require: ["startDate", "endDate"], optional: ["specIds"], scopeNote: "ทั้งองค์กร — ไม่แยกสาขา", specNote: "ไม่เลือก = ทุกสินค้าประเภทธุรกิจ 1" },
   { key: "phase1-p24", title: "P24 — รายงานการขาย (แยกตามวัน)", endpoint: "/reports/phase1/P24/pdf", require: ["startDate", "endDate", "branchId"], optional: ["specIds"] },
   { key: "phase1-p25", title: "P25 — รายงานการซื้อ (แยกตามวัน)", endpoint: "/reports/phase1/P25/pdf", require: ["startDate", "endDate", "branchId"], optional: ["specIds"] },
@@ -1025,6 +1026,20 @@ function Documents() {
     }
 
     return p
+  }
+
+  /** ---------- ยอดรับซื้อสด (PurchaseTotalPanel) ---------- */
+  // buy-report ไม่มี param สินค้า — species_like กรองฝั่งหน้าเว็บใน panel
+  const purchaseTotalQuery = (report) => {
+    const p = buildParams(report)
+    p.delete("species_like")
+    return p.toString()
+  }
+  // เรียกระหว่าง render ได้ — ห้ามใช้ validate() ตรงนี้ เพราะมันเรียก setErrors
+  const isDateRangeInvalid = () => {
+    if (filters.allTime) return false
+    if (!filters.startDate || !filters.endDate) return true
+    return new Date(filters.endDate) < new Date(filters.startDate)
   }
 
   /** ---------- Download / Preview / Print ---------- */
@@ -1902,6 +1917,18 @@ function Documents() {
             </div>
 
             {renderReportForm(reportObj)}
+
+            {reportObj.purchaseTotal && (
+              <PurchaseTotalPanel
+                key={reportObj.key}
+                query={purchaseTotalQuery(reportObj)}
+                speciesLike={filters.speciesLike}
+                speciesNames={loadingSpecies ? null : speciesOptions.map((o) => o.label)}
+                speciesFailed={speciesLoadFailed}
+                onRetrySpecies={loadSpecies}
+                datesInvalid={isDateRangeInvalid()}
+              />
+            )}
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <button
