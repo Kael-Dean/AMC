@@ -641,13 +641,32 @@ button:focus-visible:not([class*="focus-visible:ring"]):not([class*="focus:ring"
     /* Same floor for everything tappable, so dense desktop sizes (h-8, px-2 py-1, …)
        stay reachable on touch without per-page variants. Mouse layouts never match
        this media query. Opt out with [data-tap-exempt]; a min-h-* utility also wins. */
-    button:not([data-tap-exempt]), [role="button"]:not([data-tap-exempt]), [role="tab"], [role="radio"],
-    [role="checkbox"], [role="switch"], [role="menuitem"], [role="option"], summary, a[href]:not([data-tap-exempt]) {
+    button:not([data-tap-exempt]):not([role="switch"]), [role="button"]:not([data-tap-exempt]), [role="tab"], [role="radio"],
+    [role="checkbox"], [role="menuitem"], [role="option"], summary, a[href]:not([data-tap-exempt]) {
       min-height: var(--spacing-touch);
       min-width: var(--spacing-touch);
     }
     a[href]:not([data-tap-exempt]) {
       align-items: center;
+    }
+    /* A switch is a 24px pill: a 44px box turns it into a circle with the thumb adrift.
+       Keep the pill and grow only what a finger can hit. */
+    button[role="switch"] {
+      position: relative;
+    }
+    button[role="switch"]::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: max(100%, var(--spacing-touch));
+      height: max(100%, var(--spacing-touch));
+      translate: -50% -50%;
+    }
+    /* Preflight makes svg display:block, so in a plain (non-flex) button the floor leaves
+       a lone icon at the left edge of the wider box. */
+    button:not([class*="flex"]):not([class*="grid"]) > svg:only-child {
+      margin-inline: auto;
     }
     /* Checkbox/radio are hit through their label: pad the label, not the small box. */
     :where(label):has(> input[type="checkbox"], > input[type="radio"]) {
@@ -655,6 +674,9 @@ button:focus-visible:not([class*="focus-visible:ring"]):not([class*="focus:ring"
       align-items: center;
       gap: 0.5rem;
       min-height: var(--spacing-touch);
+    }
+    :where(label:has(> input[type="checkbox"], > input[type="radio"])) > input {
+      flex-shrink: 0;
     }
     /* Last resort for an unbreakable run (long number, name) in a narrow column. */
     html {

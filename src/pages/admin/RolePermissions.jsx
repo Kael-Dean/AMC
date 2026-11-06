@@ -440,7 +440,7 @@ function PositionSummary({ row }) {
       ) : (
         <details className="group/d mt-0.5 text-xs">
           <summary
-            className="cursor-pointer list-none rounded text-gray-700 marker:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-gray-300 [&::-webkit-details-marker]:hidden"
+            className="cursor-pointer list-none rounded text-gray-700 marker:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-gray-300 [&::-webkit-details-marker]:hidden pointer-coarse:flex pointer-coarse:items-center"
             title={names.join(", ")}
           >
             <span className="group-open/d:hidden">
