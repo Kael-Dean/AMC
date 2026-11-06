@@ -232,25 +232,29 @@ export default function HRDependantsVerifyTab({ onCountChange }) {
                   )}
                 >
                   <div className="min-w-0 md:w-56 md:shrink-0">
-                    <p className="truncate text-base font-semibold text-gray-900 dark:text-gray-100 md:text-sm" title={fullName(d)}>
-                      {fullName(d)}
+                    <p className="truncate text-base font-semibold md:text-sm" title={d.employee_name || undefined}>
+                      <button
+                        type="button"
+                        onClick={() => drillTo(`/hr/personnel/${d.user_id}`, "ตรวจข้อมูลครอบครัว")}
+                        className="rounded text-indigo-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500 dark:text-indigo-300"
+                      >
+                        {d.employee_name || "—"}
+                      </button>
                     </p>
                     <p className="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">
-                      {d.relationship || "—"} · {d.legal_status || "—"}{d.is_twin ? " · แฝด" : ""}
+                      {d.branch_name || "—"}
                     </p>
                   </div>
                   <dl className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)]">
                     <div className="col-span-2 min-w-0 md:col-span-1">
-                      <dt className="text-xs text-gray-500 dark:text-gray-400">พนักงาน</dt>
-                      <dd className="truncate text-sm">
-                        <button
-                          type="button"
-                          onClick={() => drillTo(`/hr/personnel/${d.user_id}`, "ตรวจข้อมูลครอบครัว")}
-                          className="rounded font-medium text-indigo-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-indigo-300"
-                        >
-                          {d.employee_name || "—"}
-                        </button>
-                        {d.branch_name && <span className="text-gray-500 dark:text-gray-400"> · {d.branch_name}</span>}
+                      <dt className="sr-only">คนในครอบครัว</dt>
+                      <dd>
+                        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100" title={fullName(d)}>
+                          {fullName(d)}
+                        </p>
+                        <p className="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">
+                          {d.relationship || "—"} · {d.legal_status || "—"}{d.is_twin ? " · แฝด" : ""}
+                        </p>
                       </dd>
                     </div>
                     <Meta label="วันเกิด"><span className="tabular-nums">{thaiDate(d.birthday)}</span></Meta>
