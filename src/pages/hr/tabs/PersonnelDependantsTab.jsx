@@ -14,7 +14,7 @@ import { apiAuth } from "../../../lib/api"
 import { apiDetail } from "../../../lib/apiErrors"
 import { useCan } from "../../../lib/permissions"
 import { cardPaddedCls, cx, iconBtnCls, neutralBtnCls } from "../../../lib/styles"
-import { currentAcademicYearBE, dependantName, sortDependants } from "../../../lib/welfare"
+import { currentAcademicYearBE, DEPENDANTS_CHANGED_EVENT, dependantName, notifyDependantsChanged, sortDependants } from "../../../lib/welfare"
 import { ConfirmDialog, EmptyState, ErrorState, SkeletonText, toast } from "../../../components/ui"
 import DependantsList from "../../../components/hr/welfare/DependantsList"
 import DependantSheet from "../../../components/hr/welfare/DependantSheet"
@@ -36,28 +36,37 @@ export default function PersonnelDependantsTab({ employeeId, employeeName }) {
   const [freshId, setFreshId] = useState(null)     // แถวที่เพิ่งเพิ่ม → เปิดออก + tint
   const [leavingId, setLeavingId] = useState(null) // แถวที่เพิ่งลบ → ยุบหายก่อนโหลดใหม่
   const leaveTimer = useRef(0)
+  const loadReq = useRef(0)
   useEffect(() => () => clearTimeout(leaveTimer.current), [])
 
   const load = useCallback(async () => {
     if (employeeId == null) return
+    // กดตรวจสอบติด ๆ กันยิงหลายคำขอ — ใช้เฉพาะคำตอบล่าสุด กันผลเก่ามาทับผลใหม่
+    const req = ++loadReq.current
     setLoading(true)
     setError("")
     try {
       const d = await apiAuth(`/hr/employees/${encodeURIComponent(employeeId)}/dependants`)
-      setRows(sortDependants(Array.isArray(d) ? d : d?.items ?? []))
+      if (req === loadReq.current) setRows(sortDependants(Array.isArray(d) ? d : d?.items ?? []))
     } catch (err) {
-      setError(apiDetail(err) || "โหลดรายชื่อผู้มีสิทธิ์ไม่สำเร็จ")
+      if (req === loadReq.current) setError(apiDetail(err) || "โหลดรายชื่อผู้มีสิทธิ์ไม่สำเร็จ")
     } finally {
-      setLoading(false)
+      if (req === loadReq.current) setLoading(false)
     }
   }, [employeeId])
 
   useEffect(() => { load() }, [load])
 
-  const afterChange = () => { load(); setVersion((v) => v + 1) }
+  // ทางเดียวของการโหลดใหม่หลังข้อมูลเปลี่ยน ทั้งจากในแท็บนี้และจากปุ่ม "ตรวจสอบแล้ว" ในการ์ดข้าง ๆ
+  useEffect(() => {
+    const onChanged = () => { load(); setVersion((v) => v + 1) }
+    window.addEventListener(DEPENDANTS_CHANGED_EVENT, onChanged)
+    return () => window.removeEventListener(DEPENDANTS_CHANGED_EVENT, onChanged)
+  }, [load])
+
   const afterSave = (row) => {
     if (!sheet?.dependant && row?.id != null) setFreshId(row.id)
-    afterChange()
+    notifyDependantsChanged()
   }
 
   const confirmDelete = async () => {
@@ -72,10 +81,11 @@ export default function PersonnelDependantsTab({ employeeId, employeeName }) {
       setLeavingId(goneId)
       const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
       clearTimeout(leaveTimer.current)
+      // แจ้งหลังแถวยุบจบ — ถ้าแจ้งทันที รายการใหม่จะเอาแถวออกก่อนแอนิเมชันเล่น
       leaveTimer.current = setTimeout(() => {
         setRows((list) => list.filter((x) => x.id !== goneId))
         setLeavingId(null)
-        afterChange()
+        notifyDependantsChanged()
       }, reduce ? 0 : 300)
     } catch (err) {
       setDeleteErr(apiDetail(err) || "ลบไม่สำเร็จ")
@@ -103,7 +113,7 @@ export default function PersonnelDependantsTab({ employeeId, employeeName }) {
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 id="pd-dependants-h" className="text-sm font-semibold text-gray-900 dark:text-gray-100">ผู้มีสิทธิ์รับสวัสดิการ</h2>
-          {!loading && rows.length > 0 && (
+          {rows.length > 0 && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
               ระบบตรวจสิทธิ์ตามระเบียบ 13 (ค่ารักษา) และ 14 (ค่าเล่าเรียนบุตร) ให้อัตโนมัติ
             </p>

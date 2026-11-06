@@ -1,7 +1,7 @@
 // src/pages/hr/tabs/HRDependantsVerifyTab.jsx
 // รอตรวจสอบข้อมูลครอบครัว (onboarding PR 59)
 //   GET  /hr/dependants/unverified?branch_id=  → คิวแถวครอบครัวที่พนักงานเพิ่ม/แก้เอง ยังไม่ผ่าน HR (เก่าสุดก่อน)
-//   POST /hr/dependants/{id}/verify            → ตรวจสอบแล้ว — สวัสดิการเริ่มนับคนนี้
+//   POST /hr/dependants/{id}/verify            → ตรวจสอบแล้ว (เห็นข้อมูลแล้ว ไม่ใช่การให้สิทธิ์) — คืนผลสิทธิ์ตามระเบียบ
 // สาขาอื่นนอกขอบเขต → 403 (แสดงข้อความ ไม่ใช่หน้าว่าง)
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Check, Info, LoaderCircle } from "lucide-react"
@@ -14,6 +14,7 @@ import Can from "../../../components/Can"
 import { useDrill } from "../../../lib/drill"
 import { thaiDate } from "../../../lib/loans"
 import { fmtDateTh } from "../../../lib/approvalActions"
+import { dependantVerifyResult, notifyDependantsChanged } from "../../../lib/welfare"
 import { EmptyState, ErrorState, Skeleton, toast } from "../../../components/ui"
 
 const COLLAPSE_MS = 300
@@ -37,7 +38,9 @@ export function VerifyDependantButton({ dependant, onVerified, className = "" })
     setBusy(true)
     try {
       const res = await apiAuth(`/hr/dependants/${dependant.id}/verify`, { method: "POST" })
-      toast.success("ตรวจสอบแล้ว", { description: `${fullName(dependant)} — สวัสดิการเริ่มนับรายการนี้แล้ว` })
+      // อ่านผลจาก res เท่านั้น: dependant คือแถวก่อนตรวจ ซึ่งยังมีเหตุผล "รอ HR ตรวจสอบข้อมูล"
+      toast.success("ตรวจสอบแล้ว", { description: dependantVerifyResult(res) || fullName(dependant) })
+      notifyDependantsChanged()
       onVerified?.(res ?? dependant)
     } catch (e) {
       toast.error("ตรวจสอบไม่สำเร็จ", { description: e.message || "ลองใหม่อีกครั้ง" })
@@ -171,8 +174,8 @@ export default function HRDependantsVerifyTab({ onCountChange }) {
         <p className="flex max-w-prose items-start gap-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
           <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-indigo-500 dark:text-indigo-400" strokeWidth={1.75} />
           <span>
-            รายการที่พนักงานเพิ่มหรือแก้เองตอนกรอกข้อมูลเริ่มต้น สวัสดิการจะนับบุคคลเหล่านี้หลัง HR ตรวจสอบแล้วเท่านั้น
-            เทียบกับเอกสาร (ทะเบียนบ้าน สูติบัตร ทะเบียนสมรส) ก่อนกด “ตรวจสอบแล้ว”
+            รายการที่พนักงานเพิ่มหรือแก้เองตอนกรอกข้อมูลเริ่มต้น
+            เทียบกับเอกสาร (ทะเบียนบ้าน สูติบัตร ทะเบียนสมรส) ก่อนกด “ตรวจสอบแล้ว” แล้วระบบจะแสดงว่ามีสิทธิ์หรือไม่ตามระเบียบ
           </span>
         </p>
         <div className="w-full sm:w-52 sm:shrink-0">

@@ -9,18 +9,28 @@
 //
 // มือถือ: แต่ละคนเป็นบล็อกเรียงลง · ≥md: ตาราง 4 คอลัมน์ (ใช้ grid เดียว ไม่ render ซ้ำ)
 // ─────────────────────────────────────────────────────────────────────────────
-import { CircleCheck, CircleMinus } from "lucide-react"
+import { CircleCheck, CircleMinus, Clock } from "lucide-react"
 import { cx } from "../../../lib/styles"
 import { dependantMeta, dependantName } from "../../../lib/welfare"
 
 const COLS = "md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-start md:gap-4"
 
-/** สิทธิ์ 1 ประเภท — มีสิทธิ์ = เขียว, ไม่มี = เทา + เหตุผล */
-export function Eligibility({ label, eligible, reason, notApplicable = false }) {
+/** สิทธิ์ 1 ประเภท — มีสิทธิ์ = เขียว, ไม่มี = เทา + เหตุผล, รอ HR ตรวจสอบ = อำพัน (ยังไม่ตัดสินสิทธิ์) */
+export function Eligibility({ label, eligible, reason, notApplicable = false, pending = false }) {
   if (notApplicable) {
     return (
       <div className="flex items-start gap-1.5 text-sm text-gray-500 dark:text-gray-400">
         <span className="md:sr-only">{label}:</span> <span aria-label="ไม่เกี่ยวข้อง">—</span>
+      </div>
+    )
+  }
+  if (pending) {
+    return (
+      <div className="flex items-start gap-1.5 text-sm">
+        <Clock aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" strokeWidth={2} />
+        <span className="min-w-0 font-medium text-amber-700 dark:text-amber-300">
+          <span className="md:sr-only">{label}: </span>รอตรวจสอบ
+        </span>
       </div>
     )
   }
@@ -54,6 +64,8 @@ export default function DependantsList({ items, actions, className = "", freshId
           const gone = !!d.deceased_date
           const fresh = freshId != null && d.id === freshId
           const leaving = leavingId != null && d.id === leavingId
+          // เทียบ === false เท่านั้น: แถวเก่า/fixture ที่ไม่มีฟิลด์นี้ถือว่าตรวจแล้ว
+          const pending = d.hr_verified === false
           return (
             <li
               key={d.id}
@@ -70,8 +82,8 @@ export default function DependantsList({ items, actions, className = "", freshId
                   </div>
                   {actions && <div className="shrink-0 md:hidden">{actions(d)}</div>}
                 </div>
-                <Eligibility label="ค่ารักษาพยาบาล" eligible={d.medical_eligible} reason={d.medical_reason} />
-                <Eligibility label="ค่าเล่าเรียนบุตร" eligible={d.education_eligible} reason={d.education_reason} notApplicable={!child} />
+                <Eligibility label="ค่ารักษาพยาบาล" eligible={d.medical_eligible} reason={d.medical_reason} pending={pending} />
+                <Eligibility label="ค่าเล่าเรียนบุตร" eligible={d.education_eligible} reason={d.education_reason} notApplicable={!child} pending={pending} />
                 {actions ? <div className="hidden md:block">{actions(d)}</div> : <span className="hidden md:block md:w-px" />}
               </div>
             </li>
