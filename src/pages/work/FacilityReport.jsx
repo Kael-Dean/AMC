@@ -10,6 +10,8 @@ import { Skeleton, ErrorState, EmptyState } from "../../components/ui"
 import ExcelDownloadButton from "../../components/ExcelDownloadButton"
 import useModalDismiss from "../../lib/useModalDismiss"
 import PageTitle from "../../components/PageTitle"
+import AllTimeToggle from "../../components/AllTimeToggle"
+import { ALL_TIME_START, allTimeEnd } from "../../lib/allTime"
 
 
 // ─── utils ────────────────────────────────────────────────────────────────────
@@ -17,6 +19,10 @@ function today() { return new Date().toISOString().slice(0, 10) }
 function firstOfMonth() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`
+}
+function fmtTxDate(iso) {
+  const d = new Date(`${String(iso).slice(0, 10)}T00:00:00`)
+  return Number.isNaN(d.getTime()) ? String(iso) : d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })
 }
 function fmtAmt(n) {
   return Number(n).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -50,7 +56,7 @@ function SectionTitle({ children }) {
 }
 
 // ─── TxRow ────────────────────────────────────────────────────────────────────
-function TxRow({ tx, itemMap, canDelete, onEdit, onDelete }) {
+function TxRow({ tx, itemMap, canDelete, showDate, onEdit, onDelete }) {
   const item = itemMap[tx.facility_item_id]
   const isIncome = item?.item_type === "income"
   return (
@@ -59,6 +65,9 @@ function TxRow({ tx, itemMap, canDelete, onEdit, onDelete }) {
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
           {item?.name ?? `รายการ #${tx.facility_item_id}`}
         </p>
+        {showDate && tx.transaction_date && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 tabular-nums">{fmtTxDate(tx.transaction_date)}</p>
+        )}
         {tx.note && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{tx.note}</p>
         )}
@@ -414,6 +423,7 @@ export default function FacilityReport() {
   // Record tab
   const [selectedFacilityId, setSelectedFacilityId] = useState(null)
   const [filterDate, setFilterDate] = useState(today())
+  const [txAllTime, setTxAllTime] = useState(true)
   const [items, setItems] = useState([])
   const [transactions, setTransactions] = useState([])
   const [loadingTx, setLoadingTx] = useState(false)
@@ -422,6 +432,7 @@ export default function FacilityReport() {
 
   // Report tab
   const [reportFacilityIds, setReportFacilityIds] = useState([])
+  const [reportAllTime, setReportAllTime] = useState(true)
   const [reportFrom, setReportFrom] = useState(firstOfMonth())
   const [reportTo, setReportTo] = useState(today())
   const [generatingPdf, setGeneratingPdf] = useState(false)
@@ -474,12 +485,13 @@ export default function FacilityReport() {
   useEffect(() => {
     if (tab !== "record" || !selectedFacilityId) { setTransactions([]); return }
     setLoadingTx(true); setTxError("")
-    const p = new URLSearchParams({ facility_id: selectedFacilityId, from_date: filterDate, to_date: filterDate })
+    const p = new URLSearchParams({ facility_id: selectedFacilityId })
+    if (!txAllTime) { p.set("from_date", filterDate); p.set("to_date", filterDate) }
     apiAuth(`/facility-report/transactions?${p}`)
       .then((data) => setTransactions(Array.isArray(data) ? data : []))
       .catch((e) => setTxError(e.message || "โหลดรายการไม่สำเร็จ"))
       .finally(() => setLoadingTx(false))
-  }, [tab, selectedFacilityId, filterDate, txVersion])
+  }, [tab, selectedFacilityId, filterDate, txAllTime, txVersion])
 
   // ── Derived ──────────────────────────────────────────────────────────────────
   const itemMap = useMemo(() => {
@@ -506,12 +518,17 @@ export default function FacilityReport() {
   // ── PDF report ───────────────────────────────────────────────────────────────
   // Shared by the PDF and Excel buttons: validates, then returns the PDF path
   // (Excel derives /facility-report/report/xlsx from it). null = invalid.
+  const reportFileRange = reportAllTime ? "all-time" : `${reportFrom}_${reportTo}`
   const reportPdfPath = () => {
     if (!reportFacilityIds.length) { setReportError("กรุณาเลือกสถานที่อย่างน้อย 1 แห่ง"); return null }
-    if (!reportFrom || !reportTo) { setReportError("กรุณาระบุช่วงวันที่"); return null }
-    if (reportFrom > reportTo) { setReportError("วันเริ่มต้นต้องไม่หลังวันสิ้นสุด"); return null }
+    if (!reportAllTime) {
+      if (!reportFrom || !reportTo) { setReportError("กรุณาระบุช่วงวันที่"); return null }
+      if (reportFrom > reportTo) { setReportError("วันเริ่มต้นต้องไม่หลังวันสิ้นสุด"); return null }
+    }
     setReportError("")
-    const p = new URLSearchParams({ from_date: reportFrom, to_date: reportTo })
+    const p = reportAllTime
+      ? new URLSearchParams({ from_date: ALL_TIME_START, to_date: allTimeEnd() })
+      : new URLSearchParams({ from_date: reportFrom, to_date: reportTo })
     reportFacilityIds.forEach((id) => p.append("facility_ids", id))
     return `/facility-report/report/pdf?${p}`
   }
@@ -524,7 +541,7 @@ export default function FacilityReport() {
       const { blob, filename } = await apiDownload(path)
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
-      a.href = url; a.download = filename || `facility_report_${reportFrom}_${reportTo}.pdf`
+      a.href = url; a.download = filename || `facility_report_${reportFileRange}.pdf`
       a.click(); URL.revokeObjectURL(url)
     } catch (e) {
       let msg = e.message
@@ -631,7 +648,7 @@ export default function FacilityReport() {
         <div className="space-y-4">
           {/* Filters */}
           <div className={cardCls}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Field label="สถานที่">
                 <SelectDropdown
                   options={facilityOpts}
@@ -644,9 +661,13 @@ export default function FacilityReport() {
                 <input
                   type="date" className={inputCls}
                   value={filterDate}
+                  disabled={txAllTime}
                   onChange={(e) => setFilterDate(e.target.value)}
                 />
               </Field>
+              <div className="flex items-end">
+                <AllTimeToggle size="sm" active={txAllTime} onChange={setTxAllTime} className="w-full" />
+              </div>
             </div>
           </div>
 
@@ -677,7 +698,7 @@ export default function FacilityReport() {
           {/* Transaction list */}
           <div className={cardCls}>
             <div className="flex items-center justify-between mb-4">
-              <SectionTitle>รายการประจำวัน</SectionTitle>
+              <SectionTitle>{txAllTime ? "รายการทุกช่วงเวลา" : "รายการประจำวัน"}</SectionTitle>
               {selectedFacilityId && (
                 <button
                   onClick={() => setTxModal({})}
@@ -710,7 +731,7 @@ export default function FacilityReport() {
               />
             ) : transactions.length === 0 ? (
               <EmptyState
-                title="ยังไม่มีรายการในวันที่เลือก"
+                title={txAllTime ? "ยังไม่มีรายการของสถานที่นี้" : "ยังไม่มีรายการในวันที่เลือก"}
                 description='กด "บันทึกรายการ" เพื่อเพิ่มรายรับหรือรายจ่ายของวันนี้'
               />
             ) : (
@@ -719,7 +740,7 @@ export default function FacilityReport() {
                   <div className="mb-3">
                     <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-2 px-1">รายรับ</p>
                     {incomeTx.map((tx) => (
-                      <TxRow key={tx.id} tx={tx} itemMap={itemMap} canDelete={canDelete}
+                      <TxRow key={tx.id} tx={tx} itemMap={itemMap} canDelete={canDelete} showDate={txAllTime}
                         onEdit={() => setTxModal({ tx })}
                         onDelete={() => handleDeleteTx(tx.id)} />
                     ))}
@@ -729,14 +750,14 @@ export default function FacilityReport() {
                   <div className="mb-3">
                     <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-2 px-1">รายจ่าย</p>
                     {expenseTx.map((tx) => (
-                      <TxRow key={tx.id} tx={tx} itemMap={itemMap} canDelete={canDelete}
+                      <TxRow key={tx.id} tx={tx} itemMap={itemMap} canDelete={canDelete} showDate={txAllTime}
                         onEdit={() => setTxModal({ tx })}
                         onDelete={() => handleDeleteTx(tx.id)} />
                     ))}
                   </div>
                 )}
                 {unclassifiedTx.map((tx) => (
-                  <TxRow key={tx.id} tx={tx} itemMap={itemMap} canDelete={canDelete}
+                  <TxRow key={tx.id} tx={tx} itemMap={itemMap} canDelete={canDelete} showDate={txAllTime}
                     onEdit={() => setTxModal({ tx })}
                     onDelete={() => handleDeleteTx(tx.id)} />
                 ))}
@@ -789,15 +810,16 @@ export default function FacilityReport() {
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="ตั้งแต่วันที่" required>
-              <input type="date" className={inputCls} value={reportFrom}
+              <input type="date" className={inputCls} value={reportFrom} disabled={reportAllTime}
                 onChange={(e) => setReportFrom(e.target.value)} />
             </Field>
             <Field label="ถึงวันที่" required>
-              <input type="date" className={inputCls} value={reportTo}
+              <input type="date" className={inputCls} value={reportTo} disabled={reportAllTime}
                 min={reportFrom || undefined}
                 onChange={(e) => setReportTo(e.target.value)} />
             </Field>
           </div>
+          <AllTimeToggle size="sm" active={reportAllTime} onChange={setReportAllTime} />
 
           {reportError && <ErrorState message={reportError} />}
 
@@ -822,7 +844,7 @@ export default function FacilityReport() {
           <ExcelDownloadButton
             label="ดาวน์โหลดรายงาน Excel"
             getPdfPath={reportPdfPath}
-            fallbackName={`facility_report_${reportFrom}_${reportTo}.xlsx`}
+            fallbackName={`facility_report_${reportFileRange}.xlsx`}
             className={cx(neutralBtnCls, "w-full !h-12")}
           />
         </div>

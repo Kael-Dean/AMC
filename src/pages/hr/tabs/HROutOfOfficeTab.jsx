@@ -16,6 +16,8 @@ import {
 } from "../../../lib/approval"
 import { KIND, requestNotificationsRefresh } from "../../../lib/approvalActions"
 import DecisionModal from "../../../components/DecisionModal"
+import AllTimeToggle from "../../../components/AllTimeToggle"
+import { firstOfMonthIso, todayIso } from "../../../lib/allTime"
 import LeaveStageActions from "../../../components/LeaveStageActions"
 import ApprovalHistory from "../../../components/ApprovalHistory"
 import OOOWorkDetails from "../../../components/OOOWorkDetails"
@@ -193,6 +195,11 @@ function RequestsPanel({ branchOptions, branchName }) {
               aria-invalid={dateRangeInvalid || undefined}
             />
           </div>
+          <AllTimeToggle
+            size="sm"
+            active={!filters.from_date && !filters.to_date}
+            onChange={(on) => setFilters((f) => ({ ...f, from_date: on ? "" : firstOfMonthIso(), to_date: on ? "" : todayIso() }))}
+          />
           <button
             type="button"
             disabled={!hasFilters}

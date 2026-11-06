@@ -10,7 +10,8 @@ import useBranchLock, { scopedBranchId } from "../../hooks/useBranchLock"
 import BranchLockNote from "../../components/BranchLockNote"
 import DateInput from "../../components/ThaiDateField"
 import PageTitle from "../../components/PageTitle"
-import AllTimeToggle, { ALL_TIME_START, ALL_TIME_END } from "../../components/AllTimeToggle"
+import AllTimeToggle from "../../components/AllTimeToggle"
+import { ALL_TIME_START, ALL_TIME_END, firstOfMonthIso, todayIso } from "../../lib/allTime"
 
 /** ----------- Utils ----------- */
 const onlyDigits = (s = "") => s.replace(/\D+/g, "")
@@ -92,8 +93,8 @@ const MODE_BTN_IDLE = "text-slate-700 hover:bg-slate-100 dark:text-white dark:ho
 const PAGE_BTN_IDLE = "bg-white text-slate-700 hover:bg-slate-100 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
 
 const Order = () => {
-  const today = new Date().toISOString().slice(0, 10)
-  const firstDayThisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)
+  const today = todayIso()
+  const firstDayThisMonth = firstOfMonthIso()
 
   const isPhone = useIsPhone()
 
@@ -135,7 +136,7 @@ const Order = () => {
   const [filters, setFilters] = useState({
     startDate: firstDayThisMonth,
     endDate: today,
-    allTime: false,
+    allTime: true,
 
     branchId: branchLock.activeKey, branchName: "",
     klangId: "", klangName: "",
@@ -401,7 +402,7 @@ const Order = () => {
     setFilters({
       startDate: firstDayThisMonth,
       endDate: today,
-      allTime: false,
+      allTime: true,
 
       branchId: branchLock.activeKey, branchName: "",
       klangId: "", klangName: "",
@@ -422,11 +423,9 @@ const Order = () => {
   const dateError = !filters.allTime && (!!errors.startDate || !!errors.endDate)
   const setAllTime = (v) => setFilters((p) => ({ ...p, allTime: v }))
 
-  // Active filters (badge on the phone disclosure). Dates count only when changed from the default range.
+  // Active filters (badge on the phone disclosure). All time is the default, so a date range counts as one filter.
   const activeFilterCount =
-    (filters.allTime ? 1 : 0) +
-    (!filters.allTime && filters.startDate !== firstDayThisMonth ? 1 : 0) +
-    (!filters.allTime && filters.endDate !== today ? 1 : 0) +
+    (!filters.allTime ? 1 : 0) +
     (filters.branchId && !branchLock.locked ? 1 : 0) +
     (filters.klangId ? 1 : 0) +
     (filters.specId ? 1 : 0) +

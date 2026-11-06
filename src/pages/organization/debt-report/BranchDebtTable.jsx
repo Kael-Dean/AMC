@@ -8,6 +8,8 @@ import { EmptyState, ErrorState } from "../../../components/ui"
 import { buildReportRows, computeColTotals, sumRows } from "./buildReportRows"
 import { printDebtTable } from "./printDebtTable"
 import ExcelDownloadButton from "../../../components/ExcelDownloadButton"
+import AllTimeToggle from "../../../components/AllTimeToggle"
+import { ALL_TIME_START, allTimeEnd } from "../../../lib/allTime"
 import DebtEntryModal from "../debt/DebtEntryModal"
 import { canWriteEntries, isOwnBranchOnly, ownBranchId } from "../debt/debtEntryMeta"
 import ReportPdfButton from "../../../components/ReportPdfButton"
@@ -186,8 +188,11 @@ export default function BranchDebtTable({ programs, fiscalYears, branches, onBac
     lockedToOwnBranch ? String(homeBranch) : ""
   )
   const [selectedProgramId, setSelectedProgramId] = useState("")
-  // Date range: send BOTH or NEITHER. Cleared (both "") → omit → backend uses
-  // current-FY default. effRange echoes the effective window from the response.
+  // All time (default) sends a wide range, because omitting the dates means the
+  // current fiscal year on the backend. Otherwise send BOTH dates or NEITHER:
+  // cleared (both "") → omit → current-FY default. effRange echoes the effective
+  // window from the response.
+  const [allTime, setAllTime]       = useState(true)
   const [dateFrom, setDateFrom]     = useState("")
   const [dateTo, setDateTo]         = useState("")
   const [effRange, setEffRange]     = useState(null)
@@ -198,8 +203,8 @@ export default function BranchDebtTable({ programs, fiscalYears, branches, onBac
   const [modal, setModal]           = useState(null)
 
   // Only one bound picked, or from > to → invalid; block the request.
-  const onlyOneDate = (!!dateFrom) !== (!!dateTo)
-  const rangeInverted = !!dateFrom && !!dateTo && dateFrom > dateTo
+  const onlyOneDate = !allTime && (!!dateFrom) !== (!!dateTo)
+  const rangeInverted = !allTime && !!dateFrom && !!dateTo && dateFrom > dateTo
 
   const tableWrapRef = useRef(null)
 
@@ -211,12 +216,15 @@ export default function BranchDebtTable({ programs, fiscalYears, branches, onBac
     const params = new URLSearchParams()
     if (selectedBranchId) params.set("branch_id", selectedBranchId)
     if (selectedProgramId) params.set("program_id", selectedProgramId)
-    if (dateFrom && dateTo) {
+    if (allTime) {
+      params.set("date_from", ALL_TIME_START)
+      params.set("date_to", allTimeEnd())
+    } else if (dateFrom && dateTo) {
       params.set("date_from", dateFrom)
       params.set("date_to", dateTo)
     }
     return params.toString()
-  }, [selectedBranchId, selectedProgramId, dateFrom, dateTo])
+  }, [selectedBranchId, selectedProgramId, allTime, dateFrom, dateTo])
 
   useEffect(() => {
     // Client-side gate before sending: never fire a request we know is invalid.
@@ -337,6 +345,7 @@ export default function BranchDebtTable({ programs, fiscalYears, branches, onBac
             aria-label="วันที่เริ่ม"
             className={cx(baseField, "!py-3 !text-sm", rangeInverted && "!border-red-400 dark:!border-red-500")}
             value={dateFrom}
+            disabled={allTime}
             max={dateTo || undefined}
             onChange={(e) => setDateFrom(e.target.value)}
           />
@@ -348,11 +357,13 @@ export default function BranchDebtTable({ programs, fiscalYears, branches, onBac
             aria-label="วันที่สิ้นสุด"
             className={cx(baseField, "!py-3 !text-sm", rangeInverted && "!border-red-400 dark:!border-red-500")}
             value={dateTo}
+            disabled={allTime}
             min={dateFrom || undefined}
             onChange={(e) => setDateTo(e.target.value)}
           />
         </div>
-        {(dateFrom || dateTo) && (
+        <AllTimeToggle size="sm" active={allTime} onChange={setAllTime} className="md:min-h-[46px]" />
+        {!allTime && (dateFrom || dateTo) && (
           <button
             type="button"
             onClick={() => { setDateFrom(""); setDateTo("") }}
@@ -377,7 +388,7 @@ export default function BranchDebtTable({ programs, fiscalYears, branches, onBac
                 : "รายงานหนี้รวมทุกสาขา",
               subtitle: [
                 selectedProgramId ? `โครงการ: ${programName(selectedProgramId)}` : "ทุกโครงการ",
-                effRange ? `ช่วงวันที่: ${fmtDate(effRange.from)} – ${fmtDate(effRange.to)}` : null,
+                effRange ? (allTime ? `ทุกช่วงเวลา ถึงวันที่ ${fmtDate(effRange.to)}` : `ช่วงวันที่: ${fmtDate(effRange.from)} – ${fmtDate(effRange.to)}`) : null,
               ].filter(Boolean).join(" · "),
               tableRows,
               colTotals,
@@ -411,11 +422,20 @@ export default function BranchDebtTable({ programs, fiscalYears, branches, onBac
 
       {!error && effRange && (
         <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
-          แสดงข้อมูลช่วง{" "}
-          <span className="font-semibold text-gray-700 dark:text-gray-200">
-            {fmtDate(effRange.from)} – {fmtDate(effRange.to)}
-          </span>
-          {!dateFrom && !dateTo && " (ปีบัญชีปัจจุบัน)"}
+          {allTime ? (
+            <>
+              แสดงข้อมูลทุกช่วงเวลา ถึงวันที่{" "}
+              <span className="font-semibold text-gray-700 dark:text-gray-200">{fmtDate(effRange.to)}</span>
+            </>
+          ) : (
+            <>
+              แสดงข้อมูลช่วง{" "}
+              <span className="font-semibold text-gray-700 dark:text-gray-200">
+                {fmtDate(effRange.from)} – {fmtDate(effRange.to)}
+              </span>
+              {!dateFrom && !dateTo && " (ปีบัญชีปัจจุบัน)"}
+            </>
+          )}
         </p>
       )}
 

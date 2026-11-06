@@ -7,6 +7,8 @@ import ExcelDownloadButton from "../../../components/ExcelDownloadButton"
 import SelectDropdown from "../../../components/SelectDropdown"
 import BranchLockNote from "../../../components/BranchLockNote"
 import useBranchLock, { scopedBranchId } from "../../../hooks/useBranchLock"
+import AllTimeToggle from "../../../components/AllTimeToggle"
+import { firstOfMonthIso, todayIso } from "../../../lib/allTime"
 import { exitTypeLabel, normalizeExitType } from "../../../lib/exitTypes"
 
 const TABLE_HEADERS = ["ชื่อ-สกุล", "รหัสเดิม", "รหัสประจำตัว", "วันเกิด", "การศึกษา", "ตำแหน่ง", "สาขา", "วันบรรจุ", "วันที่ออก", "ประเภท"]
@@ -144,6 +146,11 @@ export default function HRResignedRetiredTab() {
           <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
             className="w-36 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/60" />
         </div>
+        <AllTimeToggle
+          size="sm"
+          active={!fromDate && !toDate}
+          onChange={(on) => { setFromDate(on ? "" : firstOfMonthIso()); setToDate(on ? "" : todayIso()) }}
+        />
         <button onClick={fetchRows} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800">
           ค้นหา
         </button>
