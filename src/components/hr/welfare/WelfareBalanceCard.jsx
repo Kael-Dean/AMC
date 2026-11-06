@@ -44,13 +44,13 @@ function CapRow({ label, hint, bucket, strong = false }) {
         </dt>
         <dd className="shrink-0 text-right tabular-nums">
           <span className={cx("font-semibold", remaining <= 0 ? "text-red-700 dark:text-red-300" : "text-gray-900 dark:text-gray-100", strong ? "text-base" : "text-sm")}>
-            {money(remaining)}
+            {money(used)}
           </span>
           <span className="text-xs text-gray-500 dark:text-gray-400"> / {money(cap)}</span>
         </dd>
       </div>
       <Meter used={used} cap={cap} />
-      <p className="text-xs tabular-nums text-gray-500 dark:text-gray-400">ใช้ไป {money(used)} บาท</p>
+      <p className="text-xs tabular-nums text-gray-500 dark:text-gray-400">คงเหลือ {money(remaining)} บาท</p>
     </div>
   )
 }
@@ -74,11 +74,17 @@ export function WelfareBalanceView({ balance, compact = false, className = "" })
         <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3 dark:border-line">
           <div className="min-w-0 text-sm text-gray-700 dark:text-gray-300">
             ตรวจสุขภาพประจำปี
-            <span className="block text-xs text-gray-500 dark:text-gray-400">ปีละครั้ง เฉพาะตัวเจ้าหน้าที่ · วงเงิน {money(chk.cap)} บาท</span>
+            <span className="block text-xs text-gray-500 dark:text-gray-400">ปีละครั้ง เฉพาะตัวเจ้าหน้าที่</span>
           </div>
-          {chk.taken
-            ? <Badge tone="neutral">ใช้สิทธิ์แล้ว{n(chk.used) > 0 ? ` ${money(chk.used)}` : ""}</Badge>
-            : <Badge tone="success">ยังไม่ใช้สิทธิ์</Badge>}
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <span className="tabular-nums">
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{money(n(chk.used))}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400"> / {money(chk.cap)}</span>
+            </span>
+            {chk.taken
+              ? <Badge tone="neutral">ใช้สิทธิ์แล้ว</Badge>
+              : <Badge tone="success">ยังไม่ใช้สิทธิ์</Badge>}
+          </div>
         </div>
       )}
 
