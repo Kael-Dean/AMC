@@ -36,7 +36,7 @@ export default function CompanySearchStatus({ form }) {
           <Can perm="customers.create">
             {/* New tab: the half-filled order stays intact in this one */}
             <Link
-              to="/company-add?new=1"
+              to="/company-add"
               target="_blank"
               rel="noopener"
               className={cx(
