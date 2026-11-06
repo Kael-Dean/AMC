@@ -7,13 +7,14 @@ import { ChevronRight } from "lucide-react"
 import { apiAuth } from "../../lib/api"
 import { getUser } from "../../lib/auth"
 import SelectDropdown from "../../components/SelectDropdown"
-import { PageLoader, ErrorState, Sheet, toast } from "../../components/ui"
+import { PageLoader, ErrorState, Sheet, Skeleton, toast } from "../../components/ui"
 import FileUploader from "../../components/FileUploader"
 import AttachmentList from "../../components/AttachmentList"
 import useFileUploads from "../../hooks/useFileUploads"
 import { hasNewValue, isResolvedStatus } from "../../lib/issueReports"
 import DateInput from "../../components/ThaiDateField"
 import { fmtDays, parseDays } from "../../lib/leaveDays"
+import { isAnnualLeave, isPrescribedLeave, useLeaveBalance } from "../../lib/leaveTypes"
 import lineIcon from "../../assets/line-icon.png"
 import { roleLabel as getRoleLabel } from "../../lib/roles"
 import { can, myRoleLabel } from "../../lib/permissions"
@@ -26,23 +27,6 @@ import { apiDetail } from "../../lib/apiErrors"
 import { currentPositionLabel } from "../../components/hr/positionUtils"
 import { useOnboarding } from "../../lib/onboarding"
 import RowsStep from "../onboarding/RowsStep"
-
-// LeaveQuotaOut (backend v1.1.0) — ทุกค่าเป็นทศนิยม ส่งมาเป็น string
-// สิทธิ์เป็นค่าคงที่ ระบบคำนวณ "วันที่ใช้ไป" จากใบลาที่อนุมัติแล้วในปีงบประมาณเดียวกัน
-const QUOTA_ROWS = [
-  { key: "sick_leave",      label: "ลาป่วย" },
-  { key: "business_leave",  label: "ลากิจส่วนตัว" },
-  { key: "maturity_leave",  label: "ลาคลอดบุตร" },
-  { key: "paternity_leave", label: "ลาช่วยภริยาคลอดบุตร" },
-  { key: "religious_leave", label: "ลาอุปสมบท" },
-  { key: "military_leave",  label: "ลารับราชการทหาร" },
-  { key: "training_leave",  label: "ลาไปฝึกอบรม" },
-  { key: "ow_leave",        label: "ลา อว." },
-  { key: "accompany_leave", label: "ลาติดตามคู่สมรส" },
-  { key: "rehab_leave",     label: "ลาฟื้นฟูสมรรถภาพ" },
-  { key: "other_leave",     label: "อื่นๆ" },
-  { key: "absent",          label: "ขาดงาน" },
-]
 
 const GENDER_LABEL = { M: "ชาย", F: "หญิง", other: "อื่นๆ" }
 const MARITAL_LABEL = { single: "โสด", married: "สมรส", divorced: "หย่าร้าง", widowed: "หม้าย" }
@@ -141,6 +125,11 @@ export default function MyProfile() {
 
   const [profile, setProfile] = useState(null)
   const [financial, setFinancial] = useState(null)
+  // ประเภทการลามาจากตาราง Leaves ของ backend — ปีเดียวกับ leave_quota ด้านล่าง
+  const quotaYear = financial?.leave_quota?.year
+  const { rows: leaveRows, error: leaveRowsError } = useLeaveBalance(
+    quotaYear ? `/personnel/me/leave-balance?year=${quotaYear}` : null,
+  )
   const [positions, setPositions] = useState([])
   const [myPosition, setMyPosition] = useState(null) // GET /personnel/me/position → position_display (รวมชื่อสาขา)
   const [branches, setBranches] = useState([])
@@ -511,7 +500,9 @@ export default function MyProfile() {
 
           {/* ลาพักผ่อน: สิทธิ์ปีนี้ + ยกมาจากปีก่อน = สิทธิ์รวม — อ่านแบบเดียวกับงบดุลของสหกรณ์ */}
           <div className="rounded-xl bg-indigo-50 dark:bg-indigo-900/20 p-4 mb-3">
-            <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-200 mb-2">ลาพักผ่อนประจำปี</p>
+            <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-200 mb-2">
+              {leaveRows?.find((r) => isAnnualLeave(r.name))?.name ?? "ลาพักผ่อน"}
+            </p>
             <div className="space-y-1 text-sm">
               <div className="flex items-baseline justify-between">
                 <span className="text-gray-600 dark:text-gray-400">สิทธิ์ปีนี้</span>
@@ -536,19 +527,26 @@ export default function MyProfile() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-2">
-            {QUOTA_ROWS.map((q) => (
-              <div key={q.key} className="rounded-xl bg-gray-50 dark:bg-gray-700/40 p-3 text-center">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{q.label}</p>
-                <p className="text-lg font-bold text-gray-800 dark:text-gray-100 mt-0.5 tabular-nums">{fmtDays(quota[q.key])}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">วัน/ปี</p>
-              </div>
-            ))}
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-700/40 p-3 text-center">
-              <p className="text-xs text-gray-500 dark:text-gray-400">ลาทำหมัน</p>
-              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mt-1.5">ตามแพทย์สั่ง</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">ไม่จำกัดวัน</p>
-            </div>
+            {leaveRows === null
+              ? Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="h-[84px] rounded-xl" />)
+              : leaveRows.filter((r) => !isAnnualLeave(r.name)).map((r) => (
+                  <div key={r.id ?? r.name} className="rounded-xl bg-gray-50 dark:bg-gray-700/40 p-3 text-center">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{r.name}</p>
+                    {isPrescribedLeave(r.name) ? (
+                      <>
+                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mt-1.5">ตามแพทย์สั่ง</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">ไม่จำกัดวัน</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-lg font-bold text-gray-800 dark:text-gray-100 mt-0.5 tabular-nums">{fmtDays(r.quota)}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">วัน/ปี</p>
+                      </>
+                    )}
+                  </div>
+                ))}
           </div>
+          {leaveRowsError && <p className={cx(errorTextCls, "mt-2")}>โหลดสิทธิ์การลาแต่ละประเภทไม่สำเร็จ ลองเปิดหน้านี้ใหม่</p>}
 
           <p className="mt-3 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
             ตัวเลขข้างต้นคือสิทธิ์ทั้งปี วันคงเหลือคำนวณจากใบลาที่อนุมัติแล้วในปีงบประมาณเดียวกัน

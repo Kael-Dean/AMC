@@ -229,11 +229,12 @@ async function handle(url, init) {
     { category: "family", category_label: "ครอบครัว", fields: [{ field: "family_other", label: "ข้อมูลครอบครัวไม่ถูกต้อง (ระบุในรายละเอียด)", input_type: "textarea" }] },
   ])
   if (path === "/personnel/me/report-issue") return json(200, { status: "created", id: 1 })
-  if (path === "/personnel/me/leave-balance") return json(200, [
-    { leave_type: "ลาป่วย", quota: "30", used: "2", remaining: "28" },
-    { leave_type: "ลากิจส่วนตัว", quota: "6", used: "1", remaining: "5" },
-    { leave_type: "ลาพักผ่อน", quota: "10", used: "0", remaining: "10" },
-  ])
+  if (path === "/personnel/me/leave-balance") return json(200, { year: 2569, balance: [
+    { leave_type_id: 1, leave_type_name: "ลาป่วย", is_active: true, quota: "30", used: "2", remaining: "28" },
+    { leave_type_id: 2, leave_type_name: "ลากิจ", is_active: true, quota: "6", used: "1", remaining: "5" },
+    { leave_type_id: 3, leave_type_name: "ลาพักผ่อน", is_active: true, quota: "10", used: "0", remaining: "10" },
+    { leave_type_id: 13, leave_type_name: "ลาทำหมัน", is_active: true, quota: "0", used: "0", remaining: "0" },
+  ] })
 
   // employee onboarding
   if (path === "/personnel/me/onboarding" && method === "GET") return json(200, payload())
