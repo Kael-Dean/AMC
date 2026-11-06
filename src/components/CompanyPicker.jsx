@@ -37,7 +37,7 @@ const toOption = (rec) => ({
 })
 
 export default function CompanyPicker({ form, id, ariaDescribedBy }) {
-  const { refs, customer, memberMeta, errors, missingHints, clearError, clearHint, focusNext, pickCompanyResult } = form
+  const { refs, customer, memberMeta, errors, missingHints, clearError, clearHint, pickCompanyResult } = form
 
   const [companies, setCompanies] = useState([])
   const [searched, setSearched] = useState([])
@@ -118,7 +118,12 @@ export default function CompanyPicker({ form, id, ariaDescribedBy }) {
         onQueryChange={onQueryChange}
         loading={status === "loading" && options.length === 0}
         buttonRef={refs.companyName}
-        onEnterNext={() => focusNext("companyName")}
+        onEnterNext={() => {
+          // Straight to the ref: the page's focusNext list can predate this field mounting
+          const taxId = refs.taxId?.current
+          taxId?.focus()
+          taxId?.select?.()
+        }}
         error={!!errors.companyName}
         hintRed={!!missingHints?.companyName}
         clearHint={() => clearHint("companyName")}
