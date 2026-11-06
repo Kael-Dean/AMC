@@ -3,7 +3,7 @@
 // Empty state that teaches the next step (baseline-ui: one clear next action).
 // Muted slate, centered, line-art SVG (currentColor, no emoji). Pass `action`
 // (a node, e.g. a button) and an optional custom `icon`.
-// `mascot` (opt-in) swaps the line icon for น้องหอมทอง in her "searching" pose.
+// `mascot` (opt-in) swaps the line icon for น้องมะลิ in her "searching" pose.
 // Keep it to a few high-traffic screens; a mascot on every empty list is noise.
 // ─────────────────────────────────────────────────────────────────────────────
 import { cx } from "../../lib/styles"

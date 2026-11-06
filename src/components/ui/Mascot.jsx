@@ -1,6 +1,6 @@
 // src/components/ui/Mascot.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// "น้องหอมทอง" — the co-op's rice-grain mascot (handoff/mascot-homthong.md).
+// "น้องมะลิ" — the co-op's rice-grain mascot (handoff/mascot-homthong.md).
 //
 //   <Mascot mood="empty" size={96} />
 //
