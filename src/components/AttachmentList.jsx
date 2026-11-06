@@ -20,7 +20,7 @@
 import { useEffect, useState } from "react"
 import { Download, FileText, Image as ImageIcon, LoaderCircle } from "lucide-react"
 import { cx, focusRingCls, iconBtnCls, neutralBtnCls, primaryBtnCls } from "../lib/styles"
-import { fetchFileBlob, formatBytes, isImageType, isPdfType, saveBlob } from "../lib/files"
+import { deliverBlob, fetchFileBlob, formatBytes, isImageType, isPdfType, openPopup } from "../lib/files"
 import { Sheet, toast } from "./ui"
 
 // Object URLs per file id for this session — attachments are immutable once attached.
@@ -69,7 +69,7 @@ function Thumb({ file }) {
 }
 
 function ImagePreview({ preview, onClose }) {
-  const download = () => saveBlob(preview.blob, preview.filename)
+  const download = () => deliverBlob(preview.blob, preview.filename)
   return (
     <Sheet
       open
@@ -102,7 +102,7 @@ export default function AttachmentList({ attachments, variant = "list", emptyTex
 
   const open = async (file) => {
     // PDFs: open the tab synchronously (inside the click) so popup blockers allow it
-    const win = isPdfType(file.content_type) ? window.open("", "_blank") : null
+    const win = isPdfType(file.content_type) ? openPopup() : null
     setBusyId(file.id)
     try {
       const r = await loadBlob(file.id)
@@ -112,7 +112,7 @@ export default function AttachmentList({ attachments, variant = "list", emptyTex
       } else if (win) {
         win.location.href = r.url
       } else {
-        saveBlob(r.blob, name)
+        await deliverBlob(r.blob, name)
       }
     } catch (err) {
       win?.close()
@@ -126,7 +126,7 @@ export default function AttachmentList({ attachments, variant = "list", emptyTex
     setBusyId(file.id)
     try {
       const r = await loadBlob(file.id)
-      saveBlob(r.blob, file.filename || r.filename)
+      await deliverBlob(r.blob, file.filename || r.filename)
     } catch (err) {
       toast.error("ดาวน์โหลดไม่สำเร็จ", { description: openErrorMessage(err) })
     } finally {

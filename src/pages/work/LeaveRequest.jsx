@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback, useId, Children, cloneElement, isVali
 import { apiAuth, apiDownload } from "../../lib/api"
 import { countLeaveDays, countsCalendarDays, fmtDays, currentFiscalYearBE } from "../../lib/leaveDays"
 import { sortLeaveTypes } from "../../lib/leaveTypes"
+import { printPage } from "../../lib/files"
 import { getUser } from "../../lib/auth"
 import useFormDefaults from "../../hooks/useFormDefaults"
 import { STATUS_LABEL as APPROVAL_STATUS_LABEL, isPendingStatus } from "../../lib/approval"
@@ -611,7 +612,7 @@ export default function LeaveRequest() {
     setForm(blankForm())
   }
 
-  const handlePrint = () => window.print()
+  const handlePrint = () => printPage()
 
   const ErrMsg = ({ field }) =>
     errors[field] ? (

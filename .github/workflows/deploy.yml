@@ -156,6 +156,30 @@ jobs:
             echo "WARN: dist/mascot not found"
           fi
 
+      - name: Upload PWA files (service worker, offline page, manifest, icons)
+        env:
+          BUCKET: ${{ steps.verify_bucket.outputs.BUCKET_NORMALIZED }}
+        run: |
+          set -euo pipefail
+          echo "Using bucket: $BUCKET"
+
+          for f in dist/sw.js dist/offline.html dist/manifest.webmanifest dist/pwa/icon-192.png; do
+            test -f "$f" || { echo "$f not found. Did build fail?"; exit 1; }
+          done
+
+          # ชื่อไอคอนไม่มี hash → cache แบบเดียวกับ logo
+          gsutil -m -h "Cache-Control:public, max-age=86400, must-revalidate" cp -r "dist/pwa/*" "gs://$BUCKET/pwa/"
+
+          # gsutil เดา content-type ของ .webmanifest ไม่ได้ → ต้องตั้งเอง
+          gsutil -h "Cache-Control:no-cache" -h "Content-Type:application/manifest+json" \
+                 cp "dist/manifest.webmanifest" "gs://$BUCKET/manifest.webmanifest"
+          gsutil -h "Cache-Control:no-cache" -h "Content-Type:text/html; charset=utf-8" \
+                 cp "dist/offline.html" "gs://$BUCKET/offline.html"
+
+          # sw.js ขึ้นท้ายสุด: ตอน install มัน precache offline.html + pwa/* ถ้ายังไม่มีไฟล์ install จะล้ม
+          gsutil -h "Cache-Control:no-cache" -h "Content-Type:text/javascript; charset=utf-8" \
+                 cp "dist/sw.js" "gs://$BUCKET/sw.js"
+
       # --- Optional: Invalidate Cloud CDN ---
       - name: Invalidate Cloud CDN (optional)
         if: ${{ env.GCP_CDN_URL_MAP != '' }}

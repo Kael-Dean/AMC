@@ -8,7 +8,11 @@
     <!-- Browser chrome colour follows the app's light/dark page background (gray-50 / graphite canvas) -->
     <meta name="theme-color" content="#f9fafb" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0b0b0f" media="(prefers-color-scheme: dark)" />
-    <link rel="apple-touch-icon" href="/logo/skt-logo.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/pwa/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="SKT สุรินทร์" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!--
       Content Security Policy (client-side baseline via <meta>).
       NOTE: this is a first layer. Headers like X-Frame-Options,

@@ -5,7 +5,8 @@ import { useRef, useState } from "react"
 import { FileText } from "lucide-react"
 import { apiDownload } from "../lib/api"
 import { cx, neutralBtnCls } from "../lib/styles"
-import { excelErrorMessage, saveBlob } from "../lib/reportFormat"
+import { excelErrorMessage } from "../lib/reportFormat"
+import { deliverBlob, openPopup } from "../lib/files"
 import { toast } from "./ui"
 
 const neutralSpinnerCls =
@@ -24,8 +25,8 @@ export default function ReportPdfButton({ getPath, fallbackName = "report.pdf", 
     try {
       const { blob, filename } = await apiDownload(path)
       const url = URL.createObjectURL(blob)
-      const win = window.open(url, "_blank")
-      if (!win) saveBlob(blob, filename && filename !== "download" ? filename : fallbackName)
+      const win = openPopup(url)
+      if (!win) await deliverBlob(blob, filename && filename !== "download" ? filename : fallbackName)
       setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (err) {
       console.error(err)

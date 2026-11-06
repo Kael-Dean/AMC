@@ -1,8 +1,8 @@
 // src/components/Sidebar.jsx
 // Sidebar แสดงฟังก์ชันส่วนตัว (โปรไฟล์, ยื่นใบลา, ฯลฯ)
 import { useNavigate, useLocation } from "react-router-dom"
-import { useEffect, useMemo, useRef } from "react"
-import { Lock, LogOut, Moon, Sun, X } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Download, Lock, LogOut, Moon, Sun, X } from "lucide-react"
 import { logoutAndReload, getRoleId } from "../lib/auth"
 import { useCan } from "../lib/permissions"
 import { TRADING_GROUP, canAccessItem, lucideFor } from "../lib/homeFunctions"
@@ -10,6 +10,8 @@ import { HR_MENUS, PERSONAL_MENUS, canSeeSidebarItem } from "../lib/sidebarMenus
 import { useOnboarding } from "../lib/onboarding"
 import { goToOnboardingFromLocked } from "../lib/onboardingGate"
 import { lockBodyScroll, unlockBodyScroll } from "../lib/scrollLock"
+import { promptInstall, useInstallOption } from "../lib/pwa"
+import InstallAppSheet from "./InstallAppSheet"
 
 // สีของ icon chip — ต้องเขียน class เต็ม (Tailwind v4 ตรวจ class ที่ต่อ string ไม่เจอ)
 const TONES = {
@@ -31,6 +33,8 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
   const { can } = perms
   const closeBtnRef = useRef(null)
   const { locked: onboardingLocked } = useOnboarding()
+  const installOption = useInstallOption()
+  const [installSheetOpen, setInstallSheetOpen] = useState(false)
 
   const visibleMenus = useMemo(
     () => (can("nav.hrCompactMenu") ? HR_MENUS : PERSONAL_MENUS).filter((item) => canSeeSidebarItem(item, perms)),
@@ -70,6 +74,12 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
   const handleLogout = () => {
     // full reload — module cache ของผู้ใช้คนนี้ต้องไม่ตกไปถึงคนถัดไปบนเครื่องเดียวกัน
     logoutAndReload("/")
+  }
+
+  const handleInstall = () => {
+    setIsOpen(false)
+    if (installOption === "ios") setInstallSheetOpen(true)
+    else promptInstall().catch(() => {})
   }
 
   const isActive = (p) => location.pathname === p
@@ -214,6 +224,18 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
 
           {/* Dark mode (phone — the Topbar toggle is hidden below md) + Logout */}
           <div className="shrink-0 space-y-2 border-t border-gray-200/70 p-3 pb-safe-3 dark:border-line">
+            {installOption && (
+              <button
+                type="button"
+                onClick={handleInstall}
+                className="flex h-11 w-full cursor-pointer items-center gap-3 rounded-xl pl-2 pr-3 text-left text-sm font-medium text-gray-700 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500 dark:text-gray-300 dark:hover:bg-white/[.06] dark:hover:text-gray-100"
+              >
+                <span aria-hidden="true" className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${TONES.indigo.chip}`}>
+                  <Download strokeWidth={1.75} className="size-[18px]" />
+                </span>
+                <span className="min-w-0 flex-1 truncate">ติดตั้งแอป</span>
+              </button>
+            )}
             {setDarkMode && (
               <button
                 type="button"
@@ -251,6 +273,8 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
           </div>
         </div>
       </div>
+
+      <InstallAppSheet open={installSheetOpen} onClose={() => setInstallSheetOpen(false)} />
     </>
   )
 }

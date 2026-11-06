@@ -5,9 +5,11 @@ import { BrowserRouter, HashRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
 import { installChunkReloadHandler } from './lib/chunkReload'
+import { registerSW } from './lib/pwa'
 
 // deploy ใหม่แล้วแท็บเก่าโหลด chunk ไม่ได้ (vite:preloadError) → reload 1 ครั้ง (กันวนด้วย sessionStorage)
 installChunkReloadHandler()
+registerSW()
 
 // Client demo build (npm run build:demo → one HTML file opened from file://, fake backend).
 // Hash routing only here: file:// has no server to fall back to index.html.

@@ -15,6 +15,7 @@ import { loadOnboarding, useOnboarding } from "../lib/onboarding"
 import TourOverlay from "./onboarding/TourOverlay"
 import SearchIntroGate from "./onboarding/SearchIntroGate"
 import { useAppUpdateCheck } from "../lib/appUpdate"
+import { toast } from "./ui/toast"
 import { TOUR_SIDEBAR_EVENT, useTourState } from "../lib/tourState"
 
 export const SidebarContext = createContext(false)
@@ -37,6 +38,34 @@ const getInitialDark = () => {
   return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false
 }
 
+const OFFLINE_TOAST = "app-offline"
+const ONLINE_TOAST = "app-online"
+
+// แจ้งเมื่อเน็ตหลุด/กลับมา — คนละ id เพราะการ์ดเดิมจำ duration แรก (ค้างตลอดของ offline จะติดไปกับ toast กลับมาออนไลน์)
+function useOnlineToast() {
+  useEffect(() => {
+    const onOffline = () => {
+      toast.dismiss(ONLINE_TOAST)
+      toast.warning("ไม่มีอินเทอร์เน็ต", {
+        id: OFFLINE_TOAST,
+        description: "ข้อมูลที่กรอกยังอยู่ แต่บันทึกไม่ได้จนกว่าเน็ตจะกลับมา ตรวจสอบ Wi-Fi หรือเน็ตมือถือ",
+        duration: Infinity,
+      })
+    }
+    const onOnline = () => {
+      toast.dismiss(OFFLINE_TOAST)
+      toast.success("อินเทอร์เน็ตกลับมาแล้ว", { id: ONLINE_TOAST, description: "ใช้งานต่อได้เลย" })
+    }
+    window.addEventListener("offline", onOffline)
+    window.addEventListener("online", onOnline)
+    if (navigator.onLine === false) onOffline()
+    return () => {
+      window.removeEventListener("offline", onOffline)
+      window.removeEventListener("online", onOnline)
+    }
+  }, [])
+}
+
 // Layout shell. The <body> is the document scroller (plan §A7) — no h-screen /
 // overflow-y-auto on <main> — so 100dvh is honest on iOS, Portal's body lock
 // works, and `position: sticky` inside pages sticks below the Topbar via
@@ -46,6 +75,7 @@ const AppLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(getInitialDark)
   useAppUpdateCheck()
+  useOnlineToast()
   // หน้าตารางหนักอ่าน SidebarContext — defer เพื่อไม่ให้ re-render บล็อกเฟรมแรกของ drawer slide
   const deferredSidebarOpen = useDeferredValue(isSidebarOpen)
   // สิทธิ์จาก GET /auth/me/permissions — โหลดตอนเปิดแอป/reload; เปลี่ยนเมื่อไหร่ทั้ง layout re-render (เมนู/ปุ่ม)
