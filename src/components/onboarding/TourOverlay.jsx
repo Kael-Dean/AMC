@@ -271,7 +271,7 @@ function TourRunner({ index, onFinished }) {
     }
   }
 
-  // Where น้องหอมทอง points: from the mascot (top-left of the card) toward the
+  // Where น้องมะลิ points: from the mascot (top-left of the card) toward the
   // spotlight centre. Mostly sideways; up/down only when the target sits clearly
   // above or below. The artwork points to its right, so mirror for targets on the left.
   const mascotAim = (() => {
@@ -414,7 +414,7 @@ function TourRunner({ index, onFinished }) {
             พักก่อน
           </button>
         </div>
-        {/* น้องหอมทอง guides every stop. It stays mounted across stops (outside the keyed
+        {/* น้องมะลิ guides every stop. It stays mounted across stops (outside the keyed
             block) so the Rive state machine keeps running: wave once, then point at the
             spotlight; the last stop switches to the success dance. */}
         <div className="mt-1 flex items-center gap-3">
@@ -550,7 +550,7 @@ function FinishFlourish({ onDone }) {
         role="status"
       >
         <div className="flex flex-col items-center text-center">
-          {/* the success state is น้องหอมทอง's happy dance; Celebration stays as the
+          {/* the success state is น้องมะลิ's happy dance; Celebration stays as the
               still fallback under reduced motion (Mascot shows a static pose there) */}
           {reducedMotion() ? <Celebration size={152} /> : <Mascot mood="success" size={176} />}
           <p className="mt-3 text-xl font-bold text-gray-900 dark:text-gray-100">พร้อมใช้งานแล้ว</p>

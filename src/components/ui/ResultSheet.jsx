@@ -16,7 +16,7 @@
 //             spec §3.6), error → "primary" (indigo — recovering is not saving).
 //             Pass primary.tone to override.
 // Built on <Sheet size="sm">; primary button takes initial focus.
-// Both tones show น้องหอมทอง on a tinted halo with a status badge pinned to her
+// Both tones show น้องมะลิ on a tinted halo with a status badge pinned to her
 // hip (<ResultEmblem>): success = jump + sparks + check, error = startle/worried pose + X
 // that wobbles. Animations live in index.css (.animate-result-*), play once and
 // collapse to the final frame under prefers-reduced-motion.

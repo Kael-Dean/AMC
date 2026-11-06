@@ -3,7 +3,7 @@
 // Full-area loading state — replaces ad-hoc inline pageSpinnerCls spinners.
 // variant: "spinner" | "table" | "cards" | "dashboard". Carries the
 // role="status" + aria-busy so the structural skeletons inside stay decorative.
-// `mascot` (spinner variant, on by default): น้องหอมทอง bouncing instead of the ring.
+// `mascot` (spinner variant, on by default): น้องมะลิ bouncing instead of the ring.
 // `fullscreen`: center in the whole viewport — the app-wide route Suspense fallback,
 // which replaces the layout, so the loader would otherwise sit at the top of a blank page.
 // Never for inline/button spinners.
