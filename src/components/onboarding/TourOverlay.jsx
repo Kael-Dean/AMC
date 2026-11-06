@@ -9,7 +9,9 @@
 // scrim; it GLIDES between targets (top/left/width/height, index.css .ob-spotlight).
 // No route/target (or not found) → the box collapses to the centre = full scrim + centred
 // card. Desktop: card beside the target (flips to fit). Phone: card docked at the bottom.
-// Last stop: tour-complete → complete; 422 sends the person back to what is left.
+// Last stop "ส่งข้อมูลยืนยัน": tour-complete → complete; 422 sends the person back to what is
+// left; a connection error re-reads the status (the answer may be what got lost), else retry.
+// "พักก่อน" / Esc pauses: AppLayout's gate then returns the person to the Ready step.
 //
 // z 10045: above Sheet (10040), below popovers (10050) / ConfirmDialog / Toaster.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -21,9 +23,18 @@ import Celebration from "./Celebration"
 import Mascot from "../ui/Mascot"
 import { toast } from "../ui"
 import { apiAuth } from "../../lib/api"
-import { completeOnboarding, sectionMeta, tourComplete, useOnboarding } from "../../lib/onboarding"
+import {
+  completeOnboarding,
+  getOnboardingState,
+  isConnectionError,
+  loadOnboarding,
+  sectionMeta,
+  tourComplete,
+  useOnboarding,
+} from "../../lib/onboarding"
+import { clearAllDrafts } from "../../lib/onboardingDraft"
 import { TOUR_LENGTH, TOUR_STOPS } from "../../lib/onboardingTour"
-import { TOUR_SIDEBAR_EVENT, pauseTour, resumeTour, setTourIndex, startTour, stopTour, useTourState } from "../../lib/tourState"
+import { TOUR_SIDEBAR_EVENT, pauseTour, setTourIndex, startTour, stopTour, useTourState } from "../../lib/tourState"
 import { useIsPhone } from "../../hooks/useMediaQuery"
 import { cx, focusRingCls, neutralBtnCls, primaryBtnCls, submitBtnCls } from "../../lib/styles"
 
@@ -33,6 +44,8 @@ const GAP = 16
 const CARD_W = 384
 const FIND_TIMEOUT = 3000
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+let finishToastSeq = 0
 
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false
 const topbarH = () =>
@@ -117,6 +130,12 @@ function TourRunner({ index, onFinished }) {
   const [cardH, setCardH] = useState(0)
   const [placed, setPlaced] = useState(false)
   const [busy, setBusy] = useState(false)
+  const finishToast = useRef(null)
+  const dismissFinishToast = useCallback(() => {
+    if (finishToast.current) toast.dismiss(finishToast.current)
+    finishToast.current = null
+  }, [])
+  useEffect(() => dismissFinishToast, [dismissFinishToast]) // its retry must not outlive this stop
 
   // 1 · open the page of this stop (once per stop; a role that is redirected elsewhere
   //     simply falls back to a centred card after the timeout)
@@ -274,31 +293,56 @@ function TourRunner({ index, onFinished }) {
 
   // ── actions ───────────────────────────────────────────────────────────────
   const skip = () => {
-    pauseTour()
-    toast.info("หยุดทัวร์ไว้ก่อน", {
-      id: "tour-paused",
-      description: "ดูต่อได้จากหน้าหลัก",
-      action: { label: "ดูต่อ", onClick: resumeTour },
-    })
+    if (!busy) pauseTour()
   }
   const back = () => index > 0 && setTourIndex(index - 1)
+  const succeed = () => {
+    clearAllDrafts()
+    stopTour()
+    onFinished()
+  }
   const finish = async () => {
     if (busy) return
     setBusy(true)
+    dismissFinishToast()
     try {
       await tourComplete()
       await completeOnboarding()
-      stopTour()
-      onFinished()
+      succeed()
     } catch (err) {
+      if (err?.status === 401 || err?.onboardingRequired) return
+      const connection = isConnectionError(err)
+      if (connection || err?.status === 409) {
+        // the request may have landed and only its answer got lost
+        await loadOnboarding({ force: true })
+        if (getOnboardingState().data?.onboarded) {
+          succeed()
+          return
+        }
+      }
+      if (connection) {
+        finishToastSeq += 1
+        finishToast.current = `tour-finish-${finishToastSeq}`
+        toast.error("ยังส่งข้อมูลไม่สำเร็จ", {
+          id: finishToast.current,
+          description: "การเชื่อมต่อกับระบบขัดข้อง ข้อมูลที่กรอกไว้บันทึกแล้ว กดส่งอีกครั้งเมื่อเน็ตกลับมา",
+          action: { label: "ลองอีกครั้ง", onClick: finish },
+        })
+        return
+      }
       const d = err?.data?.detail
       if (err?.status === 422 && d && typeof d === "object" && !Array.isArray(d)) {
         if (Array.isArray(d.sections) && d.sections.length) {
           pauseTour()
-          toast.warning("ยังมีข้อมูลที่ต้องยืนยันอีกครั้ง", {
-            description: d.sections.map((k) => sectionMeta(k)?.label ?? k).join(", "),
+          // shown by the onboarding page: this layout's toaster unmounts as the gate closes
+          navigate(`/onboarding?step=${d.sections[0]}`, {
+            state: {
+              notice: {
+                title: "ยังมีข้อมูลที่ต้องยืนยันอีกครั้ง",
+                description: d.sections.map((k) => sectionMeta(k)?.label ?? k).join(", "),
+              },
+            },
           })
-          navigate(`/onboarding?step=${d.sections[0]}`)
           return
         }
         if (d.tour) {
@@ -307,7 +351,7 @@ function TourRunner({ index, onFinished }) {
           return
         }
       }
-      if (!err?.onboardingRequired) toast.error("บันทึกไม่สำเร็จ", { description: err?.message || "ลองอีกครั้ง" })
+      toast.error("บันทึกไม่สำเร็จ", { description: err?.message || "ลองอีกครั้ง" })
     } finally {
       setBusy(false)
     }
@@ -367,7 +411,7 @@ function TourRunner({ index, onFinished }) {
               focusRingCls,
             )}
           >
-            ข้าม
+            พักก่อน
           </button>
         </div>
         {/* น้องหอมทอง guides every stop. It stays mounted across stops (outside the keyed
@@ -457,7 +501,7 @@ function TourRunner({ index, onFinished }) {
             )}
           >
             {busy && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
-            {isLast ? "เสร็จสิ้น" : "เข้าใจแล้ว ถัดไป"}
+            {isLast ? "ส่งข้อมูลยืนยัน" : "เข้าใจแล้ว ถัดไป"}
           </button>
         </div>
       </div>

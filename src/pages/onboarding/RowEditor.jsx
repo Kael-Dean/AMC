@@ -1,7 +1,7 @@
 // src/pages/onboarding/RowEditor.jsx
 // Add / edit one row of a list section (family, education, work, criminal) in a <Sheet>,
 // plus the row list item used by both list steps.
-import { useEffect, useId, useState } from "react"
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react"
 import { Pencil, Trash2 } from "lucide-react"
 import PrefixedNameInput from "../../components/PrefixedNameInput"
 import SelectDropdown from "../../components/SelectDropdown"
@@ -10,7 +10,7 @@ import DateInput from "../../components/ThaiDateField"
 import { Sheet } from "../../components/ui"
 import { baseField, cx, focusRingCls, helpTextCls, iconBtnCls, neutralBtnCls, submitBtnCls } from "../../lib/styles"
 import { blank, invalidInputCls, reportProblem, requiredHint } from "./sectionFlow"
-import { Field } from "./shared"
+import { ConnectionNote, Field } from "./shared"
 
 const NO_KEYS = []
 
@@ -33,9 +33,18 @@ const toOptions = (options, current) => {
   return current && !list.some((o) => o.value === current) ? [{ value: current, label: current }, ...list] : list
 }
 
-function EditorBody({ columns, initial, formId, onSubmit, error, missing, hints }) {
+function EditorBody({ columns, initial, formId, onSubmit, error, errorKind, missing, hints, onFormChange }) {
   const [form, setForm] = useState(() => ({ ...emptyOf(columns), ...(initial ?? {}) }))
   const uid = useId()
+  // report edits only (opening the sheet is not typing), in the same tick as the keystroke
+  const firstForm = useRef(form)
+  const reportForm = useRef(onFormChange)
+  useLayoutEffect(() => {
+    reportForm.current = onFormChange
+  })
+  useLayoutEffect(() => {
+    if (form !== firstForm.current) reportForm.current?.(form)
+  }, [form])
   // keys edited since the last rejected save lose their red mark
   const [edited, setEdited] = useState({ missing, keys: [] })
   if (edited.missing !== missing) setEdited({ missing, keys: [] })
@@ -53,8 +62,8 @@ function EditorBody({ columns, initial, formId, onSubmit, error, missing, hints 
       const prefix = document.getElementById(`${uid}-${k}-prefix`)
       return prefix?.getAttribute("aria-invalid") === "true" ? prefix.id : `${uid}-${k}`
     }
-    reportProblem({ missing, message: error }, fieldId, `${uid}-error`)
-  }, [missing, error, uid])
+    reportProblem({ kind: errorKind, missing, message: error }, fieldId, `${uid}-error`)
+  }, [missing, error, errorKind, uid])
 
   const hintOf = (c) => hints?.[c.key] ?? (blank(form[c.key]) ? requiredHint(c) : "ตรวจสอบข้อมูลช่องนี้")
   return (
@@ -167,7 +176,10 @@ function EditorBody({ columns, initial, formId, onSubmit, error, missing, hints 
           </Field>
         )
       })}
-      {error && (
+      {error && errorKind === "connection" && (
+        <ConnectionNote id={`${uid}-error`} className="md:col-span-2">{error}</ConnectionNote>
+      )}
+      {error && errorKind !== "connection" && (
         <p id={`${uid}-error`} role="alert" tabIndex={-1} className="rounded-xl outline-none bg-red-50 px-3 py-2.5 text-sm leading-relaxed text-red-700 md:col-span-2 dark:bg-red-500/10 dark:text-red-300">
           {error}
         </p>
@@ -181,8 +193,10 @@ function EditorBody({ columns, initial, formId, onSubmit, error, missing, hints 
  * `missing` = keys rejected by the last save (new array per attempt → toast + focus first);
  * `hints` = { key: inline message } overriding the default "กรอก…/เลือก…".
  * `initial` = the row being edited (null → add). The body remounts per open/row.
+ * `errorKind` "connection" = `error` is connection trouble, not a rejected value.
+ * `onFormChange(form)` = after each edit (the step stores it as a draft).
  */
-export function RowEditorSheet({ open, title, subtitle, columns, initial, busy, error, missing = NO_KEYS, hints, onSubmit, onClose, openKey }) {
+export function RowEditorSheet({ open, title, subtitle, columns, initial, busy, error, errorKind, missing = NO_KEYS, hints, onSubmit, onClose, openKey, onFormChange }) {
   const formId = useId()
   return (
     <Sheet
@@ -217,8 +231,10 @@ export function RowEditorSheet({ open, title, subtitle, columns, initial, busy, 
           formId={formId}
           onSubmit={onSubmit}
           error={error}
+          errorKind={errorKind}
           missing={missing}
           hints={hints}
+          onFormChange={onFormChange}
         />
       )}
     </Sheet>
