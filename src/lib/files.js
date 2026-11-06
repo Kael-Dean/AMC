@@ -14,6 +14,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { apiAuth, apiDownload, apiUrl, expireSession } from "./api"
 import { getToken } from "./auth"
+import { isIOSLike, isMobileStandalone, isStandalone } from "./pwa"
+import { toast } from "../components/ui/toast"
 
 export const FILE_MAX_BYTES = 5 * 1024 * 1024
 export const FILE_MAX_COUNT = 5
@@ -134,4 +136,95 @@ export function saveBlob(blob, filename) {
   a.click()
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+// ─── Popups and print in the installed app ───────────────────────────────────
+// On a phone/tablet the installed app (display-mode: standalone) has no tabs:
+// window.open lands outside the app, where a blob URL does not load and the opener
+// handle is unreliable, and window.print may do nothing. These helpers keep the
+// browser behaviour everywhere else and hand over a file on those devices.
+// Desktop installed apps open popups normally.
+
+/**
+ * window.open that returns null when a popup can't work. Call it synchronously
+ * inside the click (popup blockers), and treat null like a blocked popup.
+ */
+export function openPopup(url = "", features) {
+  if (isMobileStandalone()) return null
+  return window.open(url, "_blank", features)
+}
+
+async function shareBlobFile(file) {
+  await navigator.share({ files: [file], title: file.name })
+}
+
+/**
+ * Hand a blob to the user when no popup is available. iOS standalone gets the
+ * share sheet (a[download] on a blob is unreliable there); everything else saves.
+ * Share needs a fresh tap, which a slow download can use up: then ask for one more.
+ */
+export async function deliverBlob(blob, filename) {
+  const name = filename || "file"
+  const file = isStandalone() && isIOSLike() && typeof File === "function" ? new File([blob], name, { type: blob.type }) : null
+  if (!file || !navigator.canShare?.({ files: [file] })) {
+    saveBlob(blob, name)
+    return
+  }
+  try {
+    await shareBlobFile(file)
+  } catch (err) {
+    if (err?.name === "AbortError") return // user closed the share sheet
+    if (err?.name !== "NotAllowedError") {
+      saveBlob(blob, name)
+      return
+    }
+    toast.info("ไฟล์พร้อมแล้ว", {
+      description: name,
+      duration: 15_000,
+      action: { label: "บันทึกหรือแชร์", onClick: () => shareBlobFile(file).catch(() => {}) },
+    })
+  }
+}
+
+/**
+ * Print a standalone HTML document. Prints straight from this click: the app's CSP
+ * also covers the popup, so a script inside `html` would not run.
+ * No popup available → the document is handed over as a file to print from there.
+ */
+export function printHtml(html, { filename = "document.html", features } = {}) {
+  // No "noopener": window.open would return null and we need the handle to write
+  // and print. Clear opener by hand instead (reverse-tabnabbing).
+  const popup = openPopup("", features)
+  if (!popup) {
+    deliverBlob(new Blob([html], { type: "text/html;charset=utf-8" }), filename)
+    return
+  }
+  try {
+    popup.opener = null
+  } catch { /* ignore */ }
+  popup.document.write(html)
+  popup.document.close()
+  // Synchronous on purpose: deferring to onload loses the click's user activation in Chrome.
+  try {
+    popup.focus()
+    popup.print()
+  } catch { /* ignore */ }
+}
+
+/** Print the current page. If the installed app shows no print dialog, say what to do instead. */
+export function printPage() {
+  if (!isMobileStandalone()) {
+    window.print()
+    return
+  }
+  let opened = false
+  window.addEventListener("beforeprint", () => { opened = true }, { once: true })
+  window.print()
+  setTimeout(() => {
+    if (opened) return
+    toast.warning("พิมพ์จากแอปบนเครื่องนี้ไม่ได้", {
+      description: "แคปหน้าจอเก็บไว้ หรือเปิดระบบในเบราว์เซอร์แล้วพิมพ์จากที่นั่น",
+      duration: 10_000,
+    })
+  }, 800)
 }

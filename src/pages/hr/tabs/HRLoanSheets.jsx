@@ -18,7 +18,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react"
 import { FileText } from "lucide-react"
 import { apiAuth, apiDownload } from "../../../lib/api"
 import { apiDetail } from "../../../lib/apiErrors"
-import { saveBlob } from "../../../lib/reportFormat"
+import { deliverBlob, openPopup } from "../../../lib/files"
 import { fmtDateTimeTh } from "../../../lib/approvalActions"
 import {
   cx, baseField, labelCls, helpTextCls, errorTextCls, primaryBtnCls, dangerBtnCls, neutralBtnCls,
@@ -358,8 +358,8 @@ export function LoanPdfButton({ path, label, fallbackName, className = neutralBt
     try {
       const { blob, filename } = await apiDownload(path)
       const url = URL.createObjectURL(blob)
-      const win = window.open(url, "_blank")
-      if (!win) saveBlob(blob, filename && filename !== "download" ? filename : fallbackName)
+      const win = openPopup(url)
+      if (!win) await deliverBlob(blob, filename && filename !== "download" ? filename : fallbackName)
       setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (err) {
       toast.error(`เปิด${label}ไม่สำเร็จ`, { description: errText(err, "ลองใหม่อีกครั้ง") })

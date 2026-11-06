@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useThaiAddressData } from "../../hooks/useThaiAddressData"
 import { apiAuth } from "../../lib/api"   // ✅ แนบ token อัตโนมัติ + จัดการ 401
+import { printPage } from "../../lib/files"
 import { cx, baseField, labelCls, helpTextCls, errorTextCls, submitBtnCls, resetBtnCls, secondaryBtnCls, spinnerCls } from "../../lib/styles"
 import { Card, CardHeader, PageLoader, Sheet, StickyActionBar, toast } from "../../components/ui"
 import ComboBox from "../../components/ComboBox"
@@ -194,7 +195,7 @@ function ReceiptModal({ open, onClose, receipt, name }) {
         <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={() => printPage()}
             className={cx(secondaryBtnCls, "h-12 md:h-10 !px-5 !py-0 !text-sm")}
           >
             พิมพ์ใบเสร็จ

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f9fafb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b0b0f" media="(prefers-color-scheme: dark)" />
+    <!-- Served for any URL while offline: nothing here may need the network, and no JS. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'" />
+    <title>ไม่มีอินเทอร์เน็ต | สหกรณ์การเกษตร SKT สุรินทร์</title>
+    <style>
+      :root {
+        --canvas: #f9fafb;
+        --ink: #111827;
+        --muted: #4b5563;
+        --chip: #eef2ff;
+        --chip-ink: #4f46e5;
+        --action: #4f46e5;
+        --action-hover: #6366f1;
+        --ring: #6366f1;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --canvas: #0b0b0f;
+          --ink: #f3f4f6;
+          --muted: #a1a1aa;
+          --chip: rgb(99 102 241 / 0.15);
+          --chip-ink: #a5b4fc;
+          --action: #4f46e5;
+          --action-hover: #6366f1;
+          --ring: #818cf8;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: max(1.5rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-right))
+          max(1.5rem, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left));
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: "Sarabun", "Noto Sans Thai", "Leelawadee UI", "Thonburi", system-ui, sans-serif;
+        line-height: 1.6;
+      }
+      main { width: 100%; max-width: 22rem; text-align: center; }
+      .icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 1rem;
+        background: var(--chip);
+        color: var(--chip-ink);
+      }
+      h1 { margin: 1.25rem 0 0.5rem; font-size: 1.25rem; font-weight: 700; line-height: 1.4; }
+      p { margin: 0; color: var(--muted); font-size: 1rem; }
+      a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 2.75rem;
+        margin-top: 1.5rem;
+        border-radius: 0.75rem;
+        background: var(--action);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background-color 0.2s;
+      }
+      a:hover { background: var(--action-hover); }
+      a:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+      @media (prefers-reduced-motion: reduce) { a { transition: none; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h.01" />
+          <path d="M8.5 16.429a5 5 0 0 1 7 0" />
+          <path d="M5 12.859a10 10 0 0 1 5.17-2.69" />
+          <path d="M19 12.859a10 10 0 0 0-2.007-1.523" />
+          <path d="M2 8.82a15 15 0 0 1 4.177-2.643" />
+          <path d="M22 8.82a15 15 0 0 0-11.288-3.764" />
+          <path d="m2 2 20 20" />
+        </svg>
+      </span>
+      <h1>ไม่มีอินเทอร์เน็ต</h1>
+      <p>ระบบต้องใช้อินเทอร์เน็ต ตรวจสอบ Wi-Fi หรือเน็ตมือถือ แล้วกดลองใหม่</p>
+      <a href="/">ลองใหม่</a>
+    </main>
+  </body>
+</html>

@@ -1,6 +1,7 @@
 // src/pages/Share.jsx
 import { useEffect, useMemo, useRef, useState } from "react"
 import { apiAuth } from "../../lib/api" // ✅ แนบ token + JSON ให้แล้ว
+import { printHtml } from "../../lib/files"
 import { cx, baseField, labelCls, helpTextCls, errorTextCls } from "../../lib/styles"
 import { ErrorState, SearchField, StickyActionBar, ResultSheet, ConfirmDialog, toast } from "../../components/ui"
 import { useIsPhone } from "../../hooks/useMediaQuery"
@@ -88,12 +89,7 @@ function printShareReceipt(r) {
     ["รวมต้องชำระ (บาท)", fmt3(r.total_due)],
     ["ยอดรวมหุ้นหลังซื้อ", fmt3(r.total_share_after)],
   ]
-  const w = window.open("", "_blank", "width=480,height=640")
-  if (!w) {
-    toast.error("เปิดหน้าพิมพ์ไม่ได้", { description: "เบราว์เซอร์บล็อกหน้าต่างใหม่ อนุญาตป๊อปอัปแล้วลองอีกครั้ง" })
-    return
-  }
-  w.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>ใบเสร็จซื้อหุ้น</title>
+  printHtml(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>ใบเสร็จซื้อหุ้น</title>
 <style>body{font-family:system-ui,"Sarabun",sans-serif;margin:24px;color:#111}h1{font-size:18px;margin:0 0 4px}
 p{margin:0 0 16px;color:#555;font-size:13px}table{width:100%;border-collapse:collapse;font-size:14px}
 td{padding:6px 0;border-bottom:1px solid #e5e7eb}td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
@@ -101,8 +97,7 @@ td{padding:6px 0;border-bottom:1px solid #e5e7eb}td:last-child{text-align:right;
 <h1>ใบเสร็จซื้อหุ้น</h1><p>สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส. สุรินทร์</p>
 <table>${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
 <div class="note">* คิดค่าธรรมเนียมเฉพาะการซื้อครั้งแรกของสมาชิก</div>
-<script>window.onload=function(){window.print()}</script></body></html>`)
-  w.document.close()
+</body></html>`, { filename: "ใบเสร็จซื้อหุ้น.html", features: "width=480,height=640" })
 }
 
 /** ---------- หน้า Share (ซื้อหุ้น) ---------- */

@@ -5,9 +5,11 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
 import { installChunkReloadHandler } from './lib/chunkReload'
+import { registerSW } from './lib/pwa'
 
 // deploy ใหม่แล้วแท็บเก่าโหลด chunk ไม่ได้ (vite:preloadError) → reload 1 ครั้ง (กันวนด้วย sessionStorage)
 installChunkReloadHandler()
+registerSW()
 
 // ลิงก์แบบ HashRouter เดิม (/#/home, bookmark, ลิงก์ในแชท/อีเมล) → แปลงเป็น path ปกติก่อน router อ่าน URL
 // ถ้า query อยู่หน้า # (เช่น /?token=x#/reset-password) ให้ติดไปด้วย

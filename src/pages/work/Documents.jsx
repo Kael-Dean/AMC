@@ -11,6 +11,7 @@ import ComboBox from "../../components/ComboBox"
 import BranchLockNote from "../../components/BranchLockNote"
 import useBranchLock, { scopedBranchId } from "../../hooks/useBranchLock"
 import { toast } from "../../components/ui"
+import { deliverBlob, openPopup } from "../../lib/files"
 import DateInput from "../../components/ThaiDateField"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import PageTitle from "../../components/PageTitle"
@@ -1053,7 +1054,7 @@ function Documents() {
     // (โค้ดด้านล่างต้องใช้ handle เพื่อเขียน placeholder, set location.href เป็น blob URL,
     // focus/print และ close ตอน error) — แทนที่จะใช้ noopener เราจึง null ค่า opener
     // ด้วยตัวเองเพื่อปิดช่องโหว่ reverse-tabnabbing โดยยังคงควบคุมหน้าต่างได้
-    const preOpenWin = isPdf ? window.open("", "_blank") : null
+    const preOpenWin = isPdf ? openPopup() : null
     if (preOpenWin) {
       try {
         preOpenWin.opener = null
@@ -1115,7 +1116,7 @@ function Documents() {
       if (isPdf) {
         if (report.type !== "hr_pdf") params.set("preview", "false")
 
-        const { blob } = await apiDownload(`${endpoint}?${params.toString()}`)
+        const { blob, filename } = await apiDownload(`${endpoint}?${params.toString()}`)
         const url = URL.createObjectURL(blob)
 
         if (preOpenWin) {
@@ -1129,13 +1130,7 @@ function Documents() {
             }, 1200)
           } catch { /* ignore */ }
         } else {
-          const link = document.createElement("a")
-          link.href = url
-          link.target = "_blank"
-          link.rel = "noreferrer"
-          document.body.appendChild(link)
-          link.click()
-          link.remove()
+          await deliverBlob(blob, filename && filename !== "download" ? filename : `${report.key}.pdf`)
         }
 
         setTimeout(() => URL.revokeObjectURL(url), 60_000)
