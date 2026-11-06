@@ -239,7 +239,7 @@ function ReadOnlyFact({ icon, label, value, onReport }) {
         type="button"
         onClick={onReport}
         className={cx(
-          "mt-1 inline-flex min-h-touch items-center rounded-lg text-sm font-medium text-indigo-700 underline-offset-4 hover:underline md:min-h-8 dark:text-indigo-300",
+          "mt-1 inline-flex min-h-touch items-center rounded-lg text-sm font-medium text-indigo-700 underline-offset-4 hover:underline md:pointer-fine:min-h-8 dark:text-indigo-300",
           focusRingCls,
         )}
       >
@@ -333,7 +333,7 @@ function DiseaseField({ id, value, onChange, invalid, error }) {
                 onClick={() => commit(items.filter((x) => x !== d))}
                 aria-label={`ลบ ${d}`}
                 className={cx(
-                  "inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-indigo-600 hover:bg-indigo-100 dark:text-indigo-200 dark:hover:bg-white/[.1]",
+                  "inline-flex size-8 pointer-coarse:size-11 cursor-pointer items-center justify-center rounded-full text-indigo-600 hover:bg-indigo-100 dark:text-indigo-200 dark:hover:bg-white/[.1]",
                   focusRingCls,
                 )}
               >

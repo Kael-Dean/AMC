@@ -16,7 +16,7 @@ import { cx, baseField, neutralBtnCls } from "../../lib/styles"
 import { EmptyState, ErrorState, SaveButton, Sheet, SkeletonTableRows, revealFirstInvalid, toast, useSaveStatus } from "../ui"
 import StatusMsg from "./StatusMsg"
 
-const btnCls = "h-12 md:h-10"
+const btnCls = "h-12 md:pointer-fine:h-10"
 const dayInputCls = cx(baseField, "!w-24 !rounded-lg !px-2.5 !py-1.5 md:!text-sm text-right tabular-nums")
 const COLS = 3
 
@@ -215,7 +215,7 @@ export default function DaysWorkedSheet({ open, ym, canEdit, isDraft, dailyWage 
                 className={dayInputCls}
               />
             </div>
-            <button type="button" onClick={fillEmpty} className={cx(neutralBtnCls, "h-11 md:h-9")}>เติมช่องว่าง</button>
+            <button type="button" onClick={fillEmpty} className={cx(neutralBtnCls, "h-11 md:pointer-fine:h-9")}>เติมช่องว่าง</button>
           </div>
         )}
 

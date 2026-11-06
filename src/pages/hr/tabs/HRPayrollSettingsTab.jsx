@@ -103,7 +103,7 @@ function Field({ k, form, setValue, error, readOnly, changed }) {
                   aria-checked={on}
                   disabled={readOnly}
                   onClick={() => setValue(k, o.value)}
-                  className={cx(segmentedItemCls, "md:!min-h-8 disabled:cursor-not-allowed", on && segmentedItemActiveCls)}
+                  className={cx(segmentedItemCls, "md:pointer-fine:!min-h-8 disabled:cursor-not-allowed", on && segmentedItemActiveCls)}
                 >
                   {o.label}
                 </button>

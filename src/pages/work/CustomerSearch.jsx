@@ -382,7 +382,7 @@ const CustomerSearch = () => {
   const sheetFooter = active ? (
     editing ? (
       <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
-        <button type="button" onClick={cancelEdit} disabled={saving} className={cx(neutralBtnCls, "h-12 md:h-10")}>
+        <button type="button" onClick={cancelEdit} disabled={saving} className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-10")}>
           ยกเลิก
         </button>
         <button
@@ -390,7 +390,7 @@ const CustomerSearch = () => {
           onClick={save}
           disabled={saving}
           aria-busy={saving || undefined}
-          className={cx(submitBtnCls, "h-12 md:h-10 !py-0 !text-sm hover:!scale-100")}
+          className={cx(submitBtnCls, "h-12 md:pointer-fine:h-10 !py-0 !text-sm hover:!scale-100")}
         >
           {saving && <span className={spinnerCls} aria-hidden="true" />}
           {saving ? "กำลังบันทึก…" : "บันทึก"}
@@ -398,10 +398,10 @@ const CustomerSearch = () => {
       </div>
     ) : (
       <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
-        <button type="button" onClick={closeModal} className={cx(neutralBtnCls, "h-12 md:h-10")}>
+        <button type="button" onClick={closeModal} className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-10")}>
           ปิด
         </button>
-        <button type="button" onClick={() => setEditing(true)} className={cx(secondaryBtnCls, "h-12 md:h-10 !py-0 !text-sm")}>
+        <button type="button" onClick={() => setEditing(true)} className={cx(secondaryBtnCls, "h-12 md:pointer-fine:h-10 !py-0 !text-sm")}>
           แก้ไข
         </button>
       </div>
@@ -409,7 +409,7 @@ const CustomerSearch = () => {
   ) : null
 
   return (
-    <div className="min-h-screen rounded-2xl bg-white text-black dark:bg-slate-900 dark:text-white">
+    <div className="min-h-dvh rounded-2xl bg-white text-black dark:bg-slate-900 dark:text-white">
       <div className="w-full p-4 md:p-6 text-base md:text-lg">
         <PageTitle title="ค้นหาลูกค้าทั่วไป" />
 

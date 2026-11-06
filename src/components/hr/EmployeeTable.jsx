@@ -200,7 +200,7 @@ function RosterExportButton({ block = false }) {
       onClick={onClick}
       disabled={busy}
       aria-busy={busy}
-      className={cx(neutralBtnCls, block ? "w-full !h-11" : "!h-9", "disabled:cursor-wait disabled:opacity-70")}
+      className={cx(neutralBtnCls, block ? "w-full !h-11" : "!h-9 pointer-coarse:!h-11", "disabled:cursor-wait disabled:opacity-70")}
     >
       {busy ? (
         <Loader2 aria-hidden="true" className="size-4 animate-spin" strokeWidth={1.75} />
@@ -648,7 +648,7 @@ function ColumnsMenu({ available, unavailable, hiddenSet, onToggle, onReset }) {
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen((o) => !o)}
-        className={cx(neutralBtnCls, "!h-9 !px-3")}
+        className={cx(neutralBtnCls, "!h-9 pointer-coarse:!h-11 !px-3")}
       >
         <Columns3 aria-hidden="true" className="size-4" strokeWidth={1.75} />
         คอลัมน์

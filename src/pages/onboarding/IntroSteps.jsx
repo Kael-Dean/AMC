@@ -10,7 +10,7 @@ import { useTourState } from "../../lib/tourState"
 import { cx, focusRingCls, neutralBtnCls, primaryBtnCls } from "../../lib/styles"
 import { firstNameOnly } from "./sectionFlow"
 
-const bigBtn = "h-12 w-full px-6 text-base md:h-12 md:w-auto"
+const bigBtn = "h-12 w-full px-6 text-base md:pointer-fine:h-12 md:w-auto"
 
 const POINTS = [
   { icon: Clock3, text: "กรอกข้อมูลประมาณ 10 นาที", sub: "บันทึกทีละหัวข้อ หยุดกลางทางแล้วกลับมาทำต่อได้ ต้องทำให้ครบก่อนจึงจะใช้เมนูอื่นได้" },

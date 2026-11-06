@@ -336,7 +336,7 @@ export default function HRRelocationTab() {
               role="dialog"
               aria-modal="true"
               aria-labelledby="relo-action-title"
-              className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-gray-800 shadow-2xl p-6 space-y-4"
+              className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl bg-white dark:bg-gray-800 shadow-2xl p-6 space-y-4"
             >
               <h3 id="relo-action-title" className="text-lg font-bold text-gray-900 dark:text-gray-100">{meta.title}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">

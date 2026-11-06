@@ -267,7 +267,7 @@ function DetailModal({ state, onClose, onDecide }) {
     <Portal>
       <div className="fixed inset-0 z-[10055] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="inbox-detail-title">
         <button type="button" aria-label="ปิด" tabIndex={-1} {...backdropProps} className="absolute inset-0 cursor-pointer bg-black/50 backdrop-blur-sm" />
-        <div className="relative max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-gray-200/70 dark:bg-gray-800 dark:ring-gray-700/70">
+        <div className="relative max-h-[90dvh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-gray-200/70 dark:bg-gray-800 dark:ring-gray-700/70">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="mb-1 flex items-center gap-2 text-gray-500 dark:text-gray-400">
@@ -284,7 +284,7 @@ function DetailModal({ state, onClose, onDecide }) {
               type="button"
               onClick={onClose}
               aria-label="ปิด"
-              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              className="flex h-8 w-8 pointer-coarse:size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:hover:bg-gray-700 dark:hover:text-gray-200"
             >
               <IconClose />
             </button>

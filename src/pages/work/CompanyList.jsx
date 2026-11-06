@@ -167,7 +167,7 @@ export default function CompanyList() {
         {canAdd && (
           <Link
             to={ADD_PATH}
-            className={cx(primaryBtnCls, "w-full !h-12 md:w-auto md:!h-auto md:ml-auto md:!rounded-2xl md:!px-5")}
+            className={cx(primaryBtnCls, "w-full !h-12 md:w-auto md:pointer-fine:!h-auto md:ml-auto md:!rounded-2xl md:!px-5")}
           >
             <Plus aria-hidden="true" className="size-4" strokeWidth={2} />
             เพิ่มบริษัท

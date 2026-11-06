@@ -42,7 +42,7 @@ export function SortControl({ column, sort, onSort }) {
       data-sort-first={dir === "asc" ? "" : undefined}
       onClick={() => onSort(active === dir ? null : dir)}
       className={cx(
-        "inline-flex min-h-11 md:min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-medium transition-colors duration-150 cursor-pointer",
+        "inline-flex min-h-11 md:pointer-fine:min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-medium transition-colors duration-150 cursor-pointer",
         active === dir
           ? "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-300 dark:bg-indigo-500/15 dark:text-indigo-200 dark:ring-indigo-400/40"
           : "text-gray-700 ring-1 ring-inset ring-gray-200 hover:bg-gray-50 dark:text-gray-200 dark:ring-line-strong dark:hover:bg-white/[.06]",
@@ -142,7 +142,7 @@ function EnumFilter({ column, value, onChange, options, idBase }) {
               <li key={o.value}>
                 <label
                   htmlFor={id}
-                  className="flex min-h-11 md:min-h-9 cursor-pointer items-center gap-2.5 px-3 text-sm text-gray-800 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[.05]"
+                  className="flex min-h-11 md:pointer-fine:min-h-9 cursor-pointer items-center gap-2.5 px-3 text-sm text-gray-800 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[.05]"
                 >
                   <input
                     id={id}
@@ -324,7 +324,7 @@ export default function ColumnHeaderMenu({
     >
       <div className="flex items-center justify-between gap-2 border-b border-gray-100 py-1.5 pl-4 pr-1.5 dark:border-line">
         <h2 id={titleId} className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{column.label}</h2>
-        <button type="button" onClick={onClose} aria-label="ปิด" className={cx("inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/[.08] dark:hover:text-gray-100 cursor-pointer", focusRingCls)}>
+        <button type="button" onClick={onClose} aria-label="ปิด" className={cx("inline-flex size-9 pointer-coarse:size-11 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/[.08] dark:hover:text-gray-100 cursor-pointer", focusRingCls)}>
           <X aria-hidden="true" className="size-4" strokeWidth={2} />
         </button>
       </div>

@@ -362,7 +362,7 @@ export default function BranchDebtTable({ programs, fiscalYears, branches, onBac
             onChange={(e) => setDateTo(e.target.value)}
           />
         </div>
-        <AllTimeToggle size="sm" active={allTime} onChange={setAllTime} className="md:min-h-[46px]" />
+        <AllTimeToggle size="sm" active={allTime} onChange={setAllTime} className="md:pointer-fine:min-h-[46px]" />
         {!allTime && (dateFrom || dateTo) && (
           <button
             type="button"

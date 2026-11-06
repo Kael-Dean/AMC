@@ -83,7 +83,7 @@ function Header({ confirmed, actionLabel, onAction, showProgress }) {
           type="button"
           onClick={onAction}
           className={cx(
-            "inline-flex min-h-touch shrink-0 cursor-pointer items-center rounded-xl px-3 text-[15px] font-medium text-gray-700 transition-colors duration-150 hover:bg-gray-100 md:min-h-10 dark:text-gray-200 dark:hover:bg-white/[.06]",
+            "inline-flex min-h-touch shrink-0 cursor-pointer items-center rounded-xl px-3 text-[15px] font-medium text-gray-700 transition-colors duration-150 hover:bg-gray-100 md:pointer-fine:min-h-10 dark:text-gray-200 dark:hover:bg-white/[.06]",
             focusRingCls,
           )}
         >

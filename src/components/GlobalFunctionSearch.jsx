@@ -185,7 +185,7 @@ export default function GlobalFunctionSearch() {
             reset()
             inputRef.current?.focus({ preventScroll: true })
           }}
-          className="absolute right-1.5 top-1/2 flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-gray-500 transition-colors duration-150 hover:bg-gray-200/70 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-gray-400 dark:hover:bg-white/[.08] dark:hover:text-gray-100"
+          className="absolute right-1.5 pointer-coarse:right-0 top-1/2 flex size-7 pointer-coarse:size-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-gray-500 transition-colors duration-150 hover:bg-gray-200/70 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-gray-400 dark:hover:bg-white/[.08] dark:hover:text-gray-100"
         >
           <X aria-hidden="true" className="size-4" strokeWidth={2} />
         </button>

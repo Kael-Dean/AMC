@@ -8,7 +8,7 @@
 import { cx, labelCls, segmentedCls } from "../../../lib/styles"
 
 const itemCls =
-  "relative flex flex-1 min-h-touch md:min-h-9 cursor-pointer items-center justify-center rounded-xl px-3 text-center text-sm font-medium " +
+  "relative flex flex-1 min-h-touch md:pointer-fine:min-h-9 cursor-pointer items-center justify-center rounded-xl px-3 text-center text-sm font-medium " +
   "text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 transition-colors duration-150 " +
   "has-[:checked]:bg-white has-[:checked]:text-indigo-700 has-[:checked]:shadow-sm has-[:checked]:ring-1 has-[:checked]:ring-gray-200/70 " +
   "dark:has-[:checked]:bg-raised dark:has-[:checked]:text-indigo-200 dark:has-[:checked]:ring-line-strong " +

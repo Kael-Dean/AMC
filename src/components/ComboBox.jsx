@@ -411,7 +411,7 @@ const ComboBox = forwardRef(function ComboBox(
           opt?.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
           phone
             ? "min-h-touch px-4 py-2.5 text-base outline-none focus-visible:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500 dark:focus-visible:bg-indigo-500/15 dark:focus-visible:ring-indigo-400"
-            : "min-h-10 rounded-xl px-3 py-2 text-[15px]",
+            : "min-h-10 pointer-coarse:min-h-touch rounded-xl px-3 py-2 text-[15px]",
           isActive && !phone && cx("bg-indigo-50", isChosen ? "dark:bg-indigo-500/20" : "dark:bg-white/[.06]"),
           isChosen
             ? cx(
@@ -491,7 +491,7 @@ const ComboBox = forwardRef(function ComboBox(
           aria-label="ล้างคำค้นหา"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => { setQuery(""); setHighlight(0); searchRef.current?.focus() }}
-          className={cx("absolute top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200", phone ? "right-5 size-11" : "right-1 size-8")}
+          className={cx("absolute top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200", phone ? "right-5 size-11" : "right-1 size-8 pointer-coarse:right-0 pointer-coarse:size-11")}
         >
           <X aria-hidden="true" className="size-4" strokeWidth={2} />
         </button>
@@ -525,9 +525,9 @@ const ComboBox = forwardRef(function ComboBox(
         aria-invalid={error || hintRed ? true : undefined}
         title={selectedLabel || undefined}
         className={cx(
-          "flex w-full items-center gap-2 border text-left text-base outline-none transition-colors duration-150 md:min-h-0",
+          "flex w-full items-center gap-2 border text-left text-base outline-none transition-colors duration-150 md:pointer-fine:min-h-0",
           size === "sm" ? "min-h-11 rounded-lg px-3 py-2 md:text-sm" : "min-h-12 rounded-2xl p-3 md:text-[15px]",
-          onClear && hasValue && !isDisabled && "pr-20 md:pr-16",
+          onClear && hasValue && !isDisabled && "pr-20 md:pointer-fine:pr-16",
           isDisabled
             ? cx("border-slate-300 dark:border-line-strong", fieldDisabled)
             : "cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-field dark:hover:bg-field",
@@ -569,7 +569,7 @@ const ComboBox = forwardRef(function ComboBox(
           type="button"
           aria-label="ล้างที่เลือก"
           onClick={() => { close(false); onClear(); triggerRef.current?.focus({ preventScroll: true }) }}
-          className="absolute top-1/2 right-9 flex size-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors duration-200 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 md:size-8 dark:text-slate-500 dark:hover:text-slate-200"
+          className="absolute top-1/2 right-9 flex size-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors duration-200 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 md:pointer-fine:size-8 dark:text-slate-500 dark:hover:text-slate-200"
         >
           <X aria-hidden="true" className="size-4" strokeWidth={2} />
         </button>

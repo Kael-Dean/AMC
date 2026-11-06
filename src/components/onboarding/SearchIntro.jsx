@@ -436,7 +436,7 @@ export default function SearchIntro({ userId, onClose, onPostpone }) {
             type="button"
             onClick={dismiss}
             className={cx(
-              "absolute right-3 top-3 z-10 inline-flex min-h-8 cursor-pointer items-center rounded-lg px-2 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100",
+              "absolute right-3 top-3 z-10 inline-flex min-h-8 pointer-coarse:min-h-touch cursor-pointer items-center rounded-lg px-2 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100",
               focusRingCls,
             )}
           >

@@ -48,12 +48,12 @@ export default function RevokeDialog({ fy, ev, name, onClose, onDone }) {
 
   const footer = result ? (
     <div className="grid grid-cols-1 gap-3 md:flex md:justify-end">
-      <button type="button" className={cx(primaryBtnCls, "h-12 md:h-auto")} onClick={onDone}>เสร็จสิ้น</button>
+      <button type="button" className={cx(primaryBtnCls, "h-12 md:pointer-fine:h-auto")} onClick={onDone}>เสร็จสิ้น</button>
     </div>
   ) : (
     <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
-      <button type="button" className={cx(neutralBtnCls, "h-12 md:h-auto")} onClick={onClose} disabled={saving}>ยกเลิก</button>
-      <button type="button" className={cx(dangerBtnCls, "h-12 md:h-auto")} onClick={submit} disabled={saving}>
+      <button type="button" className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-auto")} onClick={onClose} disabled={saving}>ยกเลิก</button>
+      <button type="button" className={cx(dangerBtnCls, "h-12 md:pointer-fine:h-auto")} onClick={submit} disabled={saving}>
         {saving ? "กำลังยกเลิกผล…" : "ยกเลิกผลอนุมัติ"}
       </button>
     </div>

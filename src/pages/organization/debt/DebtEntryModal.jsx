@@ -164,7 +164,7 @@ export default function DebtEntryModal({
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
         {...backdropProps}
       >
-        <div role="dialog" aria-modal="true" className={cx(modalCardCls, "max-w-lg w-full max-h-[90vh] overflow-y-auto")}>
+        <div role="dialog" aria-modal="true" className={cx(modalCardCls, "max-w-lg w-full max-h-[90dvh] overflow-y-auto")}>
           <h2 className={cx(modalTitleCls, "mb-1")}>
             {isEdit ? "แก้ไขรายการหนี้" : "บันทึกรายการหนี้"}
           </h2>

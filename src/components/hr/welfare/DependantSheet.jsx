@@ -23,7 +23,7 @@ import ThaiDateField from "../../ThaiDateField"
 import StatusMsg from "../StatusMsg"
 
 const inputCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm")
-const btnCls = "h-12 md:h-10 md:!px-5 md:!py-0 md:!text-sm"
+const btnCls = "h-12 md:pointer-fine:h-10 md:!px-5 md:!py-0 md:!text-sm"
 const errBorder = "!border-red-500 dark:!border-red-400"
 
 const EMPTY = {
@@ -91,7 +91,7 @@ function Check({ id, checked, onChange, label, hint, disabled }) {
         id={id} type="checkbox" checked={checked} disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
         aria-describedby={hint ? `${id}-hint` : undefined}
-        className="mt-0.5 size-5 shrink-0 cursor-pointer rounded accent-indigo-600 md:size-4"
+        className="mt-0.5 size-5 shrink-0 cursor-pointer rounded accent-indigo-600 md:pointer-fine:size-4"
       />
       <label htmlFor={id} className="cursor-pointer text-sm text-gray-800 dark:text-gray-200">
         {label}

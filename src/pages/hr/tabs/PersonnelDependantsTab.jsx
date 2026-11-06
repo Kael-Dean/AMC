@@ -120,7 +120,7 @@ export default function PersonnelDependantsTab({ employeeId, employeeName }) {
           )}
         </div>
         {canEdit && (
-          <button type="button" onClick={() => setSheet({ dependant: null })} className={cx(neutralBtnCls, "md:!h-9")}>
+          <button type="button" onClick={() => setSheet({ dependant: null })} className={cx(neutralBtnCls, "md:pointer-fine:!h-9")}>
             <Plus aria-hidden="true" className="size-4" />
             เพิ่มผู้มีสิทธิ์
           </button>

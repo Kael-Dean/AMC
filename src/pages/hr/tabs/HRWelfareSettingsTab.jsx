@@ -18,7 +18,7 @@ import StatusMsg from "../../../components/hr/StatusMsg"
 import Segmented from "../../../components/hr/welfare/Segmented"
 
 const inputCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm tabular-nums")
-const saveBtn = cx(submitBtnCls, "!rounded-xl !h-11 md:!h-10 !px-5 !py-0 !text-sm")
+const saveBtn = cx(submitBtnCls, "!rounded-xl !h-11 md:pointer-fine:!h-10 !px-5 !py-0 !text-sm")
 
 const CAP_FIELDS = [
   { key: "medical_annual_cap", label: "วงเงินค่ารักษาพยาบาลต่อปี", unit: "บาท", hint: "วงเงินรวมของเจ้าหน้าที่และครอบครัว ต่อปีงบประมาณ (เม.ย.–มี.ค.)" },

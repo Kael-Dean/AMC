@@ -213,7 +213,7 @@ export default function SalaryRosterPanel({ onOpenEmployee }) {
         ) : (
           <>
             {/* md+: table */}
-            <div className="hidden max-h-[70vh] overflow-auto md:block">
+            <div className="hidden max-h-[70dvh] overflow-auto md:block">
               <table className="w-full text-sm">
                 <caption className="sr-only">รายชื่อเจ้าหน้าที่พร้อมขั้นและเงินเดือนปัจจุบัน</caption>
                 <thead className="sticky top-0 z-[1] bg-gray-50 shadow-[0_1px_0_0] shadow-gray-100 dark:bg-gray-900 dark:shadow-gray-700">

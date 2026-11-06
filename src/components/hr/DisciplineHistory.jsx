@@ -58,7 +58,7 @@ function ActionRow({ a, highlight, showIssuer, busy, onPdf }) {
         aria-label={`ดาวน์โหลดหนังสือ ${stepLabel(step, a.step_label)}${a.doc_no ? ` เลขที่ ${a.doc_no}` : ""}`}
         className={cx(
           "inline-flex min-h-touch items-center justify-self-start gap-1.5 rounded-lg px-3 text-sm font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200",
-          "transition-colors duration-150 hover:bg-indigo-50 disabled:cursor-wait disabled:opacity-60 cursor-pointer md:min-h-9",
+          "transition-colors duration-150 hover:bg-indigo-50 disabled:cursor-wait disabled:opacity-60 cursor-pointer md:pointer-fine:min-h-9",
           "dark:text-indigo-300 dark:ring-indigo-400/30 dark:hover:bg-indigo-500/10",
           focusRingCls,
         )}

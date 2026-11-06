@@ -233,7 +233,7 @@ export default function BranchKpiPanel({ fy, info, phase, perms, people, onChang
   const saveBtn = (b, st, full) => (
     <button
       type="button"
-      className={cx(primaryBtnCls, full ? "w-full" : "md:!h-8 !px-3 text-xs")}
+      className={cx(primaryBtnCls, full ? "w-full" : "md:pointer-fine:!h-8 !px-3 text-xs")}
       disabled={locked || !st.dirty || !st.valid || savingId != null}
       onClick={() => save(b.id)}
     >

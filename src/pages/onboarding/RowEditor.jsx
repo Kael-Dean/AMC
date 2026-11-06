@@ -208,7 +208,7 @@ export function RowEditorSheet({ open, title, subtitle, columns, initial, busy, 
       size="md"
       footer={
         <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
-          <button type="button" onClick={onClose} disabled={busy} className={cx(neutralBtnCls, "h-12 md:h-10")}>
+          <button type="button" onClick={onClose} disabled={busy} className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-10")}>
             ยกเลิก
           </button>
           <button
@@ -216,7 +216,7 @@ export function RowEditorSheet({ open, title, subtitle, columns, initial, busy, 
             form={formId}
             disabled={busy}
             aria-busy={busy || undefined}
-            className={cx(submitBtnCls, "h-12 rounded-xl px-5 py-0 text-[15px] md:h-10 md:text-sm hover:scale-100")}
+            className={cx(submitBtnCls, "h-12 rounded-xl px-5 py-0 text-[15px] md:pointer-fine:h-10 md:text-sm hover:scale-100")}
           >
             {busy ? "กำลังบันทึก…" : "บันทึก"}
           </button>

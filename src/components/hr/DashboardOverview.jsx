@@ -191,7 +191,7 @@ export default function DashboardOverview({
             onClick={toggle}
             aria-expanded={!collapsed}
             aria-controls={collapsed ? undefined : "hr-overview-body"}
-            className={cx("-ml-1 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 text-left cursor-pointer md:min-h-9", focusRingCls)}
+            className={cx("-ml-1 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 text-left cursor-pointer md:pointer-fine:min-h-9", focusRingCls)}
           >
             <ChevronDown aria-hidden="true" className={cx("size-4 text-gray-500 transition-transform duration-200 dark:text-gray-400", collapsed && "-rotate-90")} strokeWidth={2} />
             ภาพรวมบุคลากร

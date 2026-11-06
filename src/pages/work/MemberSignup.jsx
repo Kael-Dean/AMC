@@ -196,7 +196,7 @@ function ReceiptModal({ open, onClose, receipt, name }) {
           <button
             type="button"
             onClick={() => printPage()}
-            className={cx(secondaryBtnCls, "h-12 md:h-10 !px-5 !py-0 !text-sm")}
+            className={cx(secondaryBtnCls, "h-12 md:pointer-fine:h-10 !px-5 !py-0 !text-sm")}
           >
             พิมพ์ใบเสร็จ
           </button>
@@ -204,7 +204,7 @@ function ReceiptModal({ open, onClose, receipt, name }) {
             type="button"
             data-autofocus
             onClick={onClose}
-            className={cx(submitBtnCls, "h-12 md:h-10 !px-5 !py-0 !text-sm hover:!scale-100")}
+            className={cx(submitBtnCls, "h-12 md:pointer-fine:h-10 !px-5 !py-0 !text-sm hover:!scale-100")}
           >
             ตกลง
           </button>
@@ -649,7 +649,7 @@ const MemberSignup = () => {
 
   /** ---------- UI ---------- */
   return (
-    <div className="min-h-screen bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base">
+    <div className="min-h-dvh bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base">
       <div className="w-full p-4 md:p-6 lg:p-8">
         <PageTitle title="สมัครสมาชิก" ref={topRef} tabIndex={-1} />
 

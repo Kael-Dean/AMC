@@ -16,7 +16,7 @@ export default function MyPayslips() {
         <Link
           to="/my-financial"
           state={backState("สลิปเงินเดือนของฉัน")}
-          className={`inline-flex min-h-touch md:min-h-0 items-center gap-1 rounded text-sm font-medium text-indigo-700 hover:underline dark:text-indigo-300 ${focusRingCls}`}
+          className={`inline-flex min-h-touch md:pointer-fine:min-h-0 items-center gap-1 rounded text-sm font-medium text-indigo-700 hover:underline dark:text-indigo-300 ${focusRingCls}`}
         >
           เงินเดือนและรายการหักที่บันทึกไว้ <ChevronRight aria-hidden="true" className="size-4" />
         </Link>

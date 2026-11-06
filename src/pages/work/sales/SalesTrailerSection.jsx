@@ -351,7 +351,7 @@ export default function SalesTrailerSection({ form }) {
         type="button"
         onClick={addTrailer}
         disabled={trailersCount >= MAX_TRAILERS}
-        className={cx(neutralBtnCls, "mt-3 md:h-9")}
+        className={cx(neutralBtnCls, "mt-3 md:pointer-fine:h-9")}
       >
         <Plus aria-hidden="true" className="size-4" strokeWidth={2} />
         เพิ่มคัน

@@ -24,7 +24,7 @@ export default function InstallAppSheet({ open, onClose }) {
       size="sm"
       footer={
         <div className="md:flex md:justify-end">
-          <button type="button" onClick={onClose} className={cx(primaryBtnCls, "h-12 w-full md:h-10 md:w-auto")}>
+          <button type="button" onClick={onClose} className={cx(primaryBtnCls, "h-12 w-full md:pointer-fine:h-10 md:w-auto")}>
             เข้าใจแล้ว
           </button>
         </div>

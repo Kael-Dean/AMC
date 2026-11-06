@@ -168,9 +168,14 @@ const AppLayout = () => {
   }, [])
 
   // ปิด sidebar อัตโนมัติเมื่อกว้าง >= md (กันค้างสถานะ)
+  // เช็คเฉพาะตอนความกว้างเปลี่ยน: บน tablet/มือถือแนวนอน แถบ address bar กับคีย์บอร์ดทำให้เกิด resize แค่ความสูง
   useEffect(() => {
+    let lastWidth = window.innerWidth
     const onResize = () => {
-      if (window.innerWidth >= 768) setIsSidebarOpen(false)
+      const width = window.innerWidth
+      if (width === lastWidth) return
+      lastWidth = width
+      if (width >= 768) setIsSidebarOpen(false)
     }
     window.addEventListener("resize", onResize)
     return () => window.removeEventListener("resize", onResize)
@@ -210,7 +215,7 @@ const AppLayout = () => {
           title={pageTitle}
         />
 
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 flex-1 pl-safe pr-safe pb-safe">
           <SidebarContext.Provider value={deferredSidebarOpen}>
           {/* ทุกหน้าใช้ความกว้างเต็มจอ (ไม่บีบด้วย max-w-*) — ตาราง/ฟอร์มหนาแน่นได้พื้นที่เต็มบน PC */}
           <div

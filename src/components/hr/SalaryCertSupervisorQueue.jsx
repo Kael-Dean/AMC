@@ -80,8 +80,8 @@ function OpinionSheet({ req, onClose, onDone }) {
       subtitle={`${req.user_name ?? "พนักงาน"} · ${salaryCertPurposeLabel(req.purpose_type)}`}
       footer={
         <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
-          <button type="button" onClick={onClose} disabled={busy} className={cx(neutralBtnCls, "h-12 md:h-10")}>ยกเลิก</button>
-          <button type="submit" form={`${uid}-form`} disabled={busy} className={cx(primaryBtnCls, "h-12 md:h-10")}>
+          <button type="button" onClick={onClose} disabled={busy} className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-10")}>ยกเลิก</button>
+          <button type="submit" form={`${uid}-form`} disabled={busy} className={cx(primaryBtnCls, "h-12 md:pointer-fine:h-10")}>
             {busy ? "กำลังบันทึก…" : "ส่งความเห็น"}
           </button>
         </div>
@@ -195,7 +195,7 @@ export default function SalaryCertSupervisorQueue({ onCount }) {
             <button
               type="button"
               onClick={() => setActive(r)}
-              className={cx(primaryBtnCls, "!h-11 md:!h-9 !px-3")}
+              className={cx(primaryBtnCls, "!h-11 md:pointer-fine:!h-9 !px-3")}
               aria-label={`ให้ความเห็นคำขอของ ${r.user_name || `พนักงานรหัส ${r.user_id}`}`}
             >
               ให้ความเห็น

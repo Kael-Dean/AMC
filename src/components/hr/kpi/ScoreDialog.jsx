@@ -161,10 +161,10 @@ export default function ScoreDialog({ fy, ev: initialEv, info, phase, perms, cat
 
   const footer = (
     <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
-      <button type="button" className={cx(neutralBtnCls, "h-12 md:h-auto")} onClick={onClose} disabled={busy}>ปิด</button>
+      <button type="button" className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-auto")} onClick={onClose} disabled={busy}>ปิด</button>
       <button
         type="button"
-        className={cx(primaryBtnCls, "h-12 md:h-auto")}
+        className={cx(primaryBtnCls, "h-12 md:pointer-fine:h-auto")}
         onClick={save}
         disabled={busy || !editable || hasRangeError || !empId || inputComps.length === 0 || lookup.loading}
       >
@@ -299,7 +299,7 @@ export default function ScoreDialog({ fy, ev: initialEv, info, phase, perms, cat
                         </span>
                         <button
                           type="button"
-                          className="inline-flex min-h-touch items-center gap-1 rounded-md px-2 font-semibold text-indigo-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline md:min-h-0 md:py-1 dark:text-indigo-300"
+                          className="inline-flex min-h-touch items-center gap-1 rounded-md px-2 font-semibold text-indigo-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline md:pointer-fine:min-h-0 md:py-1 dark:text-indigo-300"
                           onClick={() => applyMonthlyForm(c)}
                           disabled={!editable || busy || individualScore == null}
                         >

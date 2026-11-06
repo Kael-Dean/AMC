@@ -292,7 +292,7 @@ const CompanyAddInner = () => {
 
   /** ---------- UI ---------- */
   return (
-    <div className="min-h-screen bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base">
+    <div className="min-h-dvh bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base">
       <div className="w-full p-5 md:p-6 lg:p-8">
         <PageTitle title="เพิ่มบริษัท / นิติบุคคล" />
 
@@ -582,7 +582,7 @@ const CompanyAdd = () => {
 
   if (!allowed) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white px-4 dark:bg-slate-900">
+      <div className="flex min-h-dvh items-center justify-center bg-white px-4 dark:bg-slate-900">
         <div className="max-w-sm text-center">
           <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-6" aria-hidden="true">

@@ -30,7 +30,7 @@ import ExcelDownloadButton from "../../../components/ExcelDownloadButton"
 
 const ID_BASE = "hr-loans"
 const fieldCls = cx(baseField, "!rounded-xl !px-3 !py-2 md:!text-sm")
-const smallBtn = "!h-9 !px-3 !text-xs md:!text-sm"
+const smallBtn = "!h-9 pointer-coarse:!h-11 !px-3 !text-xs md:!text-sm"
 
 const STATUS_FILTERS = [{ value: "", label: "ทุกสถานะ" }, ...LOAN_STATUS_OPTIONS]
 

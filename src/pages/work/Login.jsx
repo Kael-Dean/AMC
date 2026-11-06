@@ -106,11 +106,11 @@ const Login = () => {
 
   return (
     <div
-      className="relative min-h-screen flex items-center justify-center px-4"
+      className="relative min-h-dvh flex items-center justify-center pl-safe-4 pr-safe-4 pt-safe pb-safe"
       style={{ backgroundImage: `url(${sktBg})`, backgroundSize: "cover", backgroundPosition: "center" }}
     >
       {/* Chatbot mockup widget — bottom-right */}
-      <button className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600 text-white shadow-xl shadow-indigo-900/30 transition-all duration-150 hover:bg-indigo-700 hover:shadow-2xl hover:shadow-indigo-900/40 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950 cursor-pointer" aria-label="แชทกับผู้ช่วย">
+      <button className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] right-[calc(1.5rem+env(safe-area-inset-right,0px))] z-50 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600 text-white shadow-xl shadow-indigo-900/30 transition-all duration-150 hover:bg-indigo-700 hover:shadow-2xl hover:shadow-indigo-900/40 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950 cursor-pointer" aria-label="แชทกับผู้ช่วย">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>

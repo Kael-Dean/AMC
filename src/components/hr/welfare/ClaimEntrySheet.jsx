@@ -30,7 +30,7 @@ import WelfareBalanceCard from "./WelfareBalanceCard"
 
 const inputCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm")
 const dateCls = "!rounded-lg !px-3 !py-2 md:!text-sm"
-const btnCls = "h-12 md:h-10 md:!px-5 md:!py-0 md:!text-sm"
+const btnCls = "h-12 md:pointer-fine:h-10 md:!px-5 md:!py-0 md:!text-sm"
 const errBorder = "!border-red-500 dark:!border-red-400"
 const Req = () => <span className="text-red-600 dark:text-red-400" aria-hidden="true"> *</span>
 // แถวที่ HR ยังไม่ตรวจ = ยังไม่ตัดสินสิทธิ์ จึงไม่ขึ้นต้นด้วย "ไม่มีสิทธิ์:"
@@ -376,7 +376,7 @@ export default function ClaimEntrySheet({ open, onClose, onSaved, initialUserId 
                   <div className="flex items-start gap-3">
                     <input id={id("fd")} type="checkbox" checked={form.first_degree} onChange={(e) => set("first_degree")(e.target.checked)}
                       aria-invalid={err("first_degree") ? true : undefined} aria-describedby={errors.first_degree ? `${id("first_degree")}-err` : undefined}
-                      className="mt-0.5 size-5 shrink-0 cursor-pointer rounded accent-indigo-600 md:size-4" />
+                      className="mt-0.5 size-5 shrink-0 cursor-pointer rounded accent-indigo-600 md:pointer-fine:size-4" />
                     <label htmlFor={id("fd")} className="cursor-pointer text-sm text-gray-800 dark:text-gray-200">เป็นปริญญาตรีใบแรกของบุตร<Req /></label>
                   </div>
                   {errP("first_degree")}

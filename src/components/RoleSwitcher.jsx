@@ -166,7 +166,7 @@ export function ActingRoleBanner() {
         type="button"
         onClick={stop}
         disabled={leaving}
-        className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-semibold text-amber-900 transition-colors duration-150 hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:cursor-not-allowed disabled:opacity-60 md:min-h-8 dark:text-amber-100 dark:hover:bg-amber-400/15"
+        className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-semibold text-amber-900 transition-colors duration-150 hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:cursor-not-allowed disabled:opacity-60 md:pointer-fine:min-h-8 dark:text-amber-100 dark:hover:bg-amber-400/15"
       >
         {leaving ? (
           <span className="size-3.5 animate-spin rounded-full border-2 border-amber-500/40 border-t-amber-600" />

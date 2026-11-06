@@ -391,7 +391,7 @@ function TourRunner({ index, onFinished }) {
             type="button"
             onClick={skip}
             className={cx(
-              "-mr-2 inline-flex min-h-touch cursor-pointer items-center rounded-lg px-2 text-sm font-medium text-gray-500 hover:text-gray-900 md:min-h-8 dark:text-gray-400 dark:hover:text-gray-100",
+              "-mr-2 inline-flex min-h-touch cursor-pointer items-center rounded-lg px-2 text-sm font-medium text-gray-500 hover:text-gray-900 md:pointer-fine:min-h-8 dark:text-gray-400 dark:hover:text-gray-100",
               focusRingCls,
             )}
           >
@@ -480,7 +480,7 @@ function TourRunner({ index, onFinished }) {
             aria-busy={busy || undefined}
             data-autofocus
             className={cx(
-              isLast ? cx(submitBtnCls, "h-11 rounded-xl px-4 py-0 text-sm hover:scale-100 md:h-10") : primaryBtnCls,
+              isLast ? cx(submitBtnCls, "h-11 rounded-xl px-4 py-0 text-sm hover:scale-100 md:pointer-fine:h-10") : primaryBtnCls,
               "whitespace-nowrap",
             )}
           >

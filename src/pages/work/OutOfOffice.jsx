@@ -861,7 +861,7 @@ export default function OutOfOffice() {
                         <button
                           type="button"
                           onClick={() => openAttach(r)}
-                          className={`inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 min-h-touch md:min-h-0 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 cursor-pointer ${focusRing} focus-visible:ring-indigo-500`}
+                          className={`inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 min-h-touch md:pointer-fine:min-h-0 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 cursor-pointer ${focusRing} focus-visible:ring-indigo-500`}
                           aria-label={`แนบไฟล์ให้คำขอวันที่ ${oooDateText(r)} ${oooTimeText(r)}`}
                         >
                           <Paperclip className="size-4" aria-hidden="true" />

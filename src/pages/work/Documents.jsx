@@ -1225,7 +1225,7 @@ function Documents() {
           {!filters.allTime && <FieldError name="endDate" />}
         </div>
         <div className="flex items-end">
-          <AllTimeToggle size="sm" active={filters.allTime} onChange={(v) => setFilter("allTime", v)} className="w-full md:min-h-[46px]" />
+          <AllTimeToggle size="sm" active={filters.allTime} onChange={(v) => setFilter("allTime", v)} className="w-full md:pointer-fine:min-h-[46px]" />
         </div>
       </>
     )
@@ -1654,7 +1654,7 @@ function Documents() {
                   {!filters.allTime && <FieldError name="endDate" />}
                 </div>
                 <div className="flex items-end">
-                  <AllTimeToggle size="sm" active={filters.allTime} onChange={(v) => setFilter("allTime", v)} className="w-full md:min-h-[46px]" />
+                  <AllTimeToggle size="sm" active={filters.allTime} onChange={(v) => setFilter("allTime", v)} className="w-full md:pointer-fine:min-h-[46px]" />
                 </div>
               </>
             )}
@@ -1726,7 +1726,7 @@ function Documents() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base documents-page">
+    <div className="min-h-dvh bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base documents-page">
       <style>{`
         .documents-page button:not(:disabled):not(.cursor-not-allowed):not(.cursor-wait):hover { cursor: pointer; }
         .documents-page [role="button"]:hover, .documents-page [role="option"]:hover { cursor: pointer; }

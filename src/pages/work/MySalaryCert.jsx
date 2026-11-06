@@ -138,7 +138,7 @@ function HistoryItem({ r, downloading, onDownload, highlight }) {
             type="button"
             onClick={() => onDownload(r.id)}
             disabled={downloading}
-            className={cx(neutralBtnCls, "md:!h-9 !px-3 !text-sm")}
+            className={cx(neutralBtnCls, "md:pointer-fine:!h-9 !px-3 !text-sm")}
             aria-label={`ดาวน์โหลดหนังสือรับรองเงินเดือน คำขอ #${r.id}`}
           >
             {downloading ? "กำลังดาวน์โหลด…" : "ดาวน์โหลดหนังสือรับรอง"}
@@ -375,7 +375,7 @@ export default function MySalaryCert() {
             </h2>
             {!loading && (
               <button type="button" onClick={fetchList}
-                className={cx("inline-flex min-h-touch cursor-pointer items-center rounded px-1 text-sm font-medium text-indigo-700 hover:underline md:min-h-0 dark:text-indigo-300", focusRingCls)}>
+                className={cx("inline-flex min-h-touch cursor-pointer items-center rounded px-1 text-sm font-medium text-indigo-700 hover:underline md:pointer-fine:min-h-0 dark:text-indigo-300", focusRingCls)}>
                 รีเฟรช
               </button>
             )}

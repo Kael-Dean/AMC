@@ -148,7 +148,7 @@ export default function CompanyPicker({ form, id, ariaDescribedBy }) {
             target="_blank"
             rel="noopener"
             className={cx(
-              "inline-flex min-h-touch items-center gap-1 rounded font-medium text-indigo-700 hover:underline md:min-h-0 dark:text-indigo-300",
+              "inline-flex min-h-touch items-center gap-1 rounded font-medium text-indigo-700 hover:underline md:pointer-fine:min-h-0 dark:text-indigo-300",
               focusRingCls,
             )}
           >

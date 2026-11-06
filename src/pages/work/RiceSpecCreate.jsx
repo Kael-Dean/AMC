@@ -303,7 +303,7 @@ function RiceSpecCreate() {
 
   /** ---------- UI ---------- */
   return (
-    <div className="min-h-screen bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base">
+    <div className="min-h-dvh bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base">
       <div className="w-full p-4 md:p-6 lg:p-8">
         <PageTitle title="เพิ่มรหัสข้าว" />
 
@@ -335,7 +335,7 @@ function RiceSpecCreate() {
               type="button"
               onClick={reloadAll}
               disabled={anyLoading}
-              className={cx(secondaryBtnCls, "!px-4 !py-2 !text-sm min-h-touch md:min-h-0")}
+              className={cx(secondaryBtnCls, "!px-4 !py-2 !text-sm min-h-touch md:pointer-fine:min-h-0")}
             >
               โหลดรายการใหม่
             </button>

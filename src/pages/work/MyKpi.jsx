@@ -338,7 +338,7 @@ function SelfAssessmentForm({ fy, phase, windowStart, windowEnd, saved, catalogu
                           aria-describedby={errors[it.item] ? errId : undefined}
                           className={cx(
                             baseField,
-                            "!h-11 !w-20 !rounded-lg !px-3 !py-0 md:!h-9 md:!text-sm text-right tabular-nums",
+                            "!h-11 !w-20 !rounded-lg !px-3 !py-0 md:pointer-fine:!h-9 md:!text-sm text-right tabular-nums",
                             !editable && "!bg-transparent !border-transparent",
                             errors[it.item] && "!border-red-500",
                           )}

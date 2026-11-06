@@ -416,7 +416,7 @@ export default function MyRelocation() {
                         {ACCEPT_WITHOUT_POSITION_OPTIONS.map((o) => (
                           <label key={o.value}
                             className={cx(
-                              "inline-flex min-h-touch md:min-h-9 items-center gap-2 rounded-lg px-4 py-2 text-sm cursor-pointer ring-1 transition-colors duration-200",
+                              "inline-flex min-h-touch md:pointer-fine:min-h-9 items-center gap-2 rounded-lg px-4 py-2 text-sm cursor-pointer ring-1 transition-colors duration-200",
                               "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-indigo-500",
                               form.accept_without_position_change === o.value
                                 ? "bg-indigo-50 ring-indigo-500 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-200"

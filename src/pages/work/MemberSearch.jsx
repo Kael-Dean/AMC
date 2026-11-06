@@ -521,11 +521,11 @@ const MemberSearch = () => {
     <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
       {!editing ? (
         <>
-          <button type="button" onClick={closeModal} className={cx(neutralBtnCls, "h-12 md:h-10")}>
+          <button type="button" onClick={closeModal} className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-10")}>
             ปิด
           </button>
           {!active.__resigned && (
-            <button type="button" onClick={() => setEditing(true)} className={cx(secondaryBtnCls, "h-12 py-0 text-sm md:h-10")}>
+            <button type="button" onClick={() => setEditing(true)} className={cx(secondaryBtnCls, "h-12 py-0 text-sm md:pointer-fine:h-10")}>
               แก้ไข
             </button>
           )}
@@ -536,11 +536,11 @@ const MemberSearch = () => {
             type="button"
             disabled={saving}
             onClick={() => { setEditing(false); openModal(active) }}
-            className={cx(neutralBtnCls, "h-12 md:h-10")}
+            className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-10")}
           >
             ยกเลิก
           </button>
-          <button type="button" onClick={save} disabled={saving} aria-busy={saving || undefined} className={cx(submitBtnCls, "h-12 py-0 text-sm md:h-10")}>
+          <button type="button" onClick={save} disabled={saving} aria-busy={saving || undefined} className={cx(submitBtnCls, "h-12 py-0 text-sm md:pointer-fine:h-10")}>
             {saving ? "กำลังบันทึก…" : "บันทึก"}
           </button>
         </>
@@ -549,7 +549,7 @@ const MemberSearch = () => {
   ) : null
 
   return (
-    <div className="min-h-screen rounded-2xl bg-white text-black dark:bg-slate-900 dark:text-white">
+    <div className="min-h-dvh rounded-2xl bg-white text-black dark:bg-slate-900 dark:text-white">
       <div className="w-full p-4 md:p-6 text-base md:text-lg">
         <PageTitle title="ค้นหาสมาชิก" />
 
@@ -571,7 +571,7 @@ const MemberSearch = () => {
           {hint && !loading && dq && (
             <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{hint}</div>
           )}
-          <label className="mt-3 flex min-h-touch w-fit cursor-pointer items-center gap-2 text-sm text-slate-700 select-none md:min-h-0 dark:text-slate-200">
+          <label className="mt-3 flex min-h-touch w-fit cursor-pointer items-center gap-2 text-sm text-slate-700 select-none md:pointer-fine:min-h-0 dark:text-slate-200">
             <input
               type="checkbox"
               className="size-4 accent-indigo-600"
@@ -667,7 +667,7 @@ const MemberSearch = () => {
                         <button
                           type="button"
                           onClick={() => openModal(r)}
-                          className="min-h-touch md:min-h-0 whitespace-nowrap rounded-2xl bg-emerald-600/90 px-4 py-2 text-sm md:text-base font-semibold text-white shadow-sm ring-1 ring-emerald-700/50 hover:bg-emerald-600 active:scale-[.98] dark:bg-emerald-500/85 dark:hover:bg-emerald-500"
+                          className="min-h-touch md:pointer-fine:min-h-0 whitespace-nowrap rounded-2xl bg-emerald-600/90 px-4 py-2 text-sm md:text-base font-semibold text-white shadow-sm ring-1 ring-emerald-700/50 hover:bg-emerald-600 active:scale-[.98] dark:bg-emerald-500/85 dark:hover:bg-emerald-500"
                         >
                           ดูรายละเอียด
                         </button>

@@ -41,7 +41,7 @@ import { keepBackState, useDrill } from "../../../lib/drill"
 const PAYROLL_COLS = 5
 const ID_BASE = "payroll"
 const inputCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm")
-const sheetBtn = "h-12 md:h-10"
+const sheetBtn = "h-12 md:pointer-fine:h-10"
 
 const now = new Date()
 const MONTH_OPTIONS = Array.from({ length: 24 }, (_, i) => {
@@ -214,7 +214,7 @@ function PeriodCard({ ym, period, loading, error, onRetry, rows, perms, daily, o
         <p id="payroll-external-missing" className="mt-4 flex flex-wrap items-start gap-x-2 gap-y-1 text-sm text-amber-800 dark:text-amber-200">
           <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} />
           <span>ยังไม่ได้บันทึกรายการหักภายนอก <span className="font-semibold tabular-nums">{externalMissing}</span> คน — ส่งตรวจสอบได้เมื่อบันทึกครบ</span>
-          <button type="button" onClick={onOpenExternal} className={cx("inline-flex min-h-touch items-center rounded font-semibold underline md:min-h-0 underline-offset-2 hover:no-underline cursor-pointer", focusRingCls)}>
+          <button type="button" onClick={onOpenExternal} className={cx("inline-flex min-h-touch items-center rounded font-semibold underline md:pointer-fine:min-h-0 underline-offset-2 hover:no-underline cursor-pointer", focusRingCls)}>
             ไปบันทึก
           </button>
         </p>

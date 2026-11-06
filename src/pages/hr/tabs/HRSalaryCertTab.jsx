@@ -31,7 +31,7 @@ function approverName(r) {
   return typeof v === "string" && !/^\d+$/.test(v.trim()) ? v : null
 }
 
-const smBtn = "!h-11 md:!h-9 !px-3 !text-xs"
+const smBtn = "!h-11 md:pointer-fine:!h-9 !px-3 !text-xs"
 
 // ─── ผู้จัดการตัดสิน (เห็นความเห็นหัวหน้าก่อน) ────────────────────────────────
 function DecisionSheet({ req, action, onClose, onDone }) {
@@ -75,8 +75,8 @@ function DecisionSheet({ req, action, onClose, onDone }) {
       subtitle={`${req.user_name ?? "พนักงาน"} · ${salaryCertPurposeLabel(req.purpose_type)} · ${req.copies_count ?? 1} ฉบับ`}
       footer={
         <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
-          <button type="button" onClick={onClose} disabled={busy} className={cx(neutralBtnCls, "h-12 md:h-10")}>ยกเลิก</button>
-          <button type="submit" form={`${uid}-form`} disabled={busy} className={cx(isDeny ? dangerBtnCls : submitBtnCls, "h-12 md:h-10")}>
+          <button type="button" onClick={onClose} disabled={busy} className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-10")}>ยกเลิก</button>
+          <button type="submit" form={`${uid}-form`} disabled={busy} className={cx(isDeny ? dangerBtnCls : submitBtnCls, "h-12 md:pointer-fine:h-10")}>
             {busy ? "กำลังบันทึก…" : isDeny ? "ยืนยันไม่อนุมัติ" : "ยืนยันอนุมัติ"}
           </button>
         </div>

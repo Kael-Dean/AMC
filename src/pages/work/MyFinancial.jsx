@@ -149,7 +149,7 @@ function OnFileCard() {
       {state === "ready" && can("self.issue.report") && (
         <p className="mt-4 border-t border-gray-100 pt-3 text-sm text-gray-600 dark:border-line dark:text-gray-400">
           ข้อมูลไม่ตรงกับที่ได้รับจริง?{" "}
-          <Link to="/my-profile" state={backState("ข้อมูลการเงินของฉัน")} className={cx("inline-flex min-h-touch md:min-h-0 items-center gap-0.5 rounded font-medium text-indigo-700 hover:underline dark:text-indigo-300", focusRingCls)}>
+          <Link to="/my-profile" state={backState("ข้อมูลการเงินของฉัน")} className={cx("inline-flex min-h-touch md:pointer-fine:min-h-0 items-center gap-0.5 rounded font-medium text-indigo-700 hover:underline dark:text-indigo-300", focusRingCls)}>
             แจ้งแก้ไขที่หน้าข้อมูลส่วนตัว <ChevronRight aria-hidden="true" className="size-4" />
           </Link>
         </p>
