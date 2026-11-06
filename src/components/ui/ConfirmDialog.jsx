@@ -99,7 +99,7 @@ function DialogBody({
           aria-busy={loading || undefined}
           tabIndex={-1}
           className={cx(
-            "w-[min(28rem,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-lg",
+            "w-[min(28rem,calc(100vw-2rem))] max-h-[90dvh] overflow-y-auto rounded-2xl bg-white p-6 short-touch:p-4 shadow-lg",
             "ring-1 ring-gray-200 dark:bg-surface dark:ring-line-strong dark:shadow-2xl dark:shadow-black/60 focus:outline-none animate-dialog-in"
           )}
         >
@@ -123,7 +123,7 @@ function DialogBody({
             </div>
           )}
 
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <div className="mt-6 short-touch:mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               ref={cancelRef}
               type="button"

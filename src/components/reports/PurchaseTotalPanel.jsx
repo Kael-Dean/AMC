@@ -156,7 +156,7 @@ export default function PurchaseTotalPanel({
               if (result.error) setAttempt((n) => n + 1)
             }}
             className={cx(
-              "inline-flex min-h-touch shrink-0 cursor-pointer items-center justify-center self-start rounded-xl bg-white px-4 text-sm font-medium text-slate-700 ring-1 ring-inset ring-slate-300 transition-colors duration-200 hover:bg-slate-100 md:min-h-9 md:self-auto dark:bg-white/[.04] dark:text-gray-100 dark:ring-line-strong dark:hover:bg-white/[.08]",
+              "inline-flex min-h-touch shrink-0 cursor-pointer items-center justify-center self-start rounded-xl bg-white px-4 text-sm font-medium text-slate-700 ring-1 ring-inset ring-slate-300 transition-colors duration-200 hover:bg-slate-100 md:pointer-fine:min-h-9 md:self-auto dark:bg-white/[.04] dark:text-gray-100 dark:ring-line-strong dark:hover:bg-white/[.08]",
               focusRingCls
             )}
           >

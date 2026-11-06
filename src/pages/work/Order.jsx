@@ -733,7 +733,7 @@ const Order = () => {
   )
 
   return (
-    <div className="min-h-screen bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl">
+    <div className="min-h-dvh bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl">
       <div className="w-full p-4 md:p-6">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
           <PageTitle title={mode === "buy" ? "รายการออเดอร์ซื้อข้าวเปลือก" : "รายการออเดอร์ขายข้าวเปลือก"} />
@@ -748,7 +748,7 @@ const Order = () => {
                 aria-checked={mode === m}
                 onClick={() => switchMode(m)}
                 className={cx(
-                  "min-h-touch flex-1 px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer md:min-h-0 md:flex-none",
+                  "min-h-touch flex-1 px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer md:pointer-fine:min-h-0 md:flex-none",
                   mode === m ? MODE_BTN_ACTIVE : MODE_BTN_IDLE
                 )}
               >

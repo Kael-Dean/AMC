@@ -58,7 +58,7 @@ export default function HrModal({ title, subtitle, onClose, busy = false, size =
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className={`w-full ${width} max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-gray-800 shadow-2xl p-6 space-y-4 focus:outline-none`}
+          className={`w-full ${width} max-h-[90dvh] overflow-y-auto rounded-2xl bg-white dark:bg-gray-800 shadow-2xl p-6 space-y-4 focus:outline-none`}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -70,7 +70,7 @@ export default function HrModal({ title, subtitle, onClose, busy = false, size =
               onClick={onClose}
               disabled={busy}
               aria-label="ปิด"
-              className="shrink-0 rounded-lg p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors duration-200 cursor-pointer disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="shrink-0 rounded-lg p-1 pointer-coarse:p-3 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors duration-200 cursor-pointer disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5">
                 <path d="M18 6 6 18M6 6l12 12" />

@@ -41,7 +41,7 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
     [can, perms]
   )
 
-  // หมวด "ธุรกิจรวบรวมผลผลิต" — เฉพาะมือถือ (md:hidden) ให้ไปหน้าซื้อ/ขาย/คลังได้โดยไม่ต้องกลับ Home
+  // หมวด "ธุรกิจรวบรวมผลผลิต" — เฉพาะอุปกรณ์สัมผัสและจอเล็ก (md:pointer-fine:hidden) ให้ไปหน้าซื้อ/ขาย/คลังได้โดยไม่ต้องกลับ Home
   const tradingMenus = useMemo(() => {
     const roleId = getRoleId()
     return TRADING_GROUP.items.filter((item) => canAccessItem(item, roleId))
@@ -105,8 +105,8 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
         aria-label="เมนูส่วนตัว"
         aria-hidden={isOpen ? undefined : "true"}
         inert={!isOpen}
-        className={`fixed inset-y-2 left-2 z-[9999] w-72 max-w-[calc(100vw-1rem)] overflow-hidden rounded-3xl bg-white will-change-transform transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none dark:bg-surface dark:ring-1 dark:ring-line ${
-          isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-[calc(100%+1rem)] shadow-none"
+        className={`fixed top-[max(0.5rem,env(safe-area-inset-top,0px))] bottom-2 left-[max(0.5rem,env(safe-area-inset-left,0px))] z-[9999] w-72 max-w-[calc(100vw-1rem)] overflow-hidden rounded-3xl bg-white will-change-transform transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none dark:bg-surface dark:ring-1 dark:ring-line ${
+          isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-[calc(100%+0.5rem+max(0.5rem,env(safe-area-inset-left,0px)))] shadow-none"
         }`}
       >
         <div className="flex h-full flex-col">
@@ -124,7 +124,7 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
               type="button"
               aria-label="ปิดเมนู"
               onClick={() => setIsOpen(false)}
-              className="flex size-11 md:size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-500 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-gray-400 dark:hover:bg-white/[.06] dark:hover:text-gray-100"
+              className="flex size-11 md:pointer-fine:size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-500 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-gray-400 dark:hover:bg-white/[.06] dark:hover:text-gray-100"
             >
               <X aria-hidden="true" strokeWidth={1.75} className="size-5" />
             </button>
@@ -183,7 +183,7 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
             )}
 
             {tradingMenus.length > 0 && (
-              <div className="mt-3 border-t border-gray-200/70 pt-3 md:hidden dark:border-line">
+              <div className="mt-3 border-t border-gray-200/70 pt-3 md:pointer-fine:hidden dark:border-line">
                 <p className="px-2 pb-1 text-xs font-semibold text-gray-500 dark:text-gray-400">{TRADING_GROUP.group}</p>
                 <ul className="space-y-1">
                   {tradingMenus.map((item) => {

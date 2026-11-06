@@ -21,7 +21,7 @@ const inputCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm")
 const numCls = cx(inputCls, "text-right tabular-nums")
 const smallLabel = "mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
 const linkBtn = cx(
-  "inline-flex min-h-touch items-center gap-1 rounded-lg px-2.5 text-sm font-medium transition-colors duration-150 cursor-pointer md:min-h-8",
+  "inline-flex min-h-touch items-center gap-1 rounded-lg px-2.5 text-sm font-medium transition-colors duration-150 cursor-pointer md:pointer-fine:min-h-8",
   focusRingCls,
 )
 
@@ -188,7 +188,7 @@ function TopicsSection({ canEdit }) {
             </button>
           )}
           {canEdit && (
-            <button type="button" onClick={() => setEditing({})} className={cx(primaryBtnCls, "md:!h-9 !px-3 !text-sm")}>
+            <button type="button" onClick={() => setEditing({})} className={cx(primaryBtnCls, "md:pointer-fine:!h-9 !px-3 !text-sm")}>
               <Plus aria-hidden="true" className="size-4" /> เพิ่มหัวข้อ
             </button>
           )}

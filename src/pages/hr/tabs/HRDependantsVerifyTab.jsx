@@ -54,7 +54,7 @@ export function VerifyDependantButton({ dependant, onVerified, className = "" })
         onClick={verify}
         disabled={busy}
         aria-label={`ตรวจสอบแล้ว: ${fullName(dependant)}`}
-        className={cx(neutralBtnCls, "!h-11 md:!h-9 !px-3 !text-[13px] whitespace-nowrap", className)}
+        className={cx(neutralBtnCls, "!h-11 md:pointer-fine:!h-9 !px-3 !text-[13px] whitespace-nowrap", className)}
       >
         {busy
           ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" strokeWidth={2} />

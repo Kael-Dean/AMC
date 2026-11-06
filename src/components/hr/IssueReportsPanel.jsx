@@ -119,7 +119,7 @@ function ReportSheet({ report, branchName, canDecide, onClose, onDone }) {
     ) : (
       <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
         <button type="button" onClick={() => { setMode("deny"); setMsg("") }} disabled={busy} className={neutralBtnCls}>ปฏิเสธ</button>
-        <button type="button" onClick={approve} disabled={busy} className={cx(submitBtnCls, "!h-11 md:!h-10 !rounded-xl !px-4 !py-0 !text-sm hover:!scale-100 hover:!shadow-sm")}>
+        <button type="button" onClick={approve} disabled={busy} className={cx(submitBtnCls, "!h-11 md:pointer-fine:!h-10 !rounded-xl !px-4 !py-0 !text-sm hover:!scale-100 hover:!shadow-sm")}>
           {busy ? "กำลังอนุมัติ…" : "อนุมัติและบันทึก"}
         </button>
       </div>
@@ -317,7 +317,7 @@ export default function IssueReportsPanel({ idBase = "hr-issues" }) {
             aria-pressed={overdueOnly}
             onClick={() => setOverdueOnly((v) => !v)}
             className={cx(
-              "inline-flex h-touch md:h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium ring-1 ring-inset transition-colors duration-150 cursor-pointer",
+              "inline-flex h-touch md:pointer-fine:h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium ring-1 ring-inset transition-colors duration-150 cursor-pointer",
               overdueOnly
                 ? "bg-red-600 text-white ring-red-600 hover:bg-red-500 dark:bg-red-500/90 dark:ring-red-400"
                 : "bg-white text-red-700 ring-red-200 hover:bg-red-50 dark:bg-transparent dark:text-red-300 dark:ring-red-400/30 dark:hover:bg-red-500/10",

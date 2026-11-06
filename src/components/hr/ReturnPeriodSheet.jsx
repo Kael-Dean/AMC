@@ -8,7 +8,7 @@ import { cx, baseField, dangerBtnCls, errorTextCls, helpTextCls, labelCls, neutr
 import { Sheet, revealFirstInvalid, toast } from "../ui"
 import StatusMsg from "./StatusMsg"
 
-const btnCls = "h-12 md:h-10"
+const btnCls = "h-12 md:pointer-fine:h-10"
 
 /** period = { year, month } (ค.ศ.) | null */
 export default function ReturnPeriodSheet({ period, onClose, onDone }) {

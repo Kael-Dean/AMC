@@ -273,8 +273,8 @@ export default function DevMobileKit() {
             size={sheet ?? "sm"}
             footer={
               <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
-                <button type="button" className={cx(neutralBtnCls, "h-12 md:h-10")} onClick={() => setSheet(null)}>ยกเลิก</button>
-                <button type="button" className={cx(primaryBtnCls, "h-12 md:h-10")} onClick={() => setSheet(null)}>ตกลง</button>
+                <button type="button" className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-10")} onClick={() => setSheet(null)}>ยกเลิก</button>
+                <button type="button" className={cx(primaryBtnCls, "h-12 md:pointer-fine:h-10")} onClick={() => setSheet(null)}>ตกลง</button>
               </div>
             }
           >
@@ -298,8 +298,8 @@ export default function DevMobileKit() {
             hideHandle
             footer={
               <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
-                <button type="button" className={cx(neutralBtnCls, "h-12 md:h-10")} disabled={busy} onClick={() => setSheet(null)}>ยกเลิก</button>
-                <button type="button" className={cx(submitBtnCls, "h-12 py-0 md:h-10")} disabled={busy} onClick={() => { setBusy(true); setTimeout(() => { setBusy(false); setSheet(null); setResult("success") }, 900) }}>
+                <button type="button" className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-10")} disabled={busy} onClick={() => setSheet(null)}>ยกเลิก</button>
+                <button type="button" className={cx(submitBtnCls, "h-12 py-0 md:pointer-fine:h-10")} disabled={busy} onClick={() => { setBusy(true); setTimeout(() => { setBusy(false); setSheet(null); setResult("success") }, 900) }}>
                   {busy ? "กำลังบันทึก…" : "บันทึกการแก้ไข"}
                 </button>
               </div>

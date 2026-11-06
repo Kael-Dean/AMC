@@ -288,7 +288,7 @@ export default function TerminationForm({ employee, onSaved, showHeader = true, 
               type="button"
               onClick={handleDownloadPdf}
               disabled={pdfLoading}
-              className="inline-flex min-h-touch items-center gap-1.5 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition duration-200 hover:bg-rose-500 disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 md:min-h-0 dark:focus-visible:ring-offset-gray-800"
+              className="inline-flex min-h-touch items-center gap-1.5 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition duration-200 hover:bg-rose-500 disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 md:pointer-fine:min-h-0 dark:focus-visible:ring-offset-gray-800"
             >
               {pdfLoading ? (
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
@@ -418,7 +418,7 @@ export default function TerminationForm({ employee, onSaved, showHeader = true, 
           onClick={handleSave}
           disabled={saving}
           className={cx(
-            "inline-flex min-h-touch shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition duration-200 disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:min-h-0 dark:focus-visible:ring-offset-gray-800",
+            "inline-flex min-h-touch shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition duration-200 disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:pointer-fine:min-h-0 dark:focus-visible:ring-offset-gray-800",
             isNew ? "bg-red-600 hover:bg-red-500 focus-visible:ring-red-500" : "bg-indigo-600 hover:bg-indigo-500 focus-visible:ring-indigo-500",
           )}
         >

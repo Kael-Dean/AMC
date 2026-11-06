@@ -382,7 +382,7 @@ function PlainSelect({
                     onMouseMove={() => { if (!isActive) setActiveIdx(idx) }}
                     onClick={() => commit(opt)}
                     className={[
-                      "flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors duration-100",
+                      "flex w-full pointer-coarse:min-h-touch cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors duration-100",
                       isActive ? "bg-indigo-50 " + (isChosen ? "dark:bg-indigo-500/20" : "dark:bg-white/[.06]") : "",
                       isChosen
                         ? "font-semibold text-indigo-700 dark:text-indigo-200" + (isActive ? "" : " dark:bg-indigo-500/15")

@@ -297,7 +297,7 @@ export default function MyProfile() {
           type="button"
           onClick={openReportModal}
           data-tour="report-issue"
-          className="inline-flex min-h-touch md:min-h-0 items-center gap-2 px-4 py-2 rounded-xl bg-amber-700 hover:bg-amber-800 text-white text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+          className="inline-flex min-h-touch md:pointer-fine:min-h-0 items-center gap-2 px-4 py-2 rounded-xl bg-amber-700 hover:bg-amber-800 text-white text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4">
             <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z" />
@@ -483,7 +483,7 @@ export default function MyProfile() {
                 <Link
                   to="/my-financial"
                   state={backState("ข้อมูลส่วนตัว")}
-                  className="mt-3 inline-flex min-h-touch md:min-h-0 items-center gap-1 rounded text-sm font-medium text-indigo-700 hover:underline dark:text-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  className="mt-3 inline-flex min-h-touch md:pointer-fine:min-h-0 items-center gap-1 rounded text-sm font-medium text-indigo-700 hover:underline dark:text-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 >
                   ดูรายการหัก สลิปเงินเดือน และประวัติการเลื่อนขั้น <ChevronRight aria-hidden="true" className="size-4" />
                 </Link>
@@ -622,7 +622,7 @@ export default function MyProfile() {
               type="submit"
               form="report-issue-form"
               disabled={reportSubmitting || uploads.busy}
-              className="inline-flex h-11 md:h-10 items-center justify-center gap-2 rounded-xl bg-amber-700 px-4 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-surface"
+              className="inline-flex h-11 md:pointer-fine:h-10 items-center justify-center gap-2 rounded-xl bg-amber-700 px-4 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-surface"
             >
               {reportSubmitting ? (
                 <>

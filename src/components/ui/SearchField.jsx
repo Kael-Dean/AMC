@@ -210,9 +210,9 @@ export default function SearchField({
           blurTimer.current = setTimeout(() => setFocused(false), 150)
           onBlur?.(e)
         }}
-        className={cx(baseField, "pl-10 pr-12 md:pr-10 [&::-webkit-search-cancel-button]:hidden")}
+        className={cx(baseField, "pl-10 pr-12 md:pointer-fine:pr-10[&::-webkit-search-cancel-button]:hidden")}
       />
-      <span className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center md:right-2">
+      <span className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center md:pointer-fine:right-2">
         {loading ? (
           <LoaderCircle aria-hidden="true" className="mr-2 size-4 animate-spin text-slate-400" strokeWidth={2} />
         ) : value ? (
@@ -221,7 +221,7 @@ export default function SearchField({
             aria-label="ล้างคำค้นหา"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => { onChange?.(""); ref.current?.focus() }}
-            className="flex size-11 cursor-pointer items-center justify-center rounded-xl text-slate-500 transition-colors duration-150 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 md:size-9 dark:text-slate-400 dark:hover:text-slate-200"
+            className="flex size-11 cursor-pointer items-center justify-center rounded-xl text-slate-500 transition-colors duration-150 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 md:pointer-fine:size-9 dark:text-slate-400 dark:hover:text-slate-200"
           >
             <X aria-hidden="true" className="size-4" strokeWidth={2} />
           </button>

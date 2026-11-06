@@ -10,7 +10,7 @@ import { SaveButton, SHEET_SAVED_MS, Sheet, toast, useSaveStatus } from "../ui"
 import StatusMsg from "./StatusMsg"
 
 const inputCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm tabular-nums")
-const btnCls = "h-12 md:h-10 md:!px-5 md:!py-0 md:!text-sm"
+const btnCls = "h-12 md:pointer-fine:h-10 md:!px-5 md:!py-0 md:!text-sm"
 
 /**
  * @param {{ open: boolean, employeeId: number|string, employeeName?: string, value?: string|null,

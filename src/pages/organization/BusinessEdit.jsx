@@ -438,7 +438,7 @@ const BusinessEdit = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50 text-black dark:bg-slate-900 dark:text-white rounded-2xl md:p-6 p-4">
+      <div className="min-h-dvh bg-slate-50 text-black dark:bg-slate-900 dark:text-white rounded-2xl md:p-6 p-4">
         <div className="w-full">
 
           <PageTitle title="แก้ไขข้อมูลธุรกิจ (Master Data)" />

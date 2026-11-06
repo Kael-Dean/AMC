@@ -62,7 +62,7 @@ export default function ForgotPassword() {
 
   return (
     <div
-      className="relative min-h-screen flex items-center justify-center px-4"
+      className="relative min-h-dvh flex items-center justify-center px-4"
       style={{ backgroundImage: `url(${sktBg})`, backgroundSize: "cover", backgroundPosition: "center" }}
     >
       <div className="absolute inset-0 bg-gray-900/40" />

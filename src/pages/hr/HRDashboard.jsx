@@ -203,7 +203,7 @@ function StatStrip({ stats, loading, error, onRetry, onGo }) {
         <p className="min-w-0 flex-1 text-sm font-medium text-gray-700 dark:text-gray-200">
           โหลดตัวเลขสรุปไม่สำเร็จ{typeof error === "string" && error ? <span className="font-normal text-gray-500 dark:text-gray-400"> — {error}</span> : null}
         </p>
-        <button type="button" onClick={onRetry} className={cx(neutralBtnCls, "h-9")}>
+        <button type="button" onClick={onRetry} className={cx(neutralBtnCls, "h-9 pointer-coarse:h-11")}>
           <RotateCw aria-hidden="true" className="size-4" strokeWidth={1.75} />
           ลองใหม่
         </button>
@@ -568,7 +568,7 @@ function QuickSwitcher({ nav, activeKey, badges, onNavigate, onClose }) {
           role="dialog"
           aria-modal="true"
           aria-label="ไปที่เมนู"
-          className="absolute left-1/2 top-[15vh] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+          className="absolute left-1/2 top-[15dvh] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
         >
           <div className="relative border-b border-gray-100 dark:border-gray-700">
             <Search

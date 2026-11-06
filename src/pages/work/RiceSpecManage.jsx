@@ -94,9 +94,9 @@ const idOf = (spec) => String(spec?.id ?? "")
 const listOf = (data) => (Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [])
 
 /* ---------- small pieces ---------- */
-const rowBtnCls = cx(neutralBtnCls, "!h-9 !px-3 max-md:!h-11")
+const rowBtnCls = cx(neutralBtnCls, "!h-11 md:pointer-fine:!h-9 !px-3")
 const hideBtnCls = cx(
-  "inline-flex h-9 max-md:h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-sm font-semibold cursor-pointer",
+  "inline-flex h-11 md:pointer-fine:h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-sm font-semibold cursor-pointer",
   "text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10",
   "transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed",
   focusRingCls,

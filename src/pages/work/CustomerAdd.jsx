@@ -360,7 +360,7 @@ const CustomerAdd = () => {
 
   /* ---------------------------------- UI ---------------------------------- */
   return (
-    <div className="min-h-screen bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base">
+    <div className="min-h-dvh bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base">
       <div className="w-full p-5 md:p-6 lg:p-8">
         <PageTitle title="เพิ่มลูกค้าทั่วไป" ref={topRef} tabIndex={-1} />
 

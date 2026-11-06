@@ -356,7 +356,7 @@ export default function HRPersonnelDetail() {
                   type="button"
                   onClick={() => setGbnOpen(true)}
                   aria-label="แก้ไขเลขบัญชีค้ำประกัน"
-                  className="min-h-touch md:min-h-0 px-2 rounded-lg text-sm font-medium text-indigo-600 hover:text-indigo-500 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-900/30 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  className="min-h-touch md:pointer-fine:min-h-0 px-2 rounded-lg text-sm font-medium text-indigo-600 hover:text-indigo-500 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-900/30 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 >
                   แก้ไข
                 </button>
@@ -590,7 +590,7 @@ export default function HRPersonnelDetail() {
       {/* Family Edit Modal */}
       {familyModal && ReactDOM.createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" {...familyBackdrop}>
-          <div role="dialog" aria-modal="true" className="w-full max-w-2xl rounded-2xl bg-white dark:bg-gray-800 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div role="dialog" aria-modal="true" className="w-full max-w-2xl rounded-2xl bg-white dark:bg-gray-800 shadow-2xl p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">แก้ไขข้อมูลครอบครัว</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">{data.first_name} {data.last_name}</p>
 

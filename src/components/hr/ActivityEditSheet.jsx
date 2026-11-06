@@ -24,7 +24,7 @@ import { cx, baseField, errorTextCls, helpTextCls, iconBtnCls, labelCls, neutral
 
 const inputCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm")
 const dateCls = "!rounded-lg !px-3 !py-2 md:!text-sm"
-const btnCls = "h-12 md:h-10 md:!px-5 md:!py-0 md:!text-sm"
+const btnCls = "h-12 md:pointer-fine:h-10 md:!px-5 md:!py-0 md:!text-sm"
 const errBorder = "!border-red-500 dark:!border-red-400"
 const Req = () => <span className="text-red-600 dark:text-red-400" aria-hidden="true"> *</span>
 

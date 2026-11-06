@@ -339,7 +339,7 @@ function Share() {
 
   /** ---------- UI ---------- */
   return (
-    <div className="min-h-screen bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base">
+    <div className="min-h-dvh bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl text-[15px] md:text-base">
       <div className="w-full p-5 md:p-6 lg:p-8">
         <PageTitle title="ซื้อหุ้น" />
 
@@ -608,7 +608,7 @@ function Share() {
             <button
               type="button"
               onClick={() => printShareReceipt(receipt)}
-              className="mt-4 inline-flex min-h-touch items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-base font-medium text-slate-700 shadow-sm transition-colors duration-200 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 cursor-pointer md:min-h-0 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white dark:hover:bg-slate-700"
+              className="mt-4 inline-flex min-h-touch items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-base font-medium text-slate-700 shadow-sm transition-colors duration-200 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 cursor-pointer md:pointer-fine:min-h-0 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white dark:hover:bg-slate-700"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5">
                 <path d="M6 9V2h12v7" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 14h12v8H6z" />

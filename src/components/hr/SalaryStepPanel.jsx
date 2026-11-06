@@ -33,7 +33,7 @@ const STEP_MAX = 5
 const REASON_MAX = 255
 
 const CHIP_BASE =
-  "h-9 flex-1 rounded-lg text-sm font-semibold tabular-nums ring-1 ring-inset cursor-pointer " +
+  "h-9 pointer-coarse:h-11 flex-1 rounded-lg text-sm font-semibold tabular-nums ring-1 ring-inset cursor-pointer " +
   "transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 " +
   "focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800"
 const CHIP_OFF =

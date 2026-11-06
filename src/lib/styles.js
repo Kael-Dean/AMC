@@ -108,6 +108,9 @@ export const secondaryBtnCls =
   "dark:focus-visible:ring-indigo-400 dark:focus-visible:ring-offset-surface"
 
 // ─── Compact app buttons (h-10, rounded-xl) — dialogs, toolbars, HR ──────────
+// 44px by default; shrinks only for a mouse at ≥md (`md:pointer-fine:*`). A touch
+// tablet is ≥md too and keeps 44px. When overriding a height on these buttons use
+// the same `md:pointer-fine:` prefix: a plain `md:h-*` sorts before it and loses.
 
 /** Shared focus ring for interactive controls (offset follows the card surface) */
 export const focusRingCls =
@@ -125,7 +128,7 @@ export const tabPanelCls =
  *  Dark: stays on indigo-600 (white text 6.5:1; indigo-500 was 4.6:1) with a
  *  hairline indigo edge + soft downward glow instead of a lighter fill. */
 export const primaryBtnCls =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 h-11 md:h-10 text-sm font-semibold " +
+  "inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 h-11 md:pointer-fine:h-10 text-sm font-semibold " +
   "text-white shadow-sm transition-colors duration-200 cursor-pointer hover:bg-indigo-500 " +
   "dark:bg-indigo-600 dark:hover:bg-indigo-500 " +
   "dark:shadow-[0_0_0_1px_rgb(129_140_248/.35),0_8px_24px_-8px_rgb(99_102_241/.6)] " +
@@ -134,7 +137,7 @@ export const primaryBtnCls =
 
 /** Destructive action (red) */
 export const dangerBtnCls =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 h-11 md:h-10 text-sm font-semibold " +
+  "inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 h-11 md:pointer-fine:h-10 text-sm font-semibold " +
   "text-white shadow-sm transition-colors duration-200 cursor-pointer hover:bg-red-500 " +
   "disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-red-600 " +
   "focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 " +
@@ -142,15 +145,15 @@ export const dangerBtnCls =
 
 /** Neutral / cancel action */
 export const neutralBtnCls =
-  "inline-flex items-center justify-center gap-2 rounded-xl px-4 h-11 md:h-10 text-sm font-semibold " +
+  "inline-flex items-center justify-center gap-2 rounded-xl px-4 h-11 md:pointer-fine:h-10 text-sm font-semibold " +
   "text-gray-700 ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-50 " +
   "dark:bg-white/[.04] dark:text-gray-100 dark:ring-line-strong dark:hover:bg-white/[.08] " +
   "transition-colors duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed " +
   focusRingCls
 
-/** Icon-only button (needs aria-label) — 44px tap target on phones, 36px on desktop */
+/** Icon-only button (needs aria-label) — 44px tap target on touch, 36px for a mouse at ≥md */
 export const iconBtnCls =
-  "inline-flex size-11 md:size-9 shrink-0 items-center justify-center rounded-xl " +
+  "inline-flex size-11 md:pointer-fine:size-9 shrink-0 items-center justify-center rounded-xl " +
   "text-gray-600 hover:bg-gray-100 hover:text-gray-900 " +
   "dark:text-gray-300 dark:hover:bg-white/[.08] dark:hover:text-gray-100 " +
   "transition-colors duration-150 cursor-pointer active:scale-95 " +
@@ -164,7 +167,7 @@ export const segmentedCls =
   "inline-flex w-full items-stretch gap-1 rounded-2xl bg-gray-100 p-1 " +
   "dark:bg-field ring-1 ring-inset ring-gray-200/70 dark:ring-line"
 export const segmentedItemCls =
-  "flex-1 min-h-touch md:min-h-9 rounded-xl px-3 text-sm font-medium cursor-pointer " +
+  "flex-1 min-h-touch md:pointer-fine:min-h-9 rounded-xl px-3 text-sm font-medium cursor-pointer " +
   "text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 " +
   "transition-colors duration-150 " +
   focusRingCls

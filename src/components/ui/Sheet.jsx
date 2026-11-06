@@ -29,8 +29,9 @@
 // Phone: fixed to the bottom, rounded top, max-height =
 //   min(100dvh, visualViewport.height) - 1rem, and lifted above the on-screen
 //   keyboard (visualViewport offset) so a focused input is always visible.
-// Desktop: centered, max-h 90dvh. Header/footer never scroll; the body does
-// (min-h-0 overflow-y-auto overscroll-contain).
+// ≥md: centered, max-h 90dvh; on touch also capped by the visual viewport and
+// lifted above the keyboard (tablet, landscape phone). Header/footer never
+// scroll; the body does (min-h-0 overflow-y-auto overscroll-contain).
 //
 // ── Z-STACK (the only place this is written down — keep in sync) ────────────
 //   Sidebar overlay             9990
@@ -50,14 +51,14 @@ import Portal from "../Portal"
 import useModalDismiss from "../../lib/useModalDismiss"
 import useFocusTrap from "../../lib/useFocusTrap"
 import useVisualViewport from "../../hooks/useVisualViewport"
-import { useIsPhone } from "../../hooks/useMediaQuery"
+import { useIsCoarsePointer, useIsPhone } from "../../hooks/useMediaQuery"
 import { cx, iconBtnCls } from "../../lib/styles"
 
 const SIZE = {
   sm: "md:max-w-md",
   md: "md:max-w-lg",
   lg: "md:max-w-2xl",
-  full: "md:max-w-4xl md:h-[90dvh]",
+  full: "md:max-w-4xl md:pointer-fine:h-[90dvh] md:pointer-coarse:h-(--sheet-md-max-h)",
 }
 
 function SheetBody({
@@ -77,16 +78,19 @@ function SheetBody({
   const subId = useId()
   const panelRef = useRef(null)
   const isPhone = useIsPhone()
+  const isCoarse = useIsCoarsePointer()
+  // On-screen keyboard is possible: phones, and touch at ≥md (tablet, landscape phone)
+  const hasKeyboard = isPhone || isCoarse
   const vv = useVisualViewport()
   const { backdropProps } = useModalDismiss(onClose, { disabled: busy })
 
-  const selector = initialFocus === undefined ? (isPhone ? "[data-sheet-close]" : undefined) : initialFocus
+  const selector = initialFocus === undefined ? (hasKeyboard ? "[data-sheet-close]" : undefined) : initialFocus
   useFocusTrap(panelRef, { active: true, initialSelector: selector })
 
-  // Phone: once the keyboard has risen (~150ms), bring the focused field into
+  // Touch: once the keyboard has risen (~150ms), bring the focused field into
   // the middle of the (now shorter) sheet body…
   const onBodyFocus = (e) => {
-    if (!isPhone) return
+    if (!hasKeyboard) return
     const el = e.target
     if (!el?.matches?.("input, select, textarea")) return
     setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 150)
@@ -94,18 +98,20 @@ function SheetBody({
   // …and again whenever the visual viewport actually changes height (the
   // keyboard animation finishes later than 150ms on some devices).
   useEffect(() => {
-    if (!isPhone) return
+    if (!hasKeyboard) return
     const el = document.activeElement
     if (!el || !panelRef.current?.contains(el) || !el.matches("input, select, textarea")) return
     el.scrollIntoView({ block: "center" })
-  }, [isPhone, vv.height])
+  }, [hasKeyboard, vv.height])
 
-  // Visual viewport → sheet geometry (phone only; desktop uses 90dvh via CSS)
+  // Visual viewport → sheet geometry (touch only; a mouse at ≥md uses 90dvh via CSS)
   const innerH = typeof window !== "undefined" ? window.innerHeight : 0
   const vvHeight = vv.height || innerH
-  const lift = isPhone ? Math.max(0, innerH - vv.offsetTop - vvHeight) : 0
+  const lift = hasKeyboard ? Math.max(0, innerH - vv.offsetTop - vvHeight) : 0
   const vars = {
     "--sheet-max-h": `calc(min(100dvh, ${vvHeight}px) - 1rem)`,
+    // centered dialog on touch: stays clear of the keyboard and the overlay's py-4
+    "--sheet-md-max-h": `min(90dvh, calc(${vvHeight}px - 2.5rem))`,
     "--sheet-lift": `${lift}px`,
   }
 
@@ -113,7 +119,7 @@ function SheetBody({
     <Portal>
       <div
         style={{ zIndex: z }}
-        className="fixed inset-0 flex items-end justify-center bg-gray-900/40 animate-fade-in dark:bg-black/60 md:items-center md:p-4"
+        className="fixed inset-0 flex items-end justify-center bg-gray-900/40 animate-fade-in dark:bg-black/60 md:items-center md:py-4 md:pl-safe-4 md:pr-safe-4"
         {...backdropProps}
       >
         <div
@@ -128,7 +134,7 @@ function SheetBody({
           className={cx(
             "flex w-full flex-col bg-white shadow-2xl ring-1 ring-gray-200 focus:outline-none animate-sheet-in",
             "dark:bg-surface dark:ring-line-strong dark:shadow-black/60",
-            "rounded-t-3xl max-h-(--sheet-max-h) mb-(--sheet-lift) md:mb-0 md:rounded-2xl md:max-h-[90dvh]",
+            "rounded-t-3xl max-h-(--sheet-max-h) mb-(--sheet-lift) md:pointer-fine:mb-0 md:rounded-2xl md:pointer-fine:max-h-[90dvh] md:pointer-coarse:max-h-(--sheet-md-max-h)",
             size === "full" && "h-(--sheet-max-h)",
             SIZE[size] ?? SIZE.sm,
             className,
@@ -140,7 +146,7 @@ function SheetBody({
             </div>
           )}
 
-          <header className="flex shrink-0 items-start gap-3 border-b border-gray-100 px-4 pb-3 pt-3 dark:border-line md:px-6 md:pt-5">
+          <header className="flex shrink-0 items-start gap-3 border-b border-gray-100 px-4 pb-3 pt-3 dark:border-line md:px-6 md:pt-5 short-touch:pt-2 short-touch:pb-2">
             <div className="min-w-0 flex-1">
               <h2 id={titleId} className="text-base font-bold text-balance leading-snug text-gray-900 dark:text-gray-100 md:text-lg">
                 {title}
@@ -165,13 +171,13 @@ function SheetBody({
 
           <div
             onFocus={onBodyFocus}
-            className={cx("min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 md:px-6", !footer && "pb-safe-4")}
+            className={cx("min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 md:px-6 short-touch:pt-2", !footer && "pb-safe-4")}
           >
             {children}
           </div>
 
           {footer && (
-            <footer className="shrink-0 border-t border-gray-100 px-4 pt-3 pb-safe-3 dark:border-line md:px-6 md:pb-4">
+            <footer className="shrink-0 border-t border-gray-100 px-4 pt-3 pb-safe-3 dark:border-line md:px-6 md:pb-safe-4 short-touch:pt-2 short-touch:pb-safe-2">
               {footer}
             </footer>
           )}

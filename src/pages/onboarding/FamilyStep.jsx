@@ -66,7 +66,7 @@ const COLUMNS = [
 const needsDetails = (r) => !r.hr_verified && (!r.name_title || !r.legal_status)
 
 const linkCls = cx(
-  "inline-flex min-h-touch items-center rounded-lg text-sm font-semibold text-indigo-700 underline-offset-4 hover:underline md:min-h-8 dark:text-indigo-300",
+  "inline-flex min-h-touch items-center rounded-lg text-sm font-semibold text-indigo-700 underline-offset-4 hover:underline md:pointer-fine:min-h-8 dark:text-indigo-300",
   focusRingCls,
 )
 

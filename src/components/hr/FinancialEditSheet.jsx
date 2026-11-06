@@ -23,7 +23,7 @@ import { SaveButton, SHEET_SAVED_MS, Sheet, revealFirstInvalid, toast, useSaveSt
 import StatusMsg from "./StatusMsg"
 
 const inputCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm tabular-nums")
-const btnCls = "h-12 md:h-10 md:!px-5 md:!py-0 md:!text-sm"
+const btnCls = "h-12 md:pointer-fine:h-10 md:!px-5 md:!py-0 md:!text-sm"
 
 const FIELDS = [
   { key: "current_salary", label: "เงินเดือน (บาท)", placeholder: "25000" },
@@ -187,7 +187,7 @@ export default function FinancialEditSheet({ open, employeeId, employeeName, fin
                       e.currentTarget.parentElement?.querySelector(`[data-v="${next.value}"]`)?.focus()
                     }}
                     data-v={o.value}
-                    className={cx(segmentedItemCls, "md:!min-h-8", on && segmentedItemActiveCls)}
+                    className={cx(segmentedItemCls, "md:pointer-fine:!min-h-8", on && segmentedItemActiveCls)}
                   >
                     {o.label}
                   </button>

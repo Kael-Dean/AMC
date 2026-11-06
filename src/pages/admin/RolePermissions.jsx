@@ -182,14 +182,14 @@ export default function RolePermissions() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="ไทย, English, คีย์ หรือ code เช่น hr.leave"
                 autoComplete="off"
-                className="min-h-11 w-full rounded-2xl border border-gray-300 bg-white py-2 pl-9 pr-11 text-sm text-gray-900 outline-none transition-colors duration-200 placeholder:text-gray-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 md:min-h-0 md:pr-9 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-indigo-400"
+                className="min-h-11 w-full rounded-2xl border border-gray-300 bg-white py-2 pl-9 pr-11 text-sm text-gray-900 outline-none transition-colors duration-200 placeholder:text-gray-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 md:pointer-fine:min-h-0 md:pr-9 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-indigo-400"
               />
               {query && (
                 <button
                   type="button"
                   onClick={() => setQuery("")}
                   aria-label="ล้างคำค้นหา"
-                  className="absolute right-1 top-1/2 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-xl text-gray-500 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 md:right-2 md:size-7 md:rounded-lg dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-100"
+                  className="absolute right-1 top-1/2 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-xl text-gray-500 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 md:pointer-fine:right-2 md:pointer-fine:size-7 pointer-coarse:size-11 md:rounded-lg dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-100"
                 >
                   <X aria-hidden="true" strokeWidth={1.75} className="size-4" />
                 </button>
@@ -250,7 +250,7 @@ export default function RolePermissions() {
             )}
           </p>
           {position && (
-            <label htmlFor={onlyId} className="inline-flex min-h-11 cursor-pointer items-center gap-2 md:min-h-0">
+            <label htmlFor={onlyId} className="inline-flex min-h-11 cursor-pointer items-center gap-2 md:pointer-fine:min-h-0">
               <input
                 id={onlyId}
                 type="checkbox"
@@ -273,7 +273,7 @@ export default function RolePermissions() {
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="min-h-11 cursor-pointer rounded-2xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 md:min-h-0 dark:focus-visible:ring-offset-gray-800"
+                  className="min-h-11 cursor-pointer rounded-2xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 md:pointer-fine:min-h-0 dark:focus-visible:ring-offset-gray-800"
                 >
                   ล้างตัวกรอง
                 </button>

@@ -406,7 +406,7 @@ function ThonthunDetail({ branchId, branchName, yearBE, planId }) {
                 })}
               </tbody>
 
-              <tfoot className="sticky bottom-[28px] z-20">
+              <tfoot className="sticky bottom-[28px] pointer-coarse:bottom-0 z-20">
                 <tr>
                   <td className={cx(leftBodyCell, STRIPE.footOdd, stickyShadow, footerBorder)}>
                     <div className="font-bold text-center text-[13px]">เฉลี่ย</div>

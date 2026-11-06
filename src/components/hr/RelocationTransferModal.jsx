@@ -176,7 +176,7 @@ export default function RelocationTransferModal({ employee = null, onClose, onDo
           role="dialog"
           aria-modal="true"
           aria-labelledby="relocation-transfer-title"
-          className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-gray-800 shadow-2xl"
+          className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-2xl bg-white dark:bg-gray-800 shadow-2xl"
         >
           <div className="px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-700">
             <h3 id="relocation-transfer-title" className="text-lg font-bold text-gray-900 dark:text-gray-100">

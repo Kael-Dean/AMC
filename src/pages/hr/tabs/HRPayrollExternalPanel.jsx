@@ -32,7 +32,7 @@ const NOTE_MAX = 200
 
 const denseAmountCls = cx(cellInput, "!py-1.5")
 const denseNoteCls = cx(cellInput, "!py-1.5 !text-left")
-const fieldCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm min-h-11 md:min-h-0")
+const fieldCls = cx(baseField, "!rounded-lg !px-3 !py-2 md:!text-sm min-h-11 md:pointer-fine:min-h-0")
 const errorCls = "mt-1 block text-xs font-medium text-red-600 dark:text-red-400"
 const invalidCls = "!border-red-500 dark:!border-red-400"
 
@@ -469,7 +469,7 @@ function ExternalMonth({ ym, guardRef, onOpenMonth }) {
               {g.name} <span className="font-normal tabular-nums text-gray-500 dark:text-gray-400">({g.all.length})</span>
             </h3>
             {blanks.length > 0 && groups.length > 1 && (
-              <button type="button" onClick={() => fillZero(blanks)} className="min-h-touch rounded text-sm font-medium text-indigo-700 hover:underline cursor-pointer md:min-h-0 dark:text-indigo-300">
+              <button type="button" onClick={() => fillZero(blanks)} className="min-h-touch rounded text-sm font-medium text-indigo-700 hover:underline cursor-pointer md:pointer-fine:min-h-0 dark:text-indigo-300">
                 ใส่ 0 ให้ {blanks.length} คนที่ยังว่างในสาขานี้
               </button>
             )}

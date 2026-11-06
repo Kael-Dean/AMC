@@ -68,7 +68,7 @@ export default function PersonnelActivitiesTab({ employeeId, employeeName }) {
   }
 
   const addBtn = (
-    <button type="button" onClick={() => setEditing(null)} className={cx(primaryBtnCls, "inline-flex items-center gap-1.5 min-h-touch md:min-h-9 md:!py-1.5 md:!text-sm")}>
+    <button type="button" onClick={() => setEditing(null)} className={cx(primaryBtnCls, "inline-flex items-center gap-1.5 min-h-touch md:pointer-fine:min-h-9 md:!py-1.5 md:!text-sm")}>
       <Plus aria-hidden="true" className="size-4" /> เพิ่มกิจกรรม
     </button>
   )

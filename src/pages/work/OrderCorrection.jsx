@@ -745,7 +745,7 @@ function OrderCorrection() {
   );
 
   return (
-    <div className="min-h-screen bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl">
+    <div className="min-h-dvh bg-white text-black dark:bg-slate-900 dark:text-white rounded-2xl">
       <div className="w-full p-4 md:p-6">
         {/* หัวเรื่อง + สลับโหมด */}
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
@@ -755,7 +755,7 @@ function OrderCorrection() {
               type="button"
               onClick={() => switchMode("buy")}
               className={[
-                "min-h-touch md:min-h-0 px-4 py-2 rounded-xl text-sm font-semibold transition",
+                "min-h-touch md:pointer-fine:min-h-0 px-4 py-2 rounded-xl text-sm font-semibold transition",
                 mode === "buy"
                   ? "bg-emerald-600 text-white shadow"
                   : "text-slate-700 hover:bg-slate-100 dark:text-white dark:hover:bg-slate-700",
@@ -767,7 +767,7 @@ function OrderCorrection() {
               type="button"
               onClick={() => switchMode("sell")}
               className={[
-                "min-h-touch md:min-h-0 px-4 py-2 rounded-xl text-sm font-semibold transition",
+                "min-h-touch md:pointer-fine:min-h-0 px-4 py-2 rounded-xl text-sm font-semibold transition",
                 mode === "sell"
                   ? "bg-emerald-600 text-white shadow"
                   : "text-slate-700 hover:bg-slate-100 dark:text-white dark:hover:bg-slate-700",
@@ -1162,11 +1162,11 @@ function OrderCorrection() {
                 type="button"
                 onClick={() => setConfirmDelete(true)}
                 disabled={deleting}
-                className={cx(dangerBtnCls, "h-12 md:h-10")}
+                className={cx(dangerBtnCls, "h-12 md:pointer-fine:h-10")}
               >
                 {deleting ? "กำลังลบ…" : "ลบออเดอร์"}
               </button>
-              <button type="button" onClick={() => setEditing(true)} className={cx(primaryBtnCls, "h-12 md:h-10")}>
+              <button type="button" onClick={() => setEditing(true)} className={cx(primaryBtnCls, "h-12 md:pointer-fine:h-10")}>
                 แก้ไข
               </button>
             </div>
@@ -1179,7 +1179,7 @@ function OrderCorrection() {
                   openModal(active);
                 }}
                 disabled={saving}
-                className={cx(neutralBtnCls, "h-12 md:h-10")}
+                className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-10")}
               >
                 ยกเลิก
               </button>
@@ -1188,7 +1188,7 @@ function OrderCorrection() {
                 onClick={save}
                 disabled={saving}
                 aria-busy={saving || undefined}
-                className={cx(submitBtnCls, "h-12 py-0 md:h-10 md:text-sm")}
+                className={cx(submitBtnCls, "h-12 py-0 md:pointer-fine:h-10 md:text-sm")}
               >
                 {saving && <span className={spinnerCls} aria-hidden="true" />}
                 {saving ? "กำลังบันทึก…" : "บันทึก"}

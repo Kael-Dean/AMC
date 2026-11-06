@@ -226,7 +226,7 @@ export default function DashboardPayrollTrend({ branchId = null, months = 12, cl
   }, [rows, latest])
 
   const toggleCls = cx(
-    "inline-flex h-11 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 md:h-8 cursor-pointer transition-colors duration-150",
+    "inline-flex h-11 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 md:pointer-fine:h-8 cursor-pointer transition-colors duration-150",
     "dark:text-gray-300 dark:hover:bg-white/[.06] dark:hover:text-gray-100",
     focusRingCls,
   )

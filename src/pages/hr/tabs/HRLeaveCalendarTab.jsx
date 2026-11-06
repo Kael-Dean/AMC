@@ -105,7 +105,7 @@ function MonthNav({ year, month0, onShift, onPick, onPickDate, onToday, isCurren
         <ChevronRight className="size-5" aria-hidden="true" />
       </button>
       {!isCurrent && (
-        <button type="button" className={cx(neutralBtnCls, "ml-1 !h-11 md:!h-9 !px-3")} onClick={onToday}>
+        <button type="button" className={cx(neutralBtnCls, "ml-1 !h-11 md:pointer-fine:!h-9 !px-3")} onClick={onToday}>
           เดือนนี้
         </button>
       )}
@@ -362,7 +362,7 @@ function PersonRow({ p, onOpenProfile }) {
           onClick={openLeave}
           disabled={busy}
           aria-label={`เปิดใบลา #${p.leaveId} ของ ${p.name}`}
-          className={cx(linkCls, "inline-flex min-h-11 shrink-0 items-center gap-1 px-1 text-xs tabular-nums text-gray-600 dark:text-gray-300 md:min-h-0 md:pt-0.5 disabled:cursor-wait")}
+          className={cx(linkCls, "inline-flex min-h-11 shrink-0 items-center gap-1 px-1 text-xs tabular-nums text-gray-600 dark:text-gray-300 md:pointer-fine:min-h-0 md:pt-0.5 disabled:cursor-wait")}
         >
           {busy ? <Loader2 aria-hidden="true" className="size-3.5 animate-spin" /> : <FileText aria-hidden="true" className="size-3.5" strokeWidth={1.75} />}
           ใบลา #{p.leaveId}

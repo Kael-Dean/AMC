@@ -401,7 +401,7 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
   const showTermination = !!prefill && canTerminate && TERMINATION_STEPS.includes(Number(c?.action?.step))
 
   // ── footer ──
-  const sheetBtn = "!h-11 md:!h-10 !px-4 !text-sm"
+  const sheetBtn = "!h-11 md:pointer-fine:!h-10 !px-4 !text-sm"
   let footer
   if (!c || !canDecide) {
     footer = <div className="flex justify-end"><button type="button" onClick={onClose} className={cx(neutralBtnCls, sheetBtn)}>ปิด</button></div>
@@ -462,7 +462,7 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
                 <span className="font-semibold">{prefill.reason || stepLabel(c.action.step)}</span> — ต้องบันทึกการพ้นสภาพ บัญชียังใช้งานได้จนกว่าจะบันทึก
               </p>
               <button type="button" onClick={() => onOpenTermination({ id: c.accused_id, first_name: c.accused_name || `รหัส ${c.accused_id}`, last_name: "" }, prefill)}
-                className={cx(primaryBtnCls, "md:!h-9 !px-3 !text-sm")}>
+                className={cx(primaryBtnCls, "md:pointer-fine:!h-9 !px-3 !text-sm")}>
                 <UserX aria-hidden="true" className="size-4" /> บันทึกการพ้นสภาพ
               </button>
             </div>
@@ -514,7 +514,7 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
                       </div>
                       {c.action.id != null && (
                         <button type="button" onClick={openPdf} disabled={pdfBusy}
-                          className={cx("inline-flex min-h-touch items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200 transition-colors duration-150 hover:bg-indigo-50 disabled:opacity-60 cursor-pointer md:min-h-9 dark:text-indigo-300 dark:ring-indigo-400/30 dark:hover:bg-indigo-500/10", focusRingCls)}>
+                          className={cx("inline-flex min-h-touch items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200 transition-colors duration-150 hover:bg-indigo-50 disabled:opacity-60 cursor-pointer md:pointer-fine:min-h-9 dark:text-indigo-300 dark:ring-indigo-400/30 dark:hover:bg-indigo-500/10", focusRingCls)}>
                           {pdfBusy ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <FileDown aria-hidden="true" className="size-4" />}
                           หนังสือ PDF
                         </button>
@@ -582,7 +582,7 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
             <div role="alert" className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800/60 dark:bg-red-900/20 dark:text-red-200">
               <p>{formErr}</p>
               {offerEscalate && (
-                <button type="button" onClick={() => toMode("escalate")} className={cx(neutralBtnCls, "md:!h-9 !px-3 !text-sm")}>
+                <button type="button" onClick={() => toMode("escalate")} className={cx(neutralBtnCls, "md:pointer-fine:!h-9 !px-3 !text-sm")}>
                   <ArrowUpRight aria-hidden="true" className="size-4" /> ส่งต่อ{stageLabel(nextStage)}แทน
                 </button>
               )}

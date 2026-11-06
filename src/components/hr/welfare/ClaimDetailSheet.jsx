@@ -16,7 +16,7 @@ import {
 } from "../../../lib/welfare"
 import { Badge, Sheet } from "../../ui"
 
-const btnCls = "h-12 md:h-10 md:!px-5 md:!py-0 md:!text-sm"
+const btnCls = "h-12 md:pointer-fine:h-10 md:!px-5 md:!py-0 md:!text-sm"
 
 function Row({ label, children }) {
   if (children == null || children === "" || children === "—") return null

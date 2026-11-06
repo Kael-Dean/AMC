@@ -109,7 +109,7 @@ function TourCell({ done }) {
   )
 }
 
-const smallBtn = "!h-9 !px-3 !text-[13px] whitespace-nowrap"
+const smallBtn = "!h-9 pointer-coarse:!h-11 !px-3 !text-[13px] whitespace-nowrap"
 
 /** ปุ่มจัดการของแต่ละแถว — ซ่อนเมื่อไม่มีสิทธิ์ hr.onboarding.manage */
 function RowActions({ row, busy, onReopen, onExempt, onUnexempt }) {
@@ -542,10 +542,10 @@ export default function HROnboardingTab() {
         size="sm"
         footer={
           <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
-            <button type="button" onClick={closeAll} disabled={saving} className={cx(neutralBtnCls, "h-12 md:h-10")}>
+            <button type="button" onClick={closeAll} disabled={saving} className={cx(neutralBtnCls, "h-12 md:pointer-fine:h-10")}>
               ยกเลิก
             </button>
-            <button type="submit" form="hr-onboarding-exempt" disabled={saving} className={cx(primaryBtnCls, "h-12 md:h-10")}>
+            <button type="submit" form="hr-onboarding-exempt" disabled={saving} className={cx(primaryBtnCls, "h-12 md:pointer-fine:h-10")}>
               {saving ? "กำลังบันทึก…" : "ยืนยันยกเว้น"}
             </button>
           </div>

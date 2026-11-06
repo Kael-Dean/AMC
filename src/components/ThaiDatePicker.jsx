@@ -8,12 +8,13 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 import { createPortal } from "react-dom"
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import useAnchoredPanel from "../lib/useAnchoredPanel"
-import { useIsPhone } from "../hooks/useMediaQuery"
+import { useIsCoarsePointer, useIsPhone } from "../hooks/useMediaQuery"
 import Sheet from "./ui/Sheet"
 import { cx, focusRingCls } from "../lib/styles"
 
 const PANEL_Z = 10050
 const PANEL_W = 288
+const PANEL_W_TOUCH = 352 // 7 columns × 44px + grid gaps + panel padding/border
 
 const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน",
@@ -51,7 +52,7 @@ function firstDayOfMonth(year, month) {
 }
 
 const navBtnCls =
-  "flex size-11 md:size-9 cursor-pointer items-center justify-center rounded-xl text-gray-500 transition-colors " +
+  "flex size-11 md:pointer-fine:size-9 cursor-pointer items-center justify-center rounded-xl text-gray-500 transition-colors " +
   "duration-150 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/[.08] dark:hover:text-gray-100 " +
   focusRingCls
 
@@ -71,7 +72,7 @@ const cellBtnCls = (selected, current) =>
 
 const headBtnCls = cx(
   "inline-flex min-h-touch cursor-pointer items-center gap-1 rounded-lg px-2.5 text-sm font-semibold text-gray-900 transition-colors duration-150",
-  "hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-white/[.08] md:min-h-9",
+  "hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-white/[.08] md:pointer-fine:min-h-9",
   focusRingCls,
 )
 
@@ -195,7 +196,7 @@ function Calendar({ value, today, viewYear, viewMonth, onPrev, onNext, onPick, o
               aria-pressed={isSelected}
               aria-label={`${day} ${THAI_MONTHS[viewMonth - 1]} ${viewYear + 543}`}
               className={cx(
-                "h-11 w-full cursor-pointer rounded-xl text-sm font-medium tabular-nums transition-colors duration-150 md:h-9",
+                "h-11 w-full cursor-pointer rounded-xl text-sm font-medium tabular-nums transition-colors duration-150 md:pointer-fine:h-9",
                 focusRingCls,
                 isSelected
                   ? "bg-indigo-600 text-white shadow-sm dark:bg-indigo-600"
@@ -216,7 +217,7 @@ function Calendar({ value, today, viewYear, viewMonth, onPrev, onNext, onPick, o
         <button
           type="button"
           onClick={onToday}
-          className={cx("min-h-touch cursor-pointer rounded-lg px-3 text-sm text-indigo-600 hover:underline dark:text-indigo-400 md:min-h-8", focusRingCls)}
+          className={cx("min-h-touch cursor-pointer rounded-lg px-3 text-sm text-indigo-600 hover:underline dark:text-indigo-400 md:pointer-fine:min-h-8", focusRingCls)}
         >
           วันนี้
         </button>
@@ -248,7 +249,10 @@ const ThaiDatePicker = forwardRef(function ThaiDatePicker({
   const panelRef = useRef(null)
   useImperativeHandle(ref, () => triggerRef.current)
   const isPhone = useIsPhone()
-  const { style } = useAnchoredPanel(triggerRef, { open: open && !isPhone, minW: PANEL_W, maxW: PANEL_W, maxH: 400 })
+  // จอสัมผัสที่ ≥md (tablet/มือถือแนวนอน) ยังเป็น popover: ขยายให้วันกว้าง ≥44px
+  const isCoarse = useIsCoarsePointer()
+  const panelW = isCoarse ? PANEL_W_TOUCH : PANEL_W
+  const { style } = useAnchoredPanel(triggerRef, { open: open && !isPhone, minW: panelW, maxW: panelW, maxH: isCoarse ? 480 : 400 })
 
   useEffect(() => {
     if (parsed) { setViewYear(parsed.year); setViewMonth(parsed.month) }

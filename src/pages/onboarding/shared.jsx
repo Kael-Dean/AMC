@@ -122,7 +122,7 @@ export function DraftNotice({ onClear }) {
         onClick={onClear}
         aria-label="ล้างข้อมูลที่กู้มา"
         className={cx(
-          "inline-flex min-h-touch cursor-pointer items-center rounded-lg text-sm font-semibold text-indigo-700 underline-offset-4 hover:underline md:min-h-8 dark:text-indigo-300",
+          "inline-flex min-h-touch cursor-pointer items-center rounded-lg text-sm font-semibold text-indigo-700 underline-offset-4 hover:underline md:pointer-fine:min-h-8 dark:text-indigo-300",
           focusRingCls,
         )}
       >
