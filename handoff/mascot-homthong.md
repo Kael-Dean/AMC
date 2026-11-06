@@ -1,4 +1,6 @@
-# มาสคอต "น้องหอมทอง" (Hom Thong) — Rive handoff
+# มาสคอต "น้องมะลิ" — Rive handoff
+
+> ชื่อเดิมคือ "น้องหอมทอง" ชื่อไฟล์ `homthong.*` และ artboard / state machine / view model `HomThong` คงเดิม เพราะ runtime เรียกด้วยชื่อนี้
 
 ตัวการ์ตูนเมล็ดข้าวหอมมะลิของ AMC — สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส. สุรินทร์
 ใช้ในแอป HR: onboarding, empty state, loading, success
