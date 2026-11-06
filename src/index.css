@@ -637,6 +637,42 @@ button:focus-visible:not([class*="focus-visible:ring"]):not([class*="focus:ring"
     select:not(.cell-input) {
       min-height: var(--spacing-touch);
     }
+
+    /* Same floor for everything tappable, so dense desktop sizes (h-8, px-2 py-1, …)
+       stay reachable on touch without per-page variants. Mouse layouts never match
+       this media query. Opt out with [data-tap-exempt]; a min-h-* utility also wins. */
+    button:not([data-tap-exempt]), [role="button"]:not([data-tap-exempt]), [role="tab"], [role="radio"],
+    [role="checkbox"], [role="switch"], [role="menuitem"], [role="option"], summary, a[href]:not([data-tap-exempt]) {
+      min-height: var(--spacing-touch);
+      min-width: var(--spacing-touch);
+    }
+    a[href]:not([data-tap-exempt]) {
+      align-items: center;
+    }
+    /* Checkbox/radio are hit through their label: pad the label, not the small box. */
+    :where(label):has(> input[type="checkbox"], > input[type="radio"]) {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: var(--spacing-touch);
+    }
+    /* Last resort for an unbreakable run (long number, name) in a narrow column. */
+    html {
+      overflow-wrap: break-word;
+    }
+    /* A bare .grid has one auto track that grows to its widest child (a long option in a
+       ComboBox, a 3-up field row) and pushes the page sideways. Any grid-cols-* still wins. */
+    .grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* .sr-only is position:absolute. When nothing between it and the app shell is
+     positioned it ignores the table's overflow wrapper, keeps its static offset far
+     out in a wide or tall table, and adds that to the page's scroll size. */
+  table .sr-only {
+    top: 0;
+    left: 0;
   }
 }
 

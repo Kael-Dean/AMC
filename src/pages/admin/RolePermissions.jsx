@@ -167,7 +167,7 @@ export default function RolePermissions() {
 
       <div className={cx(cardCls, "overflow-hidden")}>
         {/* Toolbar */}
-        <div className="grid gap-3 border-b border-gray-200 p-3 md:grid-cols-[minmax(0,1fr)_16rem_18rem] md:items-end dark:border-gray-700">
+        <div className="grid gap-3 border-b border-gray-200 p-3 md:grid-cols-2 md:pointer-fine:grid-cols-[minmax(0,1fr)_16rem_18rem] xl:grid-cols-[minmax(0,1fr)_16rem_18rem] md:items-end dark:border-gray-700">
           <div className="min-w-0">
             <label htmlFor={searchId} className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
               ค้นหาฟังก์ชัน

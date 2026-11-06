@@ -130,7 +130,7 @@ export default function DataList({
                 )}
                 {st && <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{st}</p>}
               </div>
-              {b && <div className="shrink-0">{b}</div>}
+              {b && <div className="max-w-[50%] shrink-0 text-right">{b}</div>}
               {clickable && (
                 <ChevronRight
                   aria-hidden="true"

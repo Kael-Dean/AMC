@@ -776,10 +776,10 @@ const Order = () => {
           </details>
         ) : (
           <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 text-black shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-            <div className="grid gap-3 md:grid-cols-6">
+            <div className="grid gap-3 md:grid-cols-3 md:pointer-fine:grid-cols-6 lg:grid-cols-6">
               {filterFields}
 
-              <div className="flex flex-wrap items-end gap-2 md:col-span-6">
+              <div className="flex flex-wrap items-end gap-2 col-span-full">
                 <button
                   onClick={fetchOrders}
                   type="button"
@@ -1080,7 +1080,7 @@ const Order = () => {
                       onClick={() => goToPage(it)}
                       aria-current={it === page ? "page" : undefined}
                       className={cx(
-                        "h-10 min-w-[40px] rounded-xl px-3 text-sm font-semibold transition",
+                        "h-10 min-w-[40px] pointer-coarse:min-w-touch rounded-xl px-3 text-sm font-semibold transition",
                         it === page ? PAGE_BTN_ACTIVE : PAGE_BTN_IDLE,
                         "border border-slate-300 dark:border-slate-600"
                       )}

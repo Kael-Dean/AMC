@@ -403,7 +403,7 @@ const OperationPlan = () => {
             {/* Row 1: breadcrumb + close */}
             <div className="flex items-center justify-between gap-3 mb-1.5">
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-[12px] font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                <span className="shrink-0 text-[12px] font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap">
                   {planTypeLabel}
                 </span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-300 dark:text-slate-600 flex-shrink-0">

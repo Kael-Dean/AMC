@@ -170,7 +170,8 @@ const MAX_TRAILERS = trailerCountOptions.length
 // One grid template for the column header and both rows (≥lg). Column order
 // = trailerOrder (scaleNo → unitPrice → gram → plate → weight → amount) so
 // Tab order and the Enter chain run left → right.
-const ROW_COLS = "lg:grid-cols-[3rem_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1.15fr)_minmax(0,1.25fr)]"
+// One-line row from lg with a mouse; touch waits for xl because 16px inputs do not fit under ~90px.
+const ROW_COLS = "lg:pointer-fine:grid-cols-[3rem_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1.15fr)_minmax(0,1.25fr)] xl:grid-cols-[3rem_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1.15fr)_minmax(0,1.25fr)]"
 const COLUMNS = [
   { k: "scaleNo", head: "ใบชั่ง", label: "เลขที่ใบชั่ง" },
   { k: "unitPrice", head: "ราคา/กก. (บาท)", label: "ราคาต่อกก. (บาท)", num: true, suffix: "บาท" },
@@ -202,10 +203,10 @@ function TrailerRow({ form, idx, side, amount }) {
   const K = SIDE[side].keys
   const fid = (key) => trailerFieldId(idx, key)
   return (
-    <div className={cx("mt-2 grid gap-3 md:grid-cols-3 lg:items-center lg:gap-x-2 lg:gap-y-0", ROW_COLS)}>
-      <div className="md:col-span-3 lg:col-span-1">
+    <div className={cx("mt-2 grid gap-3 md:grid-cols-3 lg:pointer-fine:items-center lg:pointer-fine:gap-x-2 lg:pointer-fine:gap-y-0 xl:items-center xl:gap-x-2 xl:gap-y-0", ROW_COLS)}>
+      <div className="md:col-span-3 lg:pointer-fine:col-span-1 xl:col-span-1">
         <span className="inline-flex items-center rounded-md bg-white px-2 py-0.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600">
-          <span className="lg:sr-only">พ่วง</span>{SIDE_NAME[side]}
+          <span className="lg:pointer-fine:sr-only xl:sr-only">พ่วง</span>{SIDE_NAME[side]}
         </span>
       </div>
 
@@ -213,7 +214,7 @@ function TrailerRow({ form, idx, side, amount }) {
         const key = K[c.k]
         const bad = !!terr[key]
         const label = (
-          <label htmlFor={fid(key)} className="mb-1 block text-sm font-medium text-gray-700 lg:sr-only dark:text-gray-200">
+          <label htmlFor={fid(key)} className="mb-1 block text-sm font-medium text-gray-700 lg:pointer-fine:sr-only xl:sr-only dark:text-gray-200">
             <span className="sr-only">คันที่ {idx + 1} พ่วง{SIDE_NAME[side]} </span>{c.label}
           </label>
         )
@@ -324,7 +325,7 @@ export default function SalesTrailerSection({ form }) {
               </div>
 
               {/* column header — once per trailer (≥lg); the per-cell labels are sr-only there */}
-              <div aria-hidden="true" className={cx("mt-2 hidden gap-x-2 text-xs font-medium text-gray-500 lg:grid dark:text-gray-400", ROW_COLS)}>
+              <div aria-hidden="true" className={cx("mt-2 hidden gap-x-2 text-xs font-medium text-gray-500 lg:pointer-fine:grid xl:grid dark:text-gray-400", ROW_COLS)}>
                 <span />
                 {COLUMNS.map((c) => (
                   <span key={c.k} className={cx("truncate", c.num ? "pr-2.5 text-right" : "pl-2.5")}>{c.head}</span>

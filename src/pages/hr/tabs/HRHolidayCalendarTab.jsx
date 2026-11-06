@@ -57,7 +57,7 @@ function AdjustResult({ result, verb }) {
         {rows.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">ไม่มีใบลาที่ได้รับผลกระทบ</p>
         ) : (
-          <div className="rounded-xl ring-1 ring-gray-200/70 dark:ring-gray-700/70 overflow-hidden max-h-56 overflow-y-auto">
+          <div className="rounded-xl ring-1 ring-gray-200/70 dark:ring-gray-700/70 overflow-auto max-h-56">
             <table className="w-full text-sm">
               <thead className="sticky top-0">
                 <tr className="bg-gray-50 dark:bg-gray-900">
