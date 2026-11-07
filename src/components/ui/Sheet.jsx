@@ -34,7 +34,6 @@
 // scroll; the body does (min-h-0 overflow-y-auto overscroll-contain).
 //
 // ── Z-STACK (the only place this is written down — keep in sync) ────────────
-//   InstallInvite card          9980
 //   Sidebar overlay             9990
 //   Sidebar panel               9999
 //   StickyTableScrollbar       10000

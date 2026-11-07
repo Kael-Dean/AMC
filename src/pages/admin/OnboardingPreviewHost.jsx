@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useRef } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import InstallGuideLazy from "../../components/InstallGuideLazy"
-import InstallInvite from "../../components/onboarding/InstallInvite"
+import InstallIntro from "../../components/onboarding/InstallIntro"
 import OnboardingBanner from "../../components/onboarding/OnboardingBanner"
 import SearchIntro from "../../components/onboarding/SearchIntro"
 import { TourPreview } from "../../components/onboarding/TourOverlay"
@@ -68,7 +68,7 @@ export default function OnboardingPreviewHost() {
     <>
       <PreviewBar onExit={exit} escapeAlways={kind === "tour"} />
       {kind === "search" && <SearchIntro preview userId={getUser()?.id ?? null} onClose={exit} onPostpone={exit} />}
-      {kind === "invite" && <InstallInvite preview userId={getUser()?.id ?? null} onClose={exit} onPostpone={exit} />}
+      {kind === "install-intro" && <InstallIntro preview userId={getUser()?.id ?? null} onClose={exit} onPostpone={exit} />}
       {kind === "guide" && <InstallGuideLazy preview open onClose={exit} />}
       {kind === "banner" && <BannerPreview onClose={exit} />}
       {kind === "tour" && <TourPreview onExit={exit} />}

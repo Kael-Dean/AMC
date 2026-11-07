@@ -2,7 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // What the gallery lists. Steps and their words come from the real sources, so this page cannot
 // drift from the real thing. `who` / `when` / `often` describe what the gate code does: when you change a
-// gate (lib/searchIntro.js, lib/installInvite.js, AppLayout's onboarding gate), change its text here.
+// gate (lib/searchIntro.js, lib/installIntro.js, AppLayout's onboarding gate), change its text here.
 //
 //   preview  "wizard" | "wizard-locked" | a PreviewHost kind | null
 //   noPreview  why not, when preview is null
@@ -10,9 +10,10 @@
 //   seenKey  (userId) → the storage key that remembers it, for the read-only status line
 // ─────────────────────────────────────────────────────────────────────────────
 import { BANNER_STATES, bannerCopy } from "../../components/onboarding/bannerCopy"
+import { INSTALL_INTRO_STEPS } from "../../components/onboarding/installIntroSteps"
 import { SEARCH_INTRO_STEPS } from "../../components/onboarding/searchIntroSteps"
 import { INSTALL_GUIDE, PLATFORM_TABS } from "../../lib/installGuideContent"
-import { INSTALL_INVITE_COPY, hasSeenInstallInvite, installInviteKey } from "../../lib/installInvite"
+import { hasSeenInstallIntro, installIntroKey } from "../../lib/installIntro"
 import { DRAFT_TTL_DAYS } from "../../lib/onboardingDraft"
 import { SECTIONS } from "../../lib/onboarding"
 import { TOUR_LENGTH, TOUR_STOPS } from "../../lib/onboardingTour"
@@ -80,27 +81,23 @@ export const ONBOARDING_ITEMS = [
     hasSeen: hasSeenSearchIntro,
   },
   {
-    key: "invite",
-    name: "การ์ดชวนติดตั้งแอป",
-    teaches: "บอกว่าติดตั้งแอปลงเครื่องได้ และพาไปคู่มือ",
-    who: "ทุกคนที่ล็อกอินและยังไม่ได้เปิดจากแอปที่ติดตั้ง ที่ทำ onboarding เสร็จแล้วหรือไม่ต้องทำ",
-    when: "หลังหน้านิ่ง 1.5 วินาที ไม่อยู่หน้า /buy หรือ /sales ไม่มีแถบปุ่มล่างจอ ไม่มี overlay เปิด จอกว้างต้องเห็นแนะนำช่องค้นหาก่อน",
-    often: "ครั้งเดียวต่อบัญชีต่อเบราว์เซอร์ นับว่าเห็นแล้วทันทีที่แสดง",
-    steps: [
-      { key: "card", title: INSTALL_INVITE_COPY.title, detail: INSTALL_INVITE_COPY.body },
-      { key: "later", title: INSTALL_INVITE_COPY.later, detail: "ปิดการ์ด" },
-      { key: "guide", title: INSTALL_INVITE_COPY.guide, detail: "เปิดคู่มือติดตั้ง" },
-    ],
-    preview: "invite",
-    seenKey: installInviteKey,
-    hasSeen: hasSeenInstallInvite,
+    key: "install-intro",
+    name: "แนะนำการติดตั้งแอป",
+    teaches: "บอกว่าติดตั้งแอปลงเครื่องได้ เปิดจากไอคอนแล้วเต็มจอ และพาไปคู่มือติดตั้ง",
+    who: "ทุกคนที่ล็อกอินและยังไม่ได้เปิดจากแอปที่ติดตั้ง ที่ทำ onboarding เสร็จแล้วหรือไม่ต้องทำ ทั้งมือถือ แท็บเล็ต และคอมพิวเตอร์",
+    when: "หลังหน้านิ่ง 1.5 วินาที ไม่อยู่หน้า /buy หรือ /sales ไม่มีแถบปุ่มล่างจอ ไม่มี overlay เปิด แท็บเปิดอยู่ ไม่ได้กำลังพิมพ์ และไม่ได้อยู่ในทัวร์ จอกว้าง 768px ขึ้นไปต้องเห็นแนะนำช่องค้นหาก่อน",
+    often: "ครั้งเดียวต่อบัญชีต่อเบราว์เซอร์ นับว่าเห็นแล้วทันทีที่เปิด ปิดแล้วยังเปิดคู่มือได้จากเมนู “ติดตั้งแอป” ถ้าติดตั้งสำเร็จระหว่างเปิดอยู่จะปิดเอง",
+    steps: INSTALL_INTRO_STEPS.map((step) => ({ key: step.key, title: step.title, detail: step.lines.join(" ") })),
+    preview: "install-intro",
+    seenKey: installIntroKey,
+    hasSeen: hasSeenInstallIntro,
   },
   {
     key: "guide",
     name: "คู่มือติดตั้งแอป",
     teaches: "วิธีติดตั้งแอปทีละขั้น ตามอุปกรณ์และเบราว์เซอร์",
     who: "ทุกคนที่ยังไม่ได้เปิดจากแอปที่ติดตั้ง รวมคนที่ยังไม่ล็อกอิน",
-    when: "กด “ติดตั้งแอป” ในเมนูด้านข้างหรือหน้าเข้าสู่ระบบ หรือ “ดูวิธีติดตั้ง” บนการ์ดชวนติดตั้ง",
+    when: "กด “ติดตั้งแอป” ในเมนูด้านข้างหรือหน้าเข้าสู่ระบบ หรือ “ดูวิธีติดตั้ง” ในขั้นสุดท้ายของแนะนำการติดตั้งแอป",
     often: "ทุกครั้งที่กด ไม่เก็บสถานะ",
     groups: guideGroups,
     preview: "guide",
