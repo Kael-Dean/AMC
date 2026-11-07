@@ -7,8 +7,8 @@
 //   lib/onboardingDraft.js   no draft is read or written
 //   lib/onboarding.js        the gate status is not written; wizard saves go to the preview's memory
 //   lib/tourState.js         the tour's sessionStorage key is not written
-//   lib/searchIntro.js, lib/installInvite.js   nothing can be claimed as seen
-//   SearchIntroGate, InstallInviteGate         the real ones hold back until the preview ends
+//   lib/searchIntro.js, lib/installIntro.js   nothing can be claimed as seen
+//   SearchIntroGate, InstallIntroGate          the real ones hold back until the preview ends
 //
 // Only the flag is here, because those modules are always loaded. The start / stop actions and the
 // network wall are in the gallery's lazy chunk (pages/admin/previewSession.js).

@@ -1,21 +1,21 @@
-// src/components/onboarding/InstallInviteGate.jsx
+// src/components/onboarding/InstallIntroGate.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Decides WHEN the one-time install invitation shows (rules: lib/installInvite.js).
-// Mounted once in AppLayout and stays small: the card is a lazy chunk that people who have already
-// seen it never download.
+// Decides WHEN the one-time install intro opens (rules: lib/installIntro.js).
+// Mounted once in AppLayout and stays small: the intro and its demo are a lazy chunk that people
+// who have already seen it never download.
 //
 // Plain React.lazy, not lazyWithReload: a missing chunk must not reload the page under someone's
-// work for an optional card. It just stays unseen and tries again on the next visit.
+// work for an optional intro. It just stays unseen and tries again on the next visit.
 // ─────────────────────────────────────────────────────────────────────────────
 import { Component, lazy, Suspense, useCallback, useEffect, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { getUser } from "../../lib/auth"
 import {
-  hasSeenInstallInvite,
+  hasSeenInstallIntro,
   isDataEntryRoute,
-  isInstallInviteEligible,
+  isInstallIntroEligible,
   isStickyBarShown,
-} from "../../lib/installInvite"
+} from "../../lib/installIntro"
 import { useOnboarding } from "../../lib/onboarding"
 import { isOnboardingGalleryPath, usePreview } from "../../lib/previewMode"
 import { useAppInstalled, useInstallOption } from "../../lib/pwa"
@@ -23,8 +23,8 @@ import { hasSeenSearchIntro, isPageBusy } from "../../lib/searchIntro"
 import { useTourState } from "../../lib/tourState"
 import { useIsPhone } from "../../hooks/useMediaQuery"
 
-const loadInvite = () => import("./InstallInvite")
-const InstallInvite = lazy(loadInvite)
+const loadIntro = () => import("./InstallIntro")
+const InstallIntro = lazy(loadIntro)
 
 const SETTLE_MS = 1500 // let the page, and the person, settle first
 const RETRY_MS = 1000 // while something else has the screen
@@ -42,7 +42,7 @@ class ChunkBoundary extends Component {
   }
 }
 
-export default function InstallInviteGate() {
+export default function InstallIntroGate() {
   const { pathname } = useLocation()
   const isPhone = useIsPhone()
   const onboarding = useOnboarding()
@@ -60,7 +60,7 @@ export default function InstallInviteGate() {
     phase === "waiting" &&
     !onDataEntry &&
     !held &&
-    isInstallInviteEligible({
+    isInstallIntroEligible({
       userId,
       installOption,
       installed,
@@ -69,12 +69,12 @@ export default function InstallInviteGate() {
       locked: onboarding.locked,
       tourActive: tour.active,
     }) &&
-    !hasSeenInstallInvite(userId)
+    !hasSeenInstallIntro(userId)
 
   // Restarts on navigation: a page that just opened hasn't settled yet.
   useEffect(() => {
     if (!wanted) return
-    loadInvite().catch(() => {}) // the lazy render below reports a failure
+    loadIntro().catch(() => {}) // the lazy render below reports a failure
     let timer
     const check = (wasBlocked) => {
       // The search intro only runs from md up (on phones it never comes, so don't wait for it).
@@ -95,7 +95,7 @@ export default function InstallInviteGate() {
   return (
     <ChunkBoundary onError={close}>
       <Suspense fallback={null}>
-        <InstallInvite
+        <InstallIntro
           userId={userId}
           paused={onDataEntry || tour.active || held}
           onClose={close}
