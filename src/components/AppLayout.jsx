@@ -14,6 +14,7 @@ import { getToken } from "../lib/auth"
 import { loadOnboarding, useOnboarding } from "../lib/onboarding"
 import TourOverlay from "./onboarding/TourOverlay"
 import SearchIntroGate from "./onboarding/SearchIntroGate"
+import InstallInviteGate from "./onboarding/InstallInviteGate"
 import { useAppUpdateCheck } from "../lib/appUpdate"
 import { toast } from "./ui/toast"
 import { TOUR_SIDEBAR_EVENT, useTourState } from "../lib/tourState"
@@ -234,6 +235,8 @@ const AppLayout = () => {
       <TourOverlay />
       {/* One-time intro of the header search — its overlay is a lazy chunk */}
       <SearchIntroGate />
+      {/* One-time "you can install this app" card, also a lazy chunk */}
+      <InstallInviteGate />
     </div>
   )
 }

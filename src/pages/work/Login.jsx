@@ -6,6 +6,9 @@ import { saveAuth, getToken, isTokenExpired, needsHardReload } from "../../lib/a
 import { loadMyPermissions } from "../../lib/myPermissions";
 import sktBg from "../../assets/skt_bg.webp";
 import Mascot from "../../components/ui/Mascot";
+import Toaster from "../../components/ui/Toaster";
+import InstallGuideLazy from "../../components/InstallGuideLazy";
+import { useInstallOption } from "../../lib/pwa";
 
 const asset = (p) => `${import.meta.env.BASE_URL.replace(/\/+$/, "")}${p}`;
 
@@ -17,6 +20,8 @@ const Login = () => {
   const [offline, setOffline]   = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const installOption = useInstallOption();
+  const [installGuideOpen, setInstallGuideOpen] = useState(false);
   // friction กัน brute-force ฝั่ง client: นับครั้งที่ล้มเหลว + คูลดาวน์แบบเพิ่มขึ้น
   // (rate-limit จริงต้องทำที่ backend — ดู SECURITY-NOTES.md)
   const [failCount, setFailCount] = useState(0);
@@ -262,11 +267,23 @@ const Login = () => {
               >
                 ลืมรหัสผ่าน?
               </button>
+              {installOption && (
+                <button
+                  type="button"
+                  onClick={() => setInstallGuideOpen(true)}
+                  className="ml-5 rounded text-sm text-gray-500 underline-offset-2 transition-colors hover:text-indigo-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:text-gray-400 dark:hover:text-indigo-400 cursor-pointer"
+                >
+                  ติดตั้งแอปลงเครื่อง
+                </button>
+              )}
             </div>
           </form>
         </div>
       </div>
 
+      {/* Toasts of the guide; the app's own Toaster lives in AppLayout, outside this page */}
+      <Toaster />
+      <InstallGuideLazy open={installGuideOpen} onClose={() => setInstallGuideOpen(false)} />
     </div>
   );
 };
