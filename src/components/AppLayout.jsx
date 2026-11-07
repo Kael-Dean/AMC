@@ -1,4 +1,4 @@
-import { createContext, useContext, useDeferredValue, useEffect, useLayoutEffect, useState } from "react"
+import { Suspense, createContext, lazy, useContext, useDeferredValue, useEffect, useLayoutEffect, useState } from "react"
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom"
 import Sidebar from "./Sidebar"
 import Topbar from "./Topbar"
@@ -18,6 +18,10 @@ import InstallInviteGate from "./onboarding/InstallInviteGate"
 import { useAppUpdateCheck } from "../lib/appUpdate"
 import { toast } from "./ui/toast"
 import { TOUR_SIDEBAR_EVENT, useTourState } from "../lib/tourState"
+import { usePreview } from "../lib/previewMode"
+
+// Super Admin's onboarding previews. The gallery loads this chunk before it starts one.
+const OnboardingPreviewHost = lazy(() => import("../pages/admin/OnboardingPreviewHost"))
 
 export const SidebarContext = createContext(false)
 export const useSidebarOpen = () => useContext(SidebarContext)
@@ -95,6 +99,7 @@ const AppLayout = () => {
   const navigate = useNavigate()
   const onboarding = useOnboarding()
   const tour = useTourState()
+  const preview = usePreview()
   const onboardingLoading = onboarding.status === "idle" || onboarding.status === "loading"
   let gateMode = "open"
   if (onboarding.gate === "pending") {
@@ -237,6 +242,11 @@ const AppLayout = () => {
       <SearchIntroGate />
       {/* One-time "you can install this app" card, also a lazy chunk */}
       <InstallInviteGate />
+      {preview && (
+        <Suspense fallback={null}>
+          <OnboardingPreviewHost />
+        </Suspense>
+      )}
     </div>
   )
 }

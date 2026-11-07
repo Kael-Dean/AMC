@@ -20,6 +20,7 @@
 import { useSyncExternalStore } from "react"
 import { apiAuth } from "./api"
 import { getToken, getUserKey } from "./auth"
+import { isPreviewActive } from "./previewMode"
 
 const BASE = "/personnel/me/onboarding"
 const READ_TIMEOUT_MS = 20_000
@@ -169,6 +170,7 @@ const gateKey = () => {
 }
 
 function writeGate(value) {
+  if (isPreviewActive()) return
   const key = gateKey()
   if (!key) return
   try {
@@ -299,10 +301,20 @@ export function loadOnboarding({ force = false, silent = false } = {}) {
   return promise
 }
 
+// The wizard preview (pages/admin/OnboardingWizardPreview.jsx) answers these from its own memory.
+let previewWrites = null // { save(key, body), confirm(key) } → Promise<payload>
+export const setOnboardingPreviewWrites = (writes) => {
+  previewWrites = writes
+}
+
 export const saveSection = (key, body) =>
-  apiAuth(`${BASE}/${key}`, { method: "PUT", body, timeoutMs: WRITE_TIMEOUT_MS }).then(acceptWrite)
+  previewWrites
+    ? previewWrites.save(key, body)
+    : apiAuth(`${BASE}/${key}`, { method: "PUT", body, timeoutMs: WRITE_TIMEOUT_MS }).then(acceptWrite)
 export const confirmSection = (key) =>
-  apiAuth(`${BASE}/${key}/confirm`, { method: "POST", timeoutMs: WRITE_TIMEOUT_MS }).then(acceptWrite)
+  previewWrites
+    ? previewWrites.confirm(key)
+    : apiAuth(`${BASE}/${key}/confirm`, { method: "POST", timeoutMs: WRITE_TIMEOUT_MS }).then(acceptWrite)
 export const tourComplete = () =>
   apiAuth(`${BASE}/tour-complete`, { method: "POST", timeoutMs: WRITE_TIMEOUT_MS }).then(acceptWrite)
 export const completeOnboarding = () =>
@@ -346,6 +358,7 @@ async function readBackWrite(key, body, before) {
 
 /** saveSection for list sections: a retry after a lost response never adds the row twice. */
 export async function saveSectionSafe(key, body) {
+  if (previewWrites) return previewWrites.save(key, body)
   const verifiable = canVerify(body)
   const sig = JSON.stringify(body)
   const prior = uncertainWrites.get(key)

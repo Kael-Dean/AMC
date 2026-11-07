@@ -9,6 +9,8 @@
 // It must survive logout, so this key must never join AUTH_STORAGE_KEYS in lib/auth.js.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { isPreviewActive } from "./previewMode"
+
 const SEEN_PREFIX = "search_intro_seen:"
 const FUNCTION_SEARCH_SELECTOR = '[data-tour="function-search"]'
 const OPEN_OVERLAY_SELECTOR = '[role="dialog"], [role="alertdialog"], [aria-modal="true"]'
@@ -32,6 +34,7 @@ export function hasSeenSearchIntro(userId) {
  * false when it was already seen (another tab won the race) or the write did not stick.
  */
 export function claimSearchIntro(userId) {
+  if (isPreviewActive()) return false
   try {
     const key = searchIntroKey(userId)
     if (localStorage.getItem(key) !== null) return false

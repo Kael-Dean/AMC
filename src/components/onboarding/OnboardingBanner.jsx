@@ -1,31 +1,28 @@
 // src/components/onboarding/OnboardingBanner.jsx
 // Compact resume strip on Home while onboarding is not done: "กรอกข้อมูลต่อ" before unlock,
 // "เริ่มทัวร์เมนู" / "ดูทัวร์ต่อ" after. Hidden while the tour itself is running.
+// `preview` (gallery, Super Admin) = { ob, tour, onAction }: a given state instead of the real one,
+// and the button calls onAction instead of going anywhere.
 import { useNavigate } from "react-router-dom"
 import ProgressRing from "./ProgressRing"
+import { bannerCopy } from "./bannerCopy"
 import { SECTIONS, useOnboarding } from "../../lib/onboarding"
-import { TOUR_LENGTH } from "../../lib/onboardingTour"
 import { resumeTour, startTour, useTourState } from "../../lib/tourState"
 import { cx, primaryBtnCls } from "../../lib/styles"
 
-export default function OnboardingBanner() {
-  const ob = useOnboarding()
-  const tour = useTourState()
+export default function OnboardingBanner({ preview = null }) {
+  const liveOb = useOnboarding()
+  const liveTour = useTourState()
   const navigate = useNavigate()
+  const ob = preview?.ob ?? liveOb
+  const tour = preview?.tour ?? liveTour
   if (!ob.needsOnboarding) return null
   if (ob.unlocked && tour.active) return null
 
-  const unlocked = ob.unlocked
-  const resuming = unlocked && tour.started
-  const title = unlocked ? "ข้อมูลครบแล้ว เหลือดูทัวร์เมนูอีกนิด" : "กรอกข้อมูลเริ่มต้นให้ครบ เพื่อเปิดเมนูบริการตนเอง"
-  const sub = unlocked
-    ? resuming
-      ? `ค้างไว้ที่จุด ${tour.index + 1} จาก ${TOUR_LENGTH}`
-      : "ใช้เวลาประมาณ 1 นาที แล้วเมนูทั้งหมดจะเปิดให้ใช้"
-    : `กรอกแล้ว ${ob.confirmedCount} จาก ${SECTIONS.length} หัวข้อ ใช้เวลาประมาณ 10 นาที`
-  const cta = unlocked ? (resuming ? "ดูทัวร์ต่อ" : "เริ่มทัวร์เมนู") : ob.confirmedCount > 0 ? "กรอกข้อมูลต่อ" : "เริ่มกรอกข้อมูล"
+  const { unlocked, resuming, title, sub, cta } = bannerCopy(ob, tour)
   const go = () => {
-    if (!unlocked) navigate("/onboarding")
+    if (preview) preview.onAction()
+    else if (!unlocked) navigate("/onboarding")
     else if (resuming) resumeTour()
     else startTour(0)
   }

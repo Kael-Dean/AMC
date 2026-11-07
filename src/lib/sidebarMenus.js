@@ -4,6 +4,7 @@
 import {
   ArrowRightLeft,
   ClipboardCheck,
+  Compass,
   CreditCard,
   FileBadge,
   FileText,
@@ -56,6 +57,7 @@ export const PERSONAL_MENUS = [
   ...SELF_SERVICE_MENUS,
   { label: "อนุมัติออกนอกสถานที่", icon: MapPinCheck, tone: "teal",  path: "/out-of-office/approvals", perm: "hr.ooo.list" },
   { label: "สิทธิ์ตามบทบาท",      icon: ShieldCheck, tone: "violet", path: "/admin/roles", perm: "admin.roles.view" },
+  { label: "ตัวอย่างการเริ่มใช้งาน", icon: Compass,    tone: "indigo", path: "/admin/onboarding", perm: "admin.onboarding.view" },
   // "รายรับ-รายจ่ายสถานที่" ย้ายไปกลุ่ม "รายงาน & แผน" ในหน้า Home แล้ว
 ]
 

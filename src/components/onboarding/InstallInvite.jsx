@@ -15,7 +15,7 @@ import { createPortal } from "react-dom"
 import { Download } from "lucide-react"
 import InstallGuideLazy from "../InstallGuideLazy"
 import useVisualViewport from "../../hooks/useVisualViewport"
-import { claimInstallInvite, isStickyBarShown } from "../../lib/installInvite"
+import { INSTALL_INVITE_COPY, claimInstallInvite, isStickyBarShown } from "../../lib/installInvite"
 import { useAppInstalled } from "../../lib/pwa"
 import { isPageBusy } from "../../lib/searchIntro"
 import { cx, neutralBtnCls, primaryBtnCls } from "../../lib/styles"
@@ -37,8 +37,9 @@ function useCovered() {
   return covered
 }
 
-export default function InstallInvite({ userId, paused, onClose, onPostpone }) {
-  const [claimed, setClaimed] = useState(false)
+/** `preview` (gallery, Super Admin): nothing is claimed as seen, and focus goes back to the gallery. */
+export default function InstallInvite({ userId, paused, onClose, onPostpone, preview = false }) {
+  const [claimed, setClaimed] = useState(preview)
   const [guideOpen, setGuideOpen] = useState(false)
   const claimedRef = useRef(false)
   const cardRef = useRef(null)
@@ -48,7 +49,7 @@ export default function InstallInvite({ userId, paused, onClose, onPostpone }) {
 
   // The gate checked a moment ago, but the chunk may have taken a while: check again, then claim.
   useLayoutEffect(() => {
-    if (claimedRef.current) return
+    if (preview || claimedRef.current) return
     if (isPageBusy()) {
       onPostpone()
       return
@@ -59,11 +60,11 @@ export default function InstallInvite({ userId, paused, onClose, onPostpone }) {
     }
     claimedRef.current = true
     setClaimed(true)
-  }, [userId, onClose, onPostpone])
+  }, [userId, onClose, onPostpone, preview])
 
   // The buttons unmount with the card: hand focus to the menu button, where "ติดตั้งแอป" lives.
   const keepFocus = () => {
-    if (cardRef.current?.contains(document.activeElement)) {
+    if (!preview && cardRef.current?.contains(document.activeElement)) {
       document.querySelector("[data-sidebar-toggle]")?.focus({ preventScroll: true })
     }
   }
@@ -77,8 +78,8 @@ export default function InstallInvite({ userId, paused, onClose, onPostpone }) {
   }
 
   if (!claimed) return null
-  if (guideOpen) return <InstallGuideLazy open onClose={onClose} />
-  if (paused || covered || keyboardOpen || installed) return null
+  if (guideOpen) return <InstallGuideLazy open onClose={onClose} preview={preview} />
+  if (paused || covered || keyboardOpen || (installed && !preview)) return null
 
   return createPortal(
     <aside
@@ -103,16 +104,16 @@ export default function InstallInvite({ userId, paused, onClose, onPostpone }) {
           <Download strokeWidth={1.75} className="size-5" />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-bold leading-6 text-gray-900 dark:text-gray-100">ติดตั้งแอปลงเครื่องได้</p>
-          <p className="text-sm leading-6 text-gray-600 dark:text-gray-300">เปิดจากไอคอนบนเครื่องได้เลย โดยไม่มีแถบเบราว์เซอร์</p>
+          <p className="text-sm font-bold leading-6 text-gray-900 dark:text-gray-100">{INSTALL_INVITE_COPY.title}</p>
+          <p className="text-sm leading-6 text-gray-600 dark:text-gray-300">{INSTALL_INVITE_COPY.body}</p>
         </div>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button type="button" onClick={dismiss} className={neutralBtnCls}>
-          ไว้ก่อน
+          {INSTALL_INVITE_COPY.later}
         </button>
         <button type="button" onClick={showGuide} className={primaryBtnCls}>
-          ดูวิธีติดตั้ง
+          {INSTALL_INVITE_COPY.guide}
         </button>
       </div>
     </aside>,

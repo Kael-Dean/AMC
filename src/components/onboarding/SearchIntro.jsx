@@ -19,35 +19,10 @@ import { getFunctionSearchIndex, visibleFunctionIds } from "../../lib/functionCa
 import { highlightParts, hitSecondaryLine, searchIndex } from "../../lib/functionSearch"
 import { useCan } from "../../lib/permissions"
 import { claimSearchIntro, findFunctionSearch, isPageBusy } from "../../lib/searchIntro"
+import { SEARCH_INTRO_STEPS as STEPS } from "./searchIntroSteps"
 import { cx, focusRingCls, neutralBtnCls, primaryBtnCls } from "../../lib/styles"
 import useFocusTrap from "../../lib/useFocusTrap"
 import useModalDismiss from "../../lib/useModalDismiss"
-
-// Copy rules (same as onboardingTour.js): short Thai sentences, no em dash, one idea per line.
-const STEPS = [
-  {
-    key: "find",
-    title: "ค้นหาฟังก์ชันได้จากช่องนี้",
-    lines: ["สวัสดี น้องมะลิเอง", "พิมพ์คำที่นึกออก แล้วไปยังฟังก์ชันที่คุณใช้ได้ทันทีจากทุกหน้า"],
-    queries: ["ลา", "สลิป", "รายงาน"],
-    fallback: "พิมพ์ชื่อฟังก์ชันที่ต้องการ แล้วเลือกจากรายการ",
-  },
-  {
-    key: "typos",
-    title: "พิมพ์ผิดก็เจอ",
-    lines: ["ไม่ใส่วรรณยุกต์ หรือพิมพ์ผิดบางตัว ก็ยังเจอ", "คำที่พูดกันทุกวันก็ใช้ได้"],
-    queries: ["เงนเดือน", "แจง", "กู้"],
-    fallback: "พิมพ์คำที่นึกออก ระบบจะหาฟังก์ชันที่ใกล้เคียงให้",
-  },
-  {
-    key: "try",
-    title: "ลองเลย",
-    lines: ["กดปุ่มด้านล่าง แล้วพิมพ์ในช่องค้นหาได้เลย"],
-    queries: [],
-    tryWords: ["ลา", "สลิป", "กู้", "รายงาน"],
-    fallback: "พิมพ์ชื่อฟังก์ชันที่ต้องการ",
-  },
-]
 
 const DEMO_ROW_LIMIT = 3
 const Z = 10045
@@ -303,7 +278,8 @@ const readRect = (el) => {
   return { top: r.top, left: r.left, width: r.width, height: r.height }
 }
 
-export default function SearchIntro({ userId, onClose, onPostpone }) {
+/** `preview` (gallery, Super Admin): nothing is claimed as seen, and the last button just closes. */
+export default function SearchIntro({ userId, onClose, onPostpone, preview = false }) {
   const titleId = useId()
   const descId = useId()
   const cardRef = useRef(null)
@@ -323,11 +299,11 @@ export default function SearchIntro({ userId, onClose, onPostpone }) {
   useLayoutEffect(() => {
     if (claimedRef.current) return
     const target = findFunctionSearch()
-    if (!target || isPageBusy()) {
+    if (!target || (!preview && isPageBusy())) {
       onPostpone()
       return
     }
-    if (!claimSearchIntro(userId)) {
+    if (!preview && !claimSearchIntro(userId)) {
       onClose()
       return
     }
@@ -335,7 +311,7 @@ export default function SearchIntro({ userId, onClose, onPostpone }) {
     targetRef.current = target
     openerRef.current = document.activeElement
     setRect(readRect(target))
-  }, [userId, onClose, onPostpone])
+  }, [userId, onClose, onPostpone, preview])
 
   // Real engine, this user's functions: the demo never lists what they can't open.
   const perms = useCan()
@@ -383,6 +359,10 @@ export default function SearchIntro({ userId, onClose, onPostpone }) {
     if (opener && opener !== document.body && opener.isConnected) opener.focus?.({ preventScroll: true })
   }
   const finish = () => {
+    if (preview) {
+      dismiss()
+      return
+    }
     const input = targetRef.current?.querySelector("input")
     onClose()
     input?.focus({ preventScroll: true })

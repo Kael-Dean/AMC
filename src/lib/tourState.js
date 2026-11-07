@@ -13,6 +13,7 @@
 import { useSyncExternalStore } from "react"
 import { TOUR_STATE_KEY } from "./onboarding"
 import { TOUR_LENGTH } from "./onboardingTour"
+import { isPreviewActive } from "./previewMode"
 
 const IDLE = { active: false, index: 0, started: false }
 const listeners = new Set()
@@ -47,6 +48,7 @@ export function getTourState() {
 }
 
 function write(next) {
+  if (isPreviewActive()) return // the tour preview keeps its stop in its own component state
   try {
     if (next) sessionStorage.setItem(TOUR_STATE_KEY, JSON.stringify(next))
     else sessionStorage.removeItem(TOUR_STATE_KEY)

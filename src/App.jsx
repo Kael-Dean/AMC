@@ -82,6 +82,8 @@ const ForgotPassword = lazyWithReload(() => import("./pages/work/ForgotPassword.
 const ResetPassword = lazyWithReload(() => import("./pages/work/ResetPassword.jsx"))
 /** Admin — สิทธิ์ตามบทบาท (read-only) */
 const RolePermissions = lazyWithReload(() => import("./pages/admin/RolePermissions.jsx"))
+const OnboardingGallery = lazyWithReload(() => import("./pages/admin/OnboardingGallery.jsx"))
+const OnboardingWizardPreview = lazyWithReload(() => import("./pages/admin/OnboardingWizardPreview.jsx"))
 
 /* -------- สิทธิ์: ทุก route guard ใช้ permission key จาก src/lib/permissions.js --------
    (role ids อยู่ที่ src/lib/roles.js เท่านั้น — ห้าม hardcode เลข role ในไฟล์นี้) */
@@ -189,10 +191,13 @@ function App() {
 
         {/* Admin — สิทธิ์ตามบทบาท (read-only) */}
         <Route path="/admin/roles" element={guard("admin.roles.view", <RolePermissions />)} />
+        {/* Admin: ทุก onboarding ในระบบ + ดูตัวอย่างแบบไม่บันทึก */}
+        <Route path="/admin/onboarding" element={guard("admin.onboarding.view", <OnboardingGallery />)} />
       </Route>
 
       {/* First-login onboarding (PR 59) — focused full-screen flow, outside AppLayout */}
       <Route path="/onboarding" element={<RequirePasswordChanged><Onboarding /></RequirePasswordChanged>} />
+      <Route path="/admin/onboarding/preview/wizard" element={<RequirePasswordChanged>{guard("admin.onboarding.view", <OnboardingWizardPreview />)}</RequirePasswordChanged>} />
 
       {/* ✅ Phase 3B — ChangePassword อยู่นอก AppLayout */}
       <Route path="/change-password" element={<ChangePassword />} />

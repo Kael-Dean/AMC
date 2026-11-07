@@ -128,7 +128,7 @@ function AfterInstall({ lines }) {
   )
 }
 
-export default function InstallGuide({ onClose }) {
+export default function InstallGuide({ onClose, preview = false }) {
   const detected = useMemo(() => detectInstallPlatform(), [])
   const installOption = useInstallOption()
   const installed = useAppInstalled()
@@ -154,6 +154,11 @@ export default function InstallGuide({ onClose }) {
 
   const install = () => {
     panelRef.current?.focus({ preventScroll: true })
+    if (preview) {
+      // The browser's event is single-use: firing it here would take it from the real button.
+      toast.info("โหมดตัวอย่าง ปุ่มนี้ไม่เปิดหน้าต่างติดตั้งจริง")
+      return
+    }
     promptInstall().catch(() => {}) // the manual steps are right below
   }
 
