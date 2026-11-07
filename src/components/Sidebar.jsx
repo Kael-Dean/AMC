@@ -10,8 +10,8 @@ import { HR_MENUS, PERSONAL_MENUS, canSeeSidebarItem } from "../lib/sidebarMenus
 import { useOnboarding } from "../lib/onboarding"
 import { goToOnboardingFromLocked } from "../lib/onboardingGate"
 import { lockBodyScroll, unlockBodyScroll } from "../lib/scrollLock"
-import { promptInstall, useInstallOption } from "../lib/pwa"
-import InstallAppSheet from "./InstallAppSheet"
+import { useInstallOption } from "../lib/pwa"
+import InstallGuideLazy from "./InstallGuideLazy"
 
 // สีของ icon chip — ต้องเขียน class เต็ม (Tailwind v4 ตรวจ class ที่ต่อ string ไม่เจอ)
 const TONES = {
@@ -34,7 +34,7 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
   const closeBtnRef = useRef(null)
   const { locked: onboardingLocked } = useOnboarding()
   const installOption = useInstallOption()
-  const [installSheetOpen, setInstallSheetOpen] = useState(false)
+  const [installGuideOpen, setInstallGuideOpen] = useState(false)
 
   const visibleMenus = useMemo(
     () => (can("nav.hrCompactMenu") ? HR_MENUS : PERSONAL_MENUS).filter((item) => canSeeSidebarItem(item, perms)),
@@ -80,8 +80,7 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
     // เมนูจะกลายเป็น inert: ย้ายโฟกัสออกก่อน ไม่งั้นปิด sheet แล้วโฟกัสหลุดไป body (Sheet คืนโฟกัสให้ปุ่มที่โฟกัสตอนเปิด)
     document.querySelector("[data-sidebar-toggle]")?.focus({ preventScroll: true })
     setIsOpen(false)
-    if (installOption === "ios") setInstallSheetOpen(true)
-    else promptInstall().catch(() => {})
+    setInstallGuideOpen(true)
   }
 
   const isActive = (p) => location.pathname === p
@@ -276,7 +275,7 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
         </div>
       </div>
 
-      <InstallAppSheet open={installSheetOpen} onClose={() => setInstallSheetOpen(false)} />
+      <InstallGuideLazy open={installGuideOpen} onClose={() => setInstallGuideOpen(false)} />
     </>
   )
 }
