@@ -8,6 +8,8 @@
 // It must survive logout, so this key must never join AUTH_STORAGE_KEYS in lib/auth.js.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { isPreviewActive } from "./previewMode"
+
 const SEEN_PREFIX = "install_invite_seen:"
 const STICKY_BAR_VAR = "--sticky-bar-h" // published by a visible phone <StickyActionBar>
 const DATA_ENTRY_ROUTE = /^\/(buy|sales)(\/|$)/i
@@ -15,6 +17,14 @@ const DATA_ENTRY_ROUTE = /^\/(buy|sales)(\/|$)/i
 const hasUserId = (userId) => userId !== null && userId !== undefined && userId !== ""
 
 export const installInviteKey = (userId) => `${SEEN_PREFIX}${userId}`
+
+/** The card's words: InstallInvite.jsx shows them, the gallery lists them. */
+export const INSTALL_INVITE_COPY = {
+  title: "ติดตั้งแอปลงเครื่องได้",
+  body: "เปิดจากไอคอนบนเครื่องได้เลย โดยไม่มีแถบเบราว์เซอร์",
+  later: "ไว้ก่อน",
+  guide: "ดูวิธีติดตั้ง",
+}
 
 /** Unreadable storage counts as seen: if we can't remember showing it, showing it could repeat forever. */
 export function hasSeenInstallInvite(userId) {
@@ -30,6 +40,7 @@ export function hasSeenInstallInvite(userId) {
  * false when it was already seen (another tab won the race) or the write did not stick.
  */
 export function claimInstallInvite(userId) {
+  if (isPreviewActive()) return false
   try {
     const key = installInviteKey(userId)
     if (localStorage.getItem(key) !== null) return false

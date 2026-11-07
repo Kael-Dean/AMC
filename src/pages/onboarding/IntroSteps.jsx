@@ -1,6 +1,6 @@
 // src/pages/onboarding/IntroSteps.jsx
 // Welcome (start / continue), Ready (all 8 confirmed → start the tour) and Done (completed).
-import { Check, Clock3, Compass, FilePenLine } from "lucide-react"
+import { Check } from "lucide-react"
 import { Link } from "react-router-dom"
 import Celebration from "../../components/onboarding/Celebration"
 import ProgressRing from "../../components/onboarding/ProgressRing"
@@ -8,15 +8,10 @@ import { SECTIONS } from "../../lib/onboarding"
 import { TOUR_LENGTH } from "../../lib/onboardingTour"
 import { useTourState } from "../../lib/tourState"
 import { cx, focusRingCls, neutralBtnCls, primaryBtnCls } from "../../lib/styles"
+import { INTRO_COPY, WELCOME_POINTS } from "./introContent"
 import { firstNameOnly } from "./sectionFlow"
 
 const bigBtn = "h-12 w-full px-6 text-base md:pointer-fine:h-12 md:w-auto"
-
-const POINTS = [
-  { icon: Clock3, text: "กรอกข้อมูลประมาณ 10 นาที", sub: "บันทึกทีละหัวข้อ หยุดกลางทางแล้วกลับมาทำต่อได้ ต้องทำให้ครบก่อนจึงจะใช้เมนูอื่นได้" },
-  { icon: Compass, text: "ทัวร์เมนูบริการตนเอง 1 นาที", sub: "รู้จักเมนูลา สลิปเงินเดือน เงินกู้ และสวัสดิการ" },
-  { icon: FilePenLine, text: "หลังจากนี้แก้ข้อมูลผ่านเมนูแจ้งแก้ไขข้อมูล", sub: "HR จะตรวจสอบและอนุมัติให้" },
-]
 
 export function WelcomeStep({ data, confirmedCount, onStart, onGoStep }) {
   const name = firstNameOnly(data?.values?.account?.th_first_name)
@@ -29,13 +24,13 @@ export function WelcomeStep({ data, confirmedCount, onStart, onGoStep }) {
         <div className="min-w-0">
           <p className="text-base text-gray-600 dark:text-gray-300">สวัสดี{name ? ` คุณ${name}` : ""}</p>
           <h1 id="ob-welcome-title" className="mt-0.5 text-2xl font-bold leading-snug text-balance text-gray-900 md:text-[28px] dark:text-gray-100">
-            {started ? "มาทำต่อจากที่ค้างไว้" : "เตรียมข้อมูลของคุณให้พร้อมใช้งาน"}
+            {started ? INTRO_COPY.welcome.resumeTitle : INTRO_COPY.welcome.title}
           </h1>
         </div>
       </div>
 
       <ul className="mt-8 space-y-5">
-        {POINTS.map((point) => {
+        {WELCOME_POINTS.map((point) => {
           const { icon: PointIcon, text, sub } = point
           return (
           <li key={text} className="flex gap-4">
@@ -104,10 +99,10 @@ export function ReadyStep({ onStartTour, onReview, starting }) {
     <section aria-labelledby="ob-ready-title" className="mx-auto flex max-w-md flex-col items-center pt-4 text-center md:pt-10">
       <Celebration size={144} />
       <h1 id="ob-ready-title" className="mt-4 text-2xl font-bold leading-snug text-gray-900 md:text-[28px] dark:text-gray-100">
-        ข้อมูลครบแล้ว
+        {INTRO_COPY.ready.title}
       </h1>
       <p className="mt-2 text-base leading-relaxed text-gray-600 dark:text-gray-300">
-        ขอบคุณที่สละเวลา ไปดูเมนูบริการตนเองกัน ใช้เวลาประมาณ 1 นาที จุดสุดท้ายของทัวร์กด “ส่งข้อมูลยืนยัน” แล้วเมนูทั้งหมดจะเปิดให้ใช้
+        {INTRO_COPY.ready.body}
       </p>
       {tour.started && (
         <p className="mt-3 text-[15px] font-medium tabular-nums text-gray-700 dark:text-gray-200">
@@ -132,23 +127,23 @@ export function ReadyStep({ onStartTour, onReview, starting }) {
   )
 }
 
-export function DoneStep({ onHome }) {
+export function DoneStep({ onHome, profilePath = "/my-profile" }) {
   return (
     <section aria-labelledby="ob-done-title" className="mx-auto max-w-md pt-4 text-center md:pt-10">
       <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
         <Check aria-hidden="true" className="size-8" strokeWidth={2.25} />
       </span>
       <h1 id="ob-done-title" className="mt-5 text-2xl font-bold leading-snug text-gray-900 dark:text-gray-100">
-        ข้อมูลเริ่มต้นเรียบร้อยแล้ว
+        {INTRO_COPY.done.title}
       </h1>
       <p className="mt-2 text-base leading-relaxed text-gray-600 dark:text-gray-300">
-        ถ้าข้อมูลของคุณเปลี่ยน ให้ใช้ปุ่ม “แจ้งแก้ไขข้อมูล” ในหน้าข้อมูลส่วนตัว HR จะตรวจสอบและแก้ให้
+        {INTRO_COPY.done.body}
       </p>
       <div className="mt-8 flex flex-col gap-3 md:flex-row md:justify-center">
         <button type="button" onClick={onHome} className={cx(primaryBtnCls, bigBtn)}>
           กลับหน้าหลัก
         </button>
-        <Link to="/my-profile" className={cx(neutralBtnCls, bigBtn)}>
+        <Link to={profilePath} className={cx(neutralBtnCls, bigBtn)}>
           ไปหน้าข้อมูลส่วนตัว
         </Link>
       </div>

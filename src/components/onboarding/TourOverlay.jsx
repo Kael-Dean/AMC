@@ -98,7 +98,11 @@ function Dots({ index }) {
   )
 }
 
-function TourRunner({ index, onFinished }) {
+// A preview's bar sits bottom right from md up (pages/admin/PreviewBar.jsx): keep the card above it.
+const PREVIEW_BAR_ROOM = 64
+
+/** `preview` = { setIndex, exit }: no tour state, no completion call, and page changes add no history. */
+function TourRunner({ index, onFinished, preview = null }) {
   const stop = TOUR_STOPS[index]
   const isLast = index === TOUR_LENGTH - 1
   const navigate = useNavigate()
@@ -124,7 +128,7 @@ function TourRunner({ index, onFinished }) {
   // 1 · open the page of this stop (once per stop; a role that is redirected elsewhere
   //     simply falls back to a centred card after the timeout)
   useEffect(() => {
-    if (stop.route && location.pathname !== stop.route) navigate(stop.route)
+    if (stop.route && location.pathname !== stop.route) navigate(stop.route, preview ? { replace: true } : undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- navigate once per stop, not on every route change
   }, [index])
 
@@ -239,18 +243,20 @@ function TourRunner({ index, onFinished }) {
   if (!isPhone) {
     const w = cardW
     const h = cardH || 280
-    if (!rect) cardPos = { x: (vp.w - w) / 2, y: (vp.h - h) / 2 }
+    const vh = preview ? vp.h - PREVIEW_BAR_ROOM : vp.h
+    const minY = preview ? GAP : -Infinity
+    if (!rect) cardPos = { x: (vp.w - w) / 2, y: Math.max(minY, (vh - h) / 2) }
     else {
       const right = vp.w - (hole.left + hole.width) - GAP
       const left = hole.left - GAP
-      const yBeside = clamp(hole.top, GAP, vp.h - h - GAP)
+      const yBeside = clamp(hole.top, GAP, vh - h - GAP)
       if (right >= w + GAP) cardPos = { x: hole.left + hole.width + GAP, y: yBeside }
       else if (left >= w + GAP) cardPos = { x: hole.left - GAP - w, y: yBeside }
       else {
         const x = clamp(hole.left, GAP, vp.w - w - GAP)
-        if (vp.h - (hole.top + hole.height) - GAP >= h + GAP) cardPos = { x, y: hole.top + hole.height + GAP }
+        if (vh - (hole.top + hole.height) - GAP >= h + GAP) cardPos = { x, y: hole.top + hole.height + GAP }
         else if (hole.top - GAP >= h + GAP) cardPos = { x, y: hole.top - GAP - h }
-        else cardPos = { x: vp.w - w - 24, y: vp.h - h - 24 }
+        else cardPos = { x: vp.w - w - 24, y: Math.max(minY, vh - h - 24) }
       }
     }
   }
@@ -276,16 +282,22 @@ function TourRunner({ index, onFinished }) {
   }, [cardH])
 
   // ── actions ───────────────────────────────────────────────────────────────
+  const moveTo = preview ? preview.setIndex : setTourIndex
   const skip = () => {
-    if (!busy) pauseTour()
+    if (preview) preview.exit()
+    else if (!busy) pauseTour()
   }
-  const back = () => index > 0 && setTourIndex(index - 1)
+  const back = () => index > 0 && moveTo(index - 1)
   const succeed = () => {
     clearAllDrafts()
     stopTour()
     onFinished()
   }
   const finish = async () => {
+    if (preview) {
+      onFinished()
+      return
+    }
     if (busy) return
     setBusy(true)
     dismissFinishToast()
@@ -340,7 +352,7 @@ function TourRunner({ index, onFinished }) {
       setBusy(false)
     }
   }
-  const next = () => (isLast ? finish() : setTourIndex(index + 1))
+  const next = () => (isLast ? finish() : moveTo(index + 1))
 
   const onKeyDown = (e) => {
     if (e.key === "Escape") {
@@ -516,11 +528,13 @@ function TourRunner({ index, onFinished }) {
 }
 
 /** Short flourish after completing: check draws, rays burst, then Home. */
-function FinishFlourish({ onDone }) {
+function FinishFlourish({ onDone, preview = false }) {
   const navigate = useNavigate()
   useEffect(() => {
-    toast.success("เริ่มใช้งานบริการตนเองได้แล้ว", { id: "onboarding-complete" })
-    navigate("/home")
+    if (!preview) {
+      toast.success("เริ่มใช้งานบริการตนเองได้แล้ว", { id: "onboarding-complete" })
+      navigate("/home")
+    }
     const t = setTimeout(onDone, reducedMotion() ? 900 : 2800)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once
@@ -543,6 +557,17 @@ function FinishFlourish({ onDone }) {
       </div>
     </Portal>
   )
+}
+
+/**
+ * The same tour and flourish for the gallery (Super Admin), driven by this component's own state.
+ * Not by TourOverlay: an out-of-scope account is never `unlocked`, and lib/tourState.js must stay untouched.
+ */
+export function TourPreview({ onExit }) {
+  const [index, setIndex] = useState(0)
+  const [celebrate, setCelebrate] = useState(false)
+  if (celebrate) return <FinishFlourish preview onDone={onExit} />
+  return <TourRunner index={index} preview={{ setIndex, exit: onExit }} onFinished={() => setCelebrate(true)} />
 }
 
 export default function TourOverlay() {

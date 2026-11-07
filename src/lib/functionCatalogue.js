@@ -245,6 +245,7 @@ const KEYWORDS = {
   "/my-discipline": ["แจ้ง", "แจ้งเรื่อง", "ตักเตือน", "ร้องเรียน", "ใบเตือน", "วินัย", "ทำผิดระเบียบ", "discipline", "complaint"],
   "/hr/kpi": ["ประเมิน", "เลื่อนขั้น", "ตรวจสอบ kpi", "อนุมัติ kpi", "kpi"],
   "/admin/roles": ["สิทธิ์", "บทบาท", "role", "permission", "สิทธิ์การใช้งาน", "ตารางสิทธิ์"],
+  "/admin/onboarding": ["onboarding", "ออนบอร์ด", "แนะนำการใช้งาน", "ทัวร์", "tour", "ตัวอย่าง", "ผู้ใช้ใหม่", "ครั้งแรก", "ติดตั้งแอป"],
 
   // แท็บ HR — เพิ่มจาก keywords ใน HR_NAV
   "/hr/dashboard?tab=overview": ["แดชบอร์ด", "hr dashboard"],

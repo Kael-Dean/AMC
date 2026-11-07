@@ -17,6 +17,7 @@ import {
   isStickyBarShown,
 } from "../../lib/installInvite"
 import { useOnboarding } from "../../lib/onboarding"
+import { isOnboardingGalleryPath, usePreview } from "../../lib/previewMode"
 import { useAppInstalled, useInstallOption } from "../../lib/pwa"
 import { hasSeenSearchIntro, isPageBusy } from "../../lib/searchIntro"
 import { useTourState } from "../../lib/tourState"
@@ -52,9 +53,13 @@ export default function InstallInviteGate() {
   const [phase, setPhase] = useState("waiting") // waiting → showing → done
 
   const onDataEntry = isDataEntryRoute(pathname)
+  // On the gallery and during a preview the real one holds back: it would use up its one showing.
+  const previewing = usePreview()
+  const held = Boolean(previewing) || isOnboardingGalleryPath(pathname)
   const wanted =
     phase === "waiting" &&
     !onDataEntry &&
+    !held &&
     isInstallInviteEligible({
       userId,
       installOption,
@@ -92,7 +97,7 @@ export default function InstallInviteGate() {
       <Suspense fallback={null}>
         <InstallInvite
           userId={userId}
-          paused={onDataEntry || tour.active}
+          paused={onDataEntry || tour.active || held}
           onClose={close}
           onPostpone={postpone}
         />

@@ -14,11 +14,15 @@
 // section or a 409 lock clears drafts.
 // ─────────────────────────────────────────────────────────────────────────────
 import { getUserKey } from "./auth"
+import { isPreviewActive } from "./previewMode"
 
 const PREFIX = "onboarding_draft:"
-const TTL_MS = 7 * 24 * 60 * 60 * 1000
+export const DRAFT_TTL_DAYS = 7
+const TTL_MS = DRAFT_TTL_DAYS * 24 * 60 * 60 * 1000
 
+// No key makes every function below a no-op: a preview neither reads nor writes real drafts.
 const storageKey = () => {
+  if (isPreviewActive()) return null
   const id = getUserKey()
   return id ? `${PREFIX}${id}` : null
 }

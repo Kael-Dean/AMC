@@ -12,6 +12,7 @@ import { useLocation } from "react-router-dom"
 import { getUser } from "../../lib/auth"
 import { getMyPermissionsStatus, useMyPermissionsVersion } from "../../lib/myPermissions"
 import { useOnboarding } from "../../lib/onboarding"
+import { isOnboardingGalleryPath, usePreview } from "../../lib/previewMode"
 import { findFunctionSearch, hasSeenSearchIntro, isPageBusy, isSearchIntroEligible } from "../../lib/searchIntro"
 import { useTourState } from "../../lib/tourState"
 import { useIsPhone } from "../../hooks/useMediaQuery"
@@ -44,8 +45,12 @@ export default function SearchIntroGate() {
   const userId = getUser()?.id ?? null
   const [phase, setPhase] = useState("waiting") // waiting → showing → done
 
+  // On the gallery and during a preview the real one holds back: it would use up its one showing.
+  const previewing = usePreview()
   const wanted =
     phase === "waiting" &&
+    !previewing &&
+    !isOnboardingGalleryPath(pathname) &&
     isSearchIntroEligible({
       userId,
       isPhone,

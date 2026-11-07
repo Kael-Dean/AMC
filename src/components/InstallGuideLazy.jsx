@@ -21,12 +21,12 @@ class ChunkBoundary extends Component {
   }
 }
 
-export default function InstallGuideLazy({ open, onClose }) {
+export default function InstallGuideLazy({ open, onClose, preview = false }) {
   if (!open) return null
   return (
     <ChunkBoundary onError={onClose}>
       <Suspense fallback={null}>
-        <InstallGuide onClose={onClose} />
+        <InstallGuide onClose={onClose} preview={preview} />
       </Suspense>
     </ChunkBoundary>
   )

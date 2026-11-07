@@ -703,3 +703,15 @@ button:focus-visible:not([class*="focus-visible:ring"]):not([class*="focus:ring"
 body[data-sheet-open] {
   overscroll-behavior: contain;
 }
+
+/* An onboarding preview is running (pages/admin/previewSession.js): dialogs stay clear of the preview
+   bar. Phone sheets are bottom-docked and the bar is along the top; from md up dialogs are centred,
+   so leaving the bar's height at both ends keeps them off it wherever it sits. */
+body[data-preview-active] [role="dialog"][aria-labelledby] {
+  max-height: calc(100dvh - 3.5rem) !important;
+}
+@media (min-width: 768px) {
+  body[data-preview-active] [role="dialog"][aria-labelledby] {
+    max-height: calc(100dvh - 7rem) !important;
+  }
+}

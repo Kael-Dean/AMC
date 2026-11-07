@@ -12,6 +12,10 @@
 //
 // Hard lock: AppLayout keeps everyone who has not finished here (or inside the tour); the only
 // way out of this page before finishing is "ออกจากระบบ".
+//
+// `preview` (pages/admin/OnboardingWizardPreview.jsx, Super Admin only) = { ob, exit, onStartTour,
+// offset }: runs on an in-memory payload with no status load, no logout, no report form, and every step
+// reachable. Its saves are answered from memory (lib/onboarding.js) and drafts do nothing (onboardingDraft.js).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from "react"
 import { WifiOff } from "lucide-react"
@@ -30,11 +34,11 @@ import { clearAllDrafts } from "../../lib/onboardingDraft"
 import { getTourState, resumeTour, startTour } from "../../lib/tourState"
 import { cx, focusRingCls } from "../../lib/styles"
 import FamilyStep from "./FamilyStep"
+import { WIZARD_STEP_KEYS as STEP_KEYS } from "./introContent"
 import { DoneStep, ReadyStep, WelcomeStep } from "./IntroSteps"
 import RowsStep from "./RowsStep"
 import { AccountStep, AddressStep, PersonalStep } from "./ScalarSteps"
 
-const STEP_KEYS = ["welcome", ...SECTION_KEYS, "ready", "done"]
 const STEPPER_STEPS = SECTIONS.map((s) => ({ key: s.key, label: s.label, shortLabel: s.short }))
 const asset = (p) => `${import.meta.env.BASE_URL.replace(/\/+$/, "")}${p}`
 
@@ -54,10 +58,10 @@ function nextAfter(key, payload) {
   return order.find(open) ?? "ready"
 }
 
-function Header({ confirmed, actionLabel, onAction, showProgress }) {
+function Header({ confirmed, actionLabel, onAction, showProgress, stickyCls = "top-0" }) {
   const total = SECTIONS.length
   return (
-    <header className="sticky top-0 z-30 border-b border-gray-200/70 bg-white/90 backdrop-blur-md dark:border-line dark:bg-canvas/85">
+    <header className={cx("sticky z-30", stickyCls, "border-b border-gray-200/70 bg-white/90 backdrop-blur-md dark:border-line dark:bg-canvas/85")}>
       <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4 md:px-6">
         <img
           src={asset("/logo/skt-logo.png")}
@@ -79,16 +83,18 @@ function Header({ confirmed, actionLabel, onAction, showProgress }) {
             </span>
           )}
         </p>
-        <button
-          type="button"
-          onClick={onAction}
-          className={cx(
-            "inline-flex min-h-touch shrink-0 cursor-pointer items-center rounded-xl px-3 text-[15px] font-medium text-gray-700 transition-colors duration-150 hover:bg-gray-100 md:pointer-fine:min-h-10 dark:text-gray-200 dark:hover:bg-white/[.06]",
-            focusRingCls,
-          )}
-        >
-          {actionLabel}
-        </button>
+        {actionLabel && (
+          <button
+            type="button"
+            onClick={onAction}
+            className={cx(
+              "inline-flex min-h-touch shrink-0 cursor-pointer items-center rounded-xl px-3 text-[15px] font-medium text-gray-700 transition-colors duration-150 hover:bg-gray-100 md:pointer-fine:min-h-10 dark:text-gray-200 dark:hover:bg-white/[.06]",
+              focusRingCls,
+            )}
+          >
+            {actionLabel}
+          </button>
+        )}
       </div>
       {showProgress && (
         <div aria-hidden="true" className="h-0.5 bg-gray-100 dark:bg-white/[.06]">
@@ -102,10 +108,12 @@ function Header({ confirmed, actionLabel, onAction, showProgress }) {
   )
 }
 
-export default function Onboarding() {
+export default function Onboarding({ preview = null }) {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const ob = useOnboarding()
+  const liveOb = useOnboarding()
+  const isPreview = Boolean(preview)
+  const ob = isPreview ? preview.ob : liveOb
   const data = ob.data
   const [failed, setFailed] = useState([])
   const [locked409, setLocked409] = useState(false)
@@ -121,8 +129,8 @@ export default function Onboarding() {
       navigate("/", { replace: true })
       return
     }
-    loadOnboarding({ force: true })
-  }, [navigate])
+    if (!isPreview) loadOnboarding({ force: true })
+  }, [navigate, isPreview])
 
   useEffect(() => {
     if (ob.status === "out_of_scope") navigate("/home", { replace: true })
@@ -139,7 +147,7 @@ export default function Onboarding() {
     const onOffline = () => setOffline(true)
     const onOnline = () => {
       setOffline(false)
-      loadOnboarding({ force: true })
+      if (!isPreview) loadOnboarding({ force: true })
     }
     window.addEventListener("offline", onOffline)
     window.addEventListener("online", onOnline)
@@ -147,7 +155,7 @@ export default function Onboarding() {
       window.removeEventListener("offline", onOffline)
       window.removeEventListener("online", onOnline)
     }
-  }, [])
+  }, [isPreview])
 
   // arrived from a locked menu → say why (once)
   const location = useLocation()
@@ -170,7 +178,8 @@ export default function Onboarding() {
   const requested = params.get("step")
   const defaultStep = !data ? null : data.onboarded ? "done" : data.unlocked ? "ready" : "welcome"
   let step = STEP_KEYS.includes(requested) ? requested : defaultStep
-  if (data) {
+  // A preview may open any step: there is no real progress for these rules to protect.
+  if (data && !isPreview) {
     if (data.onboarded) step = "done"
     else if (step === "done") step = defaultStep
     else if (step === "ready" && !data.unlocked) step = firstOpenSection(data) ?? "welcome"
@@ -196,7 +205,7 @@ export default function Onboarding() {
   }, [step])
 
   const goStep = (key, { replace = false } = {}) => setParams({ step: key }, { replace })
-  const goHome = () => navigate("/home")
+  const goHome = isPreview ? preview.exit : () => navigate("/home")
 
   // ── section handlers ───────────────────────────────────────────────────────
   const handlersFor = (key) => ({
@@ -215,9 +224,17 @@ export default function Onboarding() {
     const i = SECTION_KEYS.indexOf(key)
     return () => goStep(i > 0 ? SECTION_KEYS[i - 1] : "welcome")
   }
-  const onReport = (category, field, value) => setReport({ category, field, value })
+  const onReport = (category, field, value) => {
+    // The report form sends a real request, so a preview says so instead of opening it.
+    if (isPreview) toast.info("โหมดตัวอย่าง ปุ่มนี้เปิดฟอร์มส่งคำร้องจริง จึงไม่เปิดให้ลอง")
+    else setReport({ category, field, value })
+  }
 
   const startTourNow = () => {
+    if (isPreview) {
+      preview.onStartTour()
+      return
+    }
     if (getTourState().started) resumeTour()
     else startTour(0)
     navigate("/home")
@@ -247,7 +264,7 @@ export default function Onboarding() {
   } else if (step === "ready") {
     body = <ReadyStep onStartTour={startTourNow} onReview={() => goStep("welcome")} />
   } else if (step === "done") {
-    body = <DoneStep onHome={goHome} />
+    body = <DoneStep onHome={goHome} profilePath={isPreview ? preview.exitPath : undefined} />
   } else {
     const common = { data, handlers: handlersFor(step), onBack: backFrom(step) }
     body = (
@@ -259,7 +276,7 @@ export default function Onboarding() {
           doneSteps={SECTION_KEYS.filter((k) => data.sections?.[k]?.confirmed_at)}
           errorSteps={failed.filter((k) => !data.sections?.[k]?.confirmed_at)}
           onSelect={(i) => goStep(SECTION_KEYS[i])}
-          className="!top-14 -mx-4 mb-5 px-4 md:mx-0 md:px-0"
+          className={cx(isPreview ? preview.offset.stepperCls : "!top-14", "-mx-4 mb-5 px-4 md:mx-0 md:px-0")}
         />
         {step === "account" && <AccountStep key="account" {...common} />}
         {step === "personal" && <PersonalStep key="personal" {...common} onReport={onReport} />}
@@ -275,7 +292,7 @@ export default function Onboarding() {
   const inSections = SECTION_KEYS.includes(step)
 
   return (
-    <div className="min-h-dvh bg-gray-50 text-gray-900 dark:bg-canvas dark:text-gray-100">
+    <div className={cx("min-h-dvh bg-gray-50 text-gray-900 dark:bg-canvas dark:text-gray-100", isPreview && preview.offset.pageCls)}>
       <a
         href="#ob-main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:shadow-lg dark:focus:bg-surface"
@@ -284,9 +301,10 @@ export default function Onboarding() {
       </a>
       <Header
         confirmed={ob.confirmedCount}
-        actionLabel={finished ? "หน้าหลัก" : "ออกจากระบบ"}
+        actionLabel={isPreview ? null : finished ? "หน้าหลัก" : "ออกจากระบบ"}
         onAction={finished ? goHome : () => setAskLogout(true)}
         showProgress={Boolean(data) && step !== "done"}
+        stickyCls={isPreview ? preview.offset.headerCls : undefined}
       />
 
       <div role="status" aria-live="polite">
