@@ -30,6 +30,22 @@ RuntimeLoader.setWasmUrl(riveWasmUrl)
 // The fallback build only matters for very old browsers; never reach out to a CDN.
 RuntimeLoader.setWasmFallbackUrl(null)
 
+// The badge sits on one side of the chest (Badge.x ≈ +29 in Husk). badgeFlip only
+// counter-flips it in place, so under the CSS mirror it would land on the viewer's
+// left. Move it to the opposite side too, so it always shows on the viewer's right.
+// `artboard` is not public API on the Rive class: guard every step so an older or
+// newer runtime simply keeps the badge where the file put it.
+function placeBadge(r, flip) {
+  try {
+    const node = r?.artboard?.node?.("Badge")
+    if (!node) return
+    if (node.__homeX == null) node.__homeX = Math.abs(node.x)
+    node.x = node.__homeX * (flip < 0 ? -1 : 1)
+  } catch {
+    /* keep the file's own placement */
+  }
+}
+
 export default function MascotRive({ src, mood, pointDir = 0, badgeFlip = 1, wave = 0, cover, onReady, onError }) {
   // Callbacks / first mood are read once by the Rive constructor; keep them in refs
   // so a parent re-render never re-creates the instance.
@@ -67,6 +83,7 @@ export default function MascotRive({ src, mood, pointDir = 0, badgeFlip = 1, wav
       if (point) point.value = pointRef.current
       const flip = r.viewModelInstance.number("badgeFlip")
       if (flip) flip.value = badgeFlipRef.current
+      placeBadge(r, badgeFlipRef.current)
       readyRef.current?.()
     },
   })
@@ -86,6 +103,7 @@ export default function MascotRive({ src, mood, pointDir = 0, badgeFlip = 1, wav
   useEffect(() => {
     const flip = rive?.viewModelInstance?.number("badgeFlip")
     if (flip) flip.value = badgeFlip
+    placeBadge(rive, badgeFlip)
   }, [rive, badgeFlip])
 
   // `wave` is a counter: every bump fires the view-model trigger once (0 = never).

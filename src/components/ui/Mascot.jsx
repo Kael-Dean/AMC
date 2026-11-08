@@ -11,7 +11,8 @@
 //   size       px, the box is always square and reserved up front (no layout shift)
 //   point      "side" | "up" | "down" — where the onboard pose points (view model pointDir)
 //   mirror     true flips the character horizontally, so "side" points left. The chest
-//              badge has text, so it is counter-flipped to keep reading correctly.
+//              badge has text, so it is counter-flipped to keep reading correctly and
+//              moved to the other side of the chest, so it always shows on the right.
 //   deferMs    wait this long before fetching the Rive runtime (default: next idle
 //              moment). PageLoader uses it so quick loads never pull the wasm.
 //   className  extra classes on the box
@@ -41,7 +42,7 @@ const SMALL_ZOOM = 1.3
 
 // /mascot/* is cached for a day and has no hashed name. Bump this whenever the art
 // changes, or returning browsers keep showing the previous version.
-const MASCOT_VERSION = "8.6"
+const MASCOT_VERSION = "8.7"
 const asset = (p) => `${import.meta.env.BASE_URL.replace(/\/+$/, "")}${p}?v=${MASCOT_VERSION}`
 
 // Can this page compile WebAssembly at all? A CSP without 'wasm-unsafe-eval' in
