@@ -250,7 +250,7 @@ function PrintDocument({ form, totalDays }) {
     <div id="leave-print-root" style={{ position: "absolute", left: "-99999px", top: 0, width: "210mm" }} aria-hidden="true">
       {/* Header */}
       <div className="print-header-org">
-        สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส. สุรินทร์ จำกัด
+        สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส.สุรินทร์ จำกัด
       </div>
       <div className="print-header-title">ใบลา</div>
 

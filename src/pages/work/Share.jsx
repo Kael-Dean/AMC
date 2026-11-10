@@ -94,7 +94,7 @@ function printShareReceipt(r) {
 p{margin:0 0 16px;color:#555;font-size:13px}table{width:100%;border-collapse:collapse;font-size:14px}
 td{padding:6px 0;border-bottom:1px solid #e5e7eb}td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 .note{margin-top:12px;font-size:12px;color:#555}</style></head><body>
-<h1>ใบเสร็จซื้อหุ้น</h1><p>สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส. สุรินทร์</p>
+<h1>ใบเสร็จซื้อหุ้น</h1><p>สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส.สุรินทร์ จำกัด</p>
 <table>${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
 <div class="note">* คิดค่าธรรมเนียมเฉพาะการซื้อครั้งแรกของสมาชิก</div>
 </body></html>`, { filename: "ใบเสร็จซื้อหุ้น.html", features: "width=480,height=640" })
