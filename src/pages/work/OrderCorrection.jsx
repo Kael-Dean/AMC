@@ -46,6 +46,24 @@ function useDebounce(value, delay = 400) {
 /* ---------------- DateInput (เหมือนหน้าออเดอร์) ---------------- */
 // ช่องวันที่ไทย (วัน เดือน พ.ศ.) ตัวกลาง — API เหมือน input เดิม (handoff F25)
 
+/**
+ * วันที่ของออเดอร์ → "YYYY-MM-DD" ตามเวลาเครื่อง (ไม่ใช่ UTC).
+ * เดิมใช้ toISOString() → ออเดอร์เที่ยงคืนเวลาไทยกลายเป็นวันก่อนหน้า และถ้า backend
+ * ส่งวันที่ที่ parse ไม่ได้ จะ throw RangeError จนเปิดฟอร์มแก้ไขไม่ได้
+ */
+function toLocalYMD(v) {
+  if (!v) return "";
+  const s = String(v);
+  // "YYYY-MM-DD" ล้วน = วันตามปฏิทินอยู่แล้ว (new Date() จะตีความเป็น UTC)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) {
+    const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : "";
+  }
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 /* ---------------- Page ---------------- */
 const PAGE_SIZE = 100;
 
@@ -441,7 +459,7 @@ function OrderCorrection() {
       reason: "",
 
       // common
-      date: row?.date ? new Date(row.date).toISOString().slice(0, 10) : "",
+      date: toLocalYMD(row?.date),
       branch_location: branchId,
       klang_location: klangId,
       __branch_label: row.branch_name || "",
