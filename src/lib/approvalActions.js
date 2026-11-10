@@ -243,7 +243,7 @@ export function rejectionReason(req) {
 }
 
 /** Ask the notification bell to refetch now (after a decision). */
-export const NOTIFICATIONS_REFRESH_EVENT = "skt:notifications-refresh"
+export const NOTIFICATIONS_REFRESH_EVENT = "amc:notifications-refresh"
 export function requestNotificationsRefresh() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(NOTIFICATIONS_REFRESH_EVENT))
 }

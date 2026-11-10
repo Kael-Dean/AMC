@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { lazy } from "react"
 
-const RELOAD_KEY = "skt:chunk-reload-at"
+const RELOAD_KEY = "amc:chunk-reload-at"
 const RELOAD_WINDOW_MS = 10_000
 
 // Chrome / Firefox / Safari ใช้ข้อความต่างกัน

@@ -30,7 +30,7 @@ export function printDebtTable({ title, subtitle, tableRows, colTotals }) {
   // The print popup is about:blank (no base href) → relative asset paths fail.
   // Build an absolute URL to the logo from the app's origin + Vite BASE_URL.
   const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "")
-  const logoUrl = `${window.location.origin}${base}/logo/skt-logo.png`
+  const logoUrl = `${window.location.origin}${base}/logo/amc-logo.png`
 
   let bodyRows = ""
   tableRows.forEach((group, gi) => {

@@ -1,7 +1,7 @@
 // vite.demo.config.js — client demo build: `npm run build:demo`
 // ─────────────────────────────────────────────────────────────────────────────
 // The REAL app with the fake backend (src/dev/onboardingMock.js) baked in, packed into ONE
-// HTML file (demo/skt-demo.html) that opens straight from disk (file://) — no server, no API.
+// HTML file (demo/amc-demo.html) that opens straight from disk (file://) — no server, no API.
 // Differences from the production build (vite.config.js):
 //   · VITE_DEMO=1 → mock always on + HashRouter (src/main.jsx)
 //   · every JS/CSS/font/image inlined; /logo/*.png from public/ become data URIs
@@ -15,7 +15,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 const OUT_DIR = 'demo/.build'
-const OUT_FILE = 'demo/skt-demo.html'
+const OUT_FILE = 'demo/amc-demo.html'
 
 const dataUri = (publicPath) =>
   `data:image/png;base64,${readFileSync(resolve('public', publicPath.replace(/^\//, ''))).toString('base64')}`

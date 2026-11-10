@@ -10,8 +10,8 @@
 // activate, deletes every cache and calls self.registration.unregister().
 
 const VERSION = "v1"
-const STATIC_CACHE = `skt-static-${VERSION}` // offline page + icons
-const ASSET_CACHE = `skt-assets-${VERSION}` // /assets/* (hashed, immutable)
+const STATIC_CACHE = `amc-static-${VERSION}` // offline page + icons
+const ASSET_CACHE = `amc-assets-${VERSION}` // /assets/* (hashed, immutable)
 const OFFLINE_URL = "/offline.html"
 const MAX_ASSETS = 300 // oldest entries go first; deploys delete old hashes from the bucket
 

@@ -112,7 +112,7 @@ export function dependantMeta(d) {
 }
 
 /** รายการครอบครัวเปลี่ยน (เพิ่ม/แก้/ลบ/ตรวจสอบ) — การ์ดรอตรวจสอบกับรายชื่อผู้มีสิทธิ์โหลดใหม่พร้อมกัน */
-export const DEPENDANTS_CHANGED_EVENT = "skt:dependants-changed"
+export const DEPENDANTS_CHANGED_EVENT = "amc:dependants-changed"
 export function notifyDependantsChanged() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(DEPENDANTS_CHANGED_EVENT))
 }

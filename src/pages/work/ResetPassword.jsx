@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useNavigate, useSearchParams, Navigate } from "react-router-dom"
 import { api } from "../../lib/api"
 import { cx, baseField } from "../../lib/styles"
-import sktBg from "../../assets/skt_bg.webp"
+import amcBg from "../../assets/amc_bg.webp"
 
 const asset = (p) => `${import.meta.env.BASE_URL.replace(/\/+$/, "")}${p}`
 
@@ -90,7 +90,7 @@ export default function ResetPassword() {
   return (
     <div
       className="relative min-h-dvh flex items-center justify-center px-4"
-      style={{ backgroundImage: `url(${sktBg})`, backgroundSize: "cover", backgroundPosition: "center" }}
+      style={{ backgroundImage: `url(${amcBg})`, backgroundSize: "cover", backgroundPosition: "center" }}
     >
       <div className="absolute inset-0 bg-gray-900/40" />
       <div className="absolute inset-0 bg-indigo-950/55" />
@@ -101,8 +101,8 @@ export default function ResetPassword() {
           <div className="flex justify-center mb-3">
             <div className="rounded-2xl bg-white p-2 shadow-md">
               <img
-                src={asset("/logo/skt-logo.png")}
-                onError={(e) => { e.currentTarget.src = asset("/logo/skt-logo-dark.png") }}
+                src={asset("/logo/amc-logo.png")}
+                onError={(e) => { e.currentTarget.src = asset("/logo/amc-logo-dark.png") }}
                 alt="โลโก้องค์กร"
                 className="h-14 w-auto object-contain"
                 loading="eager"

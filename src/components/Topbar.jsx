@@ -133,12 +133,12 @@ const Topbar = ({ onToggleSidebar, isSidebarOpen, darkMode, setDarkMode, back = 
 
           <div className="hidden min-w-0 select-none items-center gap-3 md:flex">
             <img
-              src={darkMode ? asset("/logo/skt-logo-dark.png") : asset("/logo/skt-logo.png")}
+              src={darkMode ? asset("/logo/amc-logo-dark.png") : asset("/logo/amc-logo.png")}
               onError={(e) => {
                 const cur = e.currentTarget.src;
-                const alt = cur.includes("skt-logo-dark")
-                  ? asset("/logo/skt-logo.png")
-                  : asset("/logo/skt-logo-dark.png");
+                const alt = cur.includes("amc-logo-dark")
+                  ? asset("/logo/amc-logo.png")
+                  : asset("/logo/amc-logo-dark.png");
                 if (cur !== alt) e.currentTarget.src = alt;
               }}
               alt="โลโก้องค์กร"

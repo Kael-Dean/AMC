@@ -15,7 +15,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** short_name in public/manifest.webmanifest: the name under the installed icon. */
-export const APP_NAME = "SKT สุรินทร์"
+export const APP_NAME = "AMC สกต.สุรินทร์"
 
 export const PLATFORM_TABS = [
   { value: "desktop", label: "คอมพิวเตอร์" },

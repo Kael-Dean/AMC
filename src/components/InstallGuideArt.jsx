@@ -196,7 +196,7 @@ function IosAddPage({ toggle = false, hotToggle = false, hotAdd = false }) {
       )}
       <rect x={62} y={34} width={22} height={22} rx={5} className={TINT} />
       <text x={92} y={43} fontSize={FONT} className={LABEL}>
-        SKT สุรินทร์
+        AMC สกต.สุรินทร์
       </text>
       <rect x={92} y={49} width={70} height={4} rx={2} className={BONE} />
       {toggle ? (
@@ -328,7 +328,7 @@ const SCENES = {
       <rect x={64} y={60} width={32} height={32} rx={10} className={HALO} />
       <rect x={70} y={66} width={20} height={20} rx={5} className={HOT} />
       <text x={80} y={105} fontSize={FONT} textAnchor="middle" className={`${LABEL} font-semibold`}>
-        SKT สุรินทร์
+        AMC สกต.สุรินทร์
       </text>
     </Stage>
   ),
