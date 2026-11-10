@@ -24,7 +24,7 @@ function todayThai() {
 }
 
 // Cooperative full name shown above every printed report.
-const ORG_NAME = "สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส. สุรินทร์ จำกัด"
+const ORG_NAME = "สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส.สุรินทร์ จำกัด"
 
 export function printDebtTable({ title, subtitle, tableRows, colTotals }) {
   // The print popup is about:blank (no base href) → relative asset paths fail.

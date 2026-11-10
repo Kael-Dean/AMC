@@ -118,7 +118,7 @@ const Sidebar = ({ isOpen, setIsOpen, darkMode = false, setDarkMode }) => {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold leading-tight text-gray-900 dark:text-gray-100">เมนูส่วนตัว</p>
-              <p className="truncate text-xs text-gray-500 dark:text-gray-400">สหกรณ์ ธ.ก.ส. สุรินทร์</p>
+              <p className="line-clamp-2 text-xs leading-snug text-gray-500 dark:text-gray-400">สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส.สุรินทร์ จำกัด</p>
             </div>
             <button
               ref={closeBtnRef}

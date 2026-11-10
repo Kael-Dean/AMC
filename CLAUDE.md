@@ -8,7 +8,7 @@
 
 ## ภาพรวมโปรเจค
 
-**ชื่อโปรเจค:** ระบบ HR กลาง สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส. สุรินทร์ (AMC — เดิมชื่อ SKT)
+**ชื่อโปรเจค:** ระบบ HR กลาง สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส.สุรินทร์ จำกัด (AMC — เดิมชื่อ SKT)
 **ชื่อแอป (PWA / title / หน้าจอโฮม):** `AMC สกต.สุรินทร์` — ตั้งที่ `public/manifest.webmanifest`, `index.html`, `src/lib/installGuideContent.js`, `src/components/onboarding/InstallIntro.jsx`
 (คีย์ localStorage เดิมที่ขึ้นต้น `skt.` / `skt_` คงไว้โดยเจตนา — เปลี่ยนแล้วค่าที่ผู้ใช้บันทึกไว้ในเครื่องจะหาย)
 **ประเภท:** Web Application — Centralized HR System
