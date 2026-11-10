@@ -812,9 +812,10 @@ function OrderCorrection() {
                 aria-invalid={errors.startDate ? true : undefined}
                 aria-describedby={errors.startDate ? "oc-start-err" : undefined}
                 value={filters.startDate}
-                onChange={(e) => setFilters((p) => ({ ...p, startDate: e.target.value }))}
+                // เปิดหน้ามาเป็น "ทุกช่วงเวลา" — เลือกวันที่ได้เลย แล้วปิด "ทุกช่วงเวลา" ให้อัตโนมัติ
+                // (เดิม disabled ไว้ ผู้ใช้หาไม่เจอว่าต้องไปปิดสวิตช์ด้านล่างก่อน)
+                onChange={(e) => setFilters((p) => ({ ...p, startDate: e.target.value, allTime: false }))}
                 error={!filters.allTime && !!errors.startDate}
-                disabled={filters.allTime}
               />
               {!filters.allTime && errors.startDate && <div id="oc-start-err" className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.startDate}</div>}
             </div>
@@ -826,9 +827,8 @@ function OrderCorrection() {
                 aria-invalid={errors.endDate ? true : undefined}
                 aria-describedby={errors.endDate ? "oc-end-err" : undefined}
                 value={filters.endDate}
-                onChange={(e) => setFilters((p) => ({ ...p, endDate: e.target.value }))}
+                onChange={(e) => setFilters((p) => ({ ...p, endDate: e.target.value, allTime: false }))}
                 error={!filters.allTime && !!errors.endDate}
-                disabled={filters.allTime}
               />
               {!filters.allTime && errors.endDate && <div id="oc-end-err" className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.endDate}</div>}
             </div>
