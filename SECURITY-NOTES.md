@@ -1,4 +1,4 @@
-# SECURITY NOTES — SKT Frontend
+# SECURITY NOTES — AMC Frontend
 
 ไฟล์นี้บันทึกประเด็นความปลอดภัยที่ **frontend แก้เองไม่ได้** (ต้องอาศัย backend
 หรือ host/CDN config) ไว้ส่งต่อให้ทีม backend / DevOps. งานฝั่ง frontend ที่ทำได้

@@ -4,7 +4,7 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { api } from "../../lib/api";
 import { saveAuth, getToken, isTokenExpired, needsHardReload } from "../../lib/auth";
 import { loadMyPermissions } from "../../lib/myPermissions";
-import sktBg from "../../assets/skt_bg.webp";
+import amcBg from "../../assets/amc_bg.webp";
 import Mascot from "../../components/ui/Mascot";
 import Toaster from "../../components/ui/Toaster";
 import InstallGuideLazy from "../../components/InstallGuideLazy";
@@ -112,7 +112,7 @@ const Login = () => {
   return (
     <div
       className="relative min-h-dvh flex items-center justify-center pl-safe-4 pr-safe-4 pt-safe pb-safe"
-      style={{ backgroundImage: `url(${sktBg})`, backgroundSize: "cover", backgroundPosition: "center" }}
+      style={{ backgroundImage: `url(${amcBg})`, backgroundSize: "cover", backgroundPosition: "center" }}
     >
       {/* Chatbot mockup widget — bottom-right */}
       <button className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] right-[calc(1.5rem+env(safe-area-inset-right,0px))] z-50 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600 text-white shadow-xl shadow-indigo-900/30 transition-all duration-150 hover:bg-indigo-700 hover:shadow-2xl hover:shadow-indigo-900/40 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950 cursor-pointer" aria-label="แชทกับผู้ช่วย">
@@ -132,9 +132,9 @@ const Login = () => {
           <div className="mb-4 flex justify-center">
             <div className="rounded-2xl bg-white/95 p-2.5 shadow-lg ring-1 ring-white/50">
               <img
-                src={asset("/logo/skt-logo.png")}
+                src={asset("/logo/amc-logo.png")}
                 onError={(e) => {
-                  e.currentTarget.src = asset("/logo/skt-logo-dark.png");
+                  e.currentTarget.src = asset("/logo/amc-logo-dark.png");
                 }}
                 alt="โลโก้องค์กร"
                 className="h-14 w-auto object-contain"

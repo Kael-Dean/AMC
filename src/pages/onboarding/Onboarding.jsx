@@ -64,13 +64,13 @@ function Header({ confirmed, actionLabel, onAction, showProgress, stickyCls = "t
     <header className={cx("sticky z-30", stickyCls, "border-b border-gray-200/70 bg-white/90 backdrop-blur-md dark:border-line dark:bg-canvas/85")}>
       <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4 md:px-6">
         <img
-          src={asset("/logo/skt-logo.png")}
+          src={asset("/logo/amc-logo.png")}
           alt=""
           className="h-8 w-auto shrink-0 rounded object-contain dark:hidden"
           decoding="async"
         />
         <img
-          src={asset("/logo/skt-logo-dark.png")}
+          src={asset("/logo/amc-logo-dark.png")}
           alt=""
           className="hidden h-8 w-auto shrink-0 rounded object-contain dark:block"
           decoding="async"

@@ -1,4 +1,4 @@
-# SKT — Mobile UI-SPEC: โมดูลธุรกิจรวบรวมผลผลิต
+# AMC — Mobile UI-SPEC: โมดูลธุรกิจรวบรวมผลผลิต
 
 > ผู้เขียน: product-ux-designer · impeccable `shape` · mode **Operate**
 > อ้างอิง: แผน `C:\Users\User\.claude\plans\ux-ui-swift-liskov.md` (§A–C), `.impeccable.md`, `src/lib/styles.js`, `src/components/ui/*`
@@ -77,7 +77,7 @@
 
 ```
 ┌ Topbar ───────────────────────────────┐
-│ [☰]  SKT          [สาขา ▾] [🔔] [👤] │
+│ [☰]  AMC          [สาขา ▾] [🔔] [👤] │
 ├───────────────────────────────────────┤
 │ welcome card (เดิม)                   │
 │                                       │

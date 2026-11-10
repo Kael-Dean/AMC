@@ -1,4 +1,4 @@
-# SKT Frontend — Project Initializer สำหรับ Claude Code
+# AMC Frontend — Project Initializer สำหรับ Claude Code
 
 ## วิธีทำงานกับ Claude
 
@@ -8,11 +8,13 @@
 
 ## ภาพรวมโปรเจค
 
-**ชื่อโปรเจค:** ระบบ HR กลาง สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส. สุรินทร์ (SKT)
+**ชื่อโปรเจค:** ระบบ HR กลาง สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส. สุรินทร์ (AMC — เดิมชื่อ SKT)
+**ชื่อแอป (PWA / title / หน้าจอโฮม):** `AMC สกต.สุรินทร์` — ตั้งที่ `public/manifest.webmanifest`, `index.html`, `src/lib/installGuideContent.js`, `src/components/onboarding/InstallIntro.jsx`
+(คีย์ localStorage เดิมที่ขึ้นต้น `skt.` / `skt_` คงไว้โดยเจตนา — เปลี่ยนแล้วค่าที่ผู้ใช้บันทึกไว้ในเครื่องจะหาย)
 **ประเภท:** Web Application — Centralized HR System
 **Frontend Stack:** React 19 + Vite 7 + Tailwind CSS v4 + React Router v7 (BrowserRouter)
 **Backend:** Python FastAPI บน Google Cloud Run — repo **https://github.com/FeatureRichDevelopment/um_backend** (อ่านดู route/schema ได้ แต่ห้ามแก้จากโปรเจคนี้)
-**Frontend repo:** https://github.com/Kael-Dean/SKT
+**Frontend repo:** https://github.com/Kael-Dean/AMC
 **Deploy:** Frontend อยู่บน Google Cloud Storage Bucket (Static Hosting)
 
 ---
@@ -237,4 +239,4 @@ const PARENT_ROUTES = {
 
 - **Frontend:** (คุณ) — React, Tailwind, Vite
 - **Backend:** เพื่อน — Python FastAPI บน Google Cloud Run
-- **Client:** องค์กรสหกรณ์การเกษตร SKT
+- **Client:** องค์กรสหกรณ์การเกษตร AMC (สกต.สุรินทร์)

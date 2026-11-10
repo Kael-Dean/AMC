@@ -25,7 +25,7 @@ import { INSTALL_INTRO_ACTIONS as ACTIONS, INSTALL_INTRO_STEPS as STEPS } from "
 
 const asset = (p) => `${import.meta.env.BASE_URL.replace(/\/+$/, "")}${p}`
 
-const APP_NAME = "SKT สุรินทร์" // manifest short_name
+const APP_NAME = "AMC สกต.สุรินทร์" // manifest short_name
 const MENU_LABEL = "ติดตั้งแอป" // Sidebar.jsx
 
 // One loop of each demo, ms. Most of it is the hold on the result: this should read as calm.
