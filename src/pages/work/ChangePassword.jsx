@@ -98,10 +98,9 @@ export default function ChangePassword() {
               />
             </div>
           </div>
-          <h1 className="text-base font-semibold text-white/90 leading-snug">
-            สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส.
+          <h1 className="text-base font-semibold text-white/90 leading-snug text-balance">
+            สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส.สุรินทร์ จำกัด
           </h1>
-          <p className="text-sm text-white/65">จังหวัดสุรินทร์</p>
         </div>
 
         {/* Card */}

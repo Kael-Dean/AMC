@@ -143,10 +143,9 @@ const Login = () => {
               />
             </div>
           </div>
-          <h1 className="text-[15px] font-semibold leading-snug text-white/95">
-            สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส.
+          <h1 className="text-[15px] font-semibold leading-snug text-white/95 text-balance">
+            สหกรณ์การเกษตรเพื่อการตลาดลูกค้า ธ.ก.ส.สุรินทร์ จำกัด
           </h1>
-          <p className="mt-0.5 text-sm text-white/60">จังหวัดสุรินทร์</p>
         </div>
 
         {/* Card */}
