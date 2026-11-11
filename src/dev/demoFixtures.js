@@ -173,7 +173,7 @@ export function demoFixture(path, method, u, body, values) {
         return ok([`${y}-12-05`, `${y}-12-10`, `${y}-12-31`, `${y}-10-13`, `${y}-10-23`].map((d) => ({ holiday_date: d, is_active: true })))
       }
       case "/personnel/me/leaves": return ok(state.leaves)
-      case "/hr/out-of-office/settings": return ok({ work_start: "08:30:00", work_end: "16:30:00", half_day_hours: 4 })
+      case "/hr/out-of-office/settings": return ok({ work_start: "08:30:00", work_end: "16:30:00", half_day_hours: 2.5 })
       case "/personnel/me/out-of-office": return ok(state.ooo)
       case "/personnel/me/payroll": return ok(payslips())
       case "/personnel/me/salary-cert-requests": return ok(state.certs)
