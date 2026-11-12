@@ -14,7 +14,7 @@ import { FileDown, LoaderCircle } from "lucide-react"
 import { cx, focusRingCls } from "../../lib/styles"
 import { Badge, EmptyState, ErrorState, Skeleton, toast } from "../ui"
 import { apiDetail } from "../../lib/apiErrors"
-import { SUSPENSION_STEP, downloadActionPdf, fmtDate, stepLabel, stepTone, suspensionText } from "../../lib/discipline"
+import { SUSPENSION_STEP, downloadActionPdf, fmtDate, resolutionText, stepLabel, stepTone, suspensionText } from "../../lib/discipline"
 
 function ActionRow({ a, highlight, showIssuer, busy, onPdf }) {
   const ref = useRef(null)
@@ -43,6 +43,9 @@ function ActionRow({ a, highlight, showIssuer, busy, onPdf }) {
           {a.doc_no ? `เลขที่ ${a.doc_no} · ` : ""}ออกเมื่อ {fmtDate(a.issued_on, { long: true })}
           {showIssuer && a.issued_by_name ? ` · โดย ${a.issued_by_name}` : ""}
         </p>
+        {a.committee_resolution_no && (
+          <p className="text-sm text-gray-700 dark:text-gray-300">{resolutionText(a)}</p>
+        )}
         {step === SUSPENSION_STEP && a.suspension_start && (
           <p className="text-sm text-red-800 dark:text-red-200">
             พักงาน <span className="tabular-nums">{suspensionText(a)}</span>
