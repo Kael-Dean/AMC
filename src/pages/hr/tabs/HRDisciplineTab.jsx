@@ -8,6 +8,8 @@
 //   POST /hr/discipline/cases/{id}/escalate  { reason }
 //   POST /hr/discipline/cases/{id}/punish    { step, note?, suspension_start?, suspension_end? }
 //        → { case, action, termination_prefill }  (ขั้น 7/8 → ปุ่ม "บันทึกการพ้นสภาพ")
+//        ขั้น 7/8 บังคับ committee_resolution_no + committee_resolution_date (+ attachment_ids ไม่บังคับ)
+//        HR (discipline.record_outcome) ที่ขั้น ผจก.: can_record_outcome → ปุ่ม "บันทึกผลมติคณะกรรมการ" (mode outcome)
 //   POST /hr/discipline/cases/{id}/dismiss   { reason, false_report }
 //
 // ปุ่มทั้งหมดอิง server: can_decide (เรื่องอยู่ที่ขั้นของฉัน) + allowed_steps[].within_my_stage
@@ -27,9 +29,11 @@ import {
 } from "../../../lib/styles"
 import {
   EVENT_LABEL, LADDER, NEXT_STAGE, STAGES, SUSPENSION_STEP, TERMINATION_STEPS,
-  asArray, canSeeReporter, caseStatus, downloadActionPdf, fmtDate, fmtDateTime, inclusiveDays, stageLabel,
-  stepLabel, stepTone, suspensionText, terminationPrefillFor,
+  asArray, canSeeReporter, caseStatus, downloadActionPdf, fmtDate, fmtDateTime, inclusiveDays, nowBangkok, resolutionText,
+  stageLabel, stepLabel, stepTone, suspensionText, terminationPrefillFor,
 } from "../../../lib/discipline"
+import FileUploader from "../../../components/FileUploader"
+import useFileUploads from "../../../hooks/useFileUploads"
 import { useIsPhone } from "../../../hooks/useMediaQuery"
 import {
   Badge, DataList, EmptyState, ErrorState, Sheet, Skeleton, SkeletonTableRows, Tabs, panelId, tabId, toast, useSubTab,
@@ -154,10 +158,42 @@ function EventsTimeline({ events }) {
 
 // ─── ฟอร์มตัดสิน (อยู่ใน Sheet เดียวกัน — ไม่ซ้อน modal) ─────────────────────
 
-function PunishForm({ c, state, setState, settings }) {
+/** ช่องมติคณะกรรมการ (ขั้น 7/8 บังคับ) + ไฟล์มติ/คำสั่งที่ลงนามแล้ว */
+function ResolutionFields({ uid, state, setState, uploads }) {
+  const set = (k) => (e) => setState((s) => ({ ...s, [k]: e.target.value, resErr: { ...s.resErr, [k]: "" }, err: "" }))
+  const err = state.resErr || {}
+  return (
+    <fieldset className="space-y-3 rounded-xl bg-gray-50 p-3 dark:bg-white/[.03]">
+      <legend className="sr-only">มติคณะกรรมการ</legend>
+      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">มติคณะกรรมการ</p>
+      <p className="-mt-2 text-xs text-gray-600 dark:text-gray-400">คณะกรรมการตัดสินนอกระบบ บันทึกตามมติที่ได้รับ หนังสือจะอ้าง “ตามมติคณะกรรมการ … ลงวันที่ …”</p>
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,13rem)]">
+        <div>
+          <label htmlFor={`${uid}-resno`} className={smallLabel}>เลขที่มติ <span className="text-red-600 dark:text-red-400">*</span></label>
+          <input id={`${uid}-resno`} type="text" maxLength={200} value={state.resNo} onChange={set("resNo")}
+            aria-required="true" aria-invalid={!!err.resNo || undefined} aria-describedby={err.resNo ? `${uid}-resno-err` : undefined}
+            placeholder="เช่น ครั้งที่ 5/2569 วาระที่ 3"
+            className={cx(inputCls, err.resNo && "!border-red-500 dark:!border-red-400")} />
+          {err.resNo && <p id={`${uid}-resno-err`} className={errorTextCls}>{err.resNo}</p>}
+        </div>
+        <div>
+          <label htmlFor={`${uid}-resdate`} className={smallLabel}>วันที่มติ <span className="text-red-600 dark:text-red-400">*</span></label>
+          <ThaiDateField id={`${uid}-resdate`} ariaLabel="วันที่มติคณะกรรมการ" value={state.resDate} error={!!err.resDate}
+            aria-describedby={err.resDate ? `${uid}-resdate-err` : undefined}
+            onChange={set("resDate")} className="!rounded-lg !px-3 !py-2 md:!text-sm" />
+          {err.resDate && <p id={`${uid}-resdate-err`} className={errorTextCls}>{err.resDate}</p>}
+        </div>
+      </div>
+      <FileUploader uploads={uploads} id={`${uid}-resfiles`} label="มติ / คำสั่งคณะกรรมการที่ลงนามแล้ว (ไม่บังคับ)"
+        hint="PDF หรือรูปถ่าย — แนบเข้ากับเรื่องนี้" />
+    </fieldset>
+  )
+}
+
+function PunishForm({ c, state, setState, settings, uploads, outcome = false }) {
   const uid = useId()
   const ladder = c.ladder || {}
-  const options = asArray(ladder.allowed_steps)
+  const options = outcome ? outcomeOptions(c) : asArray(ladder.allowed_steps)
   const nextStage = NEXT_STAGE[c.stage]
   const step = Number(state.step) || null
   const days = inclusiveDays(state.start, state.end)
@@ -167,15 +203,15 @@ function PunishForm({ c, state, setState, settings }) {
   return (
     <div className="space-y-4">
       <fieldset>
-        <legend className={smallLabel}>เลือกโทษ <span className="text-red-600 dark:text-red-400">*</span></legend>
-        {c.topic_is_serious && options.length > 1 && (
+        <legend className={smallLabel}>{outcome ? "ผลมติคณะกรรมการ" : "เลือกโทษ"} <span className="text-red-600 dark:text-red-400">*</span></legend>
+        {!outcome && c.topic_is_serious && options.length > 1 && (
           <p className="mb-2 text-xs text-gray-600 dark:text-gray-400">หัวข้อร้ายแรง: เลือกโทษที่ขั้นถัดไปหรือหนักกว่าได้</p>
         )}
         <div className="space-y-2">
           {options.map((o) => {
             const n = Number(o.step)
             const active = step === n
-            const within = o.within_my_stage !== false
+            const within = outcome || o.within_my_stage !== false
             return (
               <label key={n} className={cx(
                 "flex items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors duration-150",
@@ -229,6 +265,8 @@ function PunishForm({ c, state, setState, settings }) {
         </fieldset>
       )}
 
+      {TERMINATION_STEPS.includes(step) && <ResolutionFields uid={uid} state={state} setState={setState} uploads={uploads} />}
+
       <div>
         <label htmlFor={`${uid}-note`} className={smallLabel}>หมายเหตุในหนังสือ (ไม่บังคับ)</label>
         <textarea id={`${uid}-note`} rows={3} maxLength={1000} value={state.note}
@@ -263,7 +301,13 @@ function ReasonForm({ id, label, hint, value, onChange, error, placeholder, chil
 
 // ─── Sheet รายละเอียดเรื่อง ─────────────────────────────────────────────────
 
-const EMPTY_PUNISH = { step: null, start: "", end: "", note: "", dateErr: "", err: "" }
+const EMPTY_PUNISH = { step: null, start: "", end: "", note: "", dateErr: "", err: "", resNo: "", resDate: "", resErr: {} }
+
+/** ตัวเลือกของ "บันทึกผลมติคณะกรรมการ" — ขั้น 7/8 จาก allowed_steps (ถ้ามี) ไม่งั้นทั้งสองขั้น */
+function outcomeOptions(c) {
+  const fromServer = asArray(c?.ladder?.allowed_steps).filter((o) => TERMINATION_STEPS.includes(Number(o.step)))
+  return fromServer.length ? fromServer : TERMINATION_STEPS.map((step) => ({ step }))
+}
 
 function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
   const { can } = useCan()
@@ -275,9 +319,10 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
   const [loadErr, setLoadErr] = useState("")
   const [tick, setTick] = useState(0)
 
-  const [mode, setMode] = useState("view") // view | punish | escalate | dismiss
+  const [mode, setMode] = useState("view") // view | punish | outcome | escalate | dismiss
   const [busy, setBusy] = useState(false)
   const [punish, setPunish] = useState(EMPTY_PUNISH)
+  const uploads = useFileUploads()
   const [reason, setReason] = useState("")
   const [reasonErr, setReasonErr] = useState("")
   const [falseReport, setFalseReport] = useState(false)
@@ -309,17 +354,24 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
 
   const open = c?.status === "open"
   const canDecide = !!c?.can_decide && open
+  // HR (117/130) ที่ขั้น ผจก.: can_record_outcome = true ขณะที่ can_decide = false
+  const canRecord = !!c?.can_record_outcome && open && !canDecide
   const options = asArray(c?.ladder?.allowed_steps)
   const withinOptions = options.filter((o) => o.within_my_stage !== false)
   const nextStage = c ? NEXT_STAGE[c.stage] : null
   const st = caseStatus(c)
 
   const toMode = (m) => {
+    if (m === "view" && uploads.ids.length) uploads.discard()
     setMode(m); setFormErr(""); setReasonErr(""); setOfferEscalate(false)
     if (m === "punish") {
       const next = Number(c?.ladder?.next_step)
       const def = withinOptions.find((o) => Number(o.step) === next) ?? (withinOptions.length === 1 ? withinOptions[0] : null)
       setPunish({ ...EMPTY_PUNISH, step: def ? Number(def.step) : null })
+    }
+    if (m === "outcome") {
+      const opts = outcomeOptions(c)
+      setPunish({ ...EMPTY_PUNISH, step: opts.length === 1 ? Number(opts[0].step) : null })
     }
     if (m === "escalate" || m === "dismiss") { setReason(""); setFalseReport(false) }
   }
@@ -361,12 +413,25 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
       body.suspension_start = punish.start
       body.suspension_end = punish.end
     }
+    if (TERMINATION_STEPS.includes(step)) {
+      const resNo = punish.resNo.trim()
+      const resErr = {}
+      if (!resNo) resErr.resNo = "ระบุเลขที่มติคณะกรรมการ"
+      if (!punish.resDate) resErr.resDate = "ระบุวันที่มติ"
+      else if (punish.resDate > nowBangkok().date) resErr.resDate = "วันที่มติต้องไม่เป็นวันในอนาคต"
+      if (resErr.resNo || resErr.resDate) { setPunish((s) => ({ ...s, resErr })); return }
+      if (uploads.busy) { setFormErr("รอให้อัปโหลดไฟล์เสร็จก่อน"); return }
+      body.committee_resolution_no = resNo
+      body.committee_resolution_date = punish.resDate
+      if (uploads.ids.length) body.attachment_ids = uploads.ids
+    }
     setBusy(true); setFormErr(""); setOfferEscalate(false)
     try {
       const res = await apiAuth(`/hr/discipline/cases/${c.id}/punish`, { method: "POST", body })
       if (res?.termination_prefill) setServerPrefill(res.termination_prefill)
+      uploads.reset()
       const doc = res?.action?.doc_no
-      afterDone("ลงโทษแล้ว", `${stepLabel(step, res?.action?.step_label)}${doc ? ` · เลขที่ ${doc}` : ""} — แจ้งผู้ถูกลงโทษแล้ว`)
+      afterDone(mode === "outcome" ? "บันทึกผลมติแล้ว" : "ลงโทษแล้ว", `${stepLabel(step, res?.action?.step_label)}${doc ? ` · เลขที่ ${doc}` : ""} — แจ้งผู้ถูกลงโทษแล้ว`)
     } catch (e) {
       handleErr(e, "บันทึกการลงโทษไม่สำเร็จ")
     } finally {
@@ -403,8 +468,15 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
   // ── footer ──
   const sheetBtn = "!h-11 md:pointer-fine:!h-10 !px-4 !text-sm"
   let footer
-  if (!c || !canDecide) {
+  if (!c || (!canDecide && !canRecord)) {
     footer = <div className="flex justify-end"><button type="button" onClick={onClose} className={cx(neutralBtnCls, sheetBtn)}>ปิด</button></div>
+  } else if (mode === "view" && canRecord) {
+    footer = (
+      <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
+        <button type="button" onClick={onClose} className={cx(neutralBtnCls, sheetBtn)}>ปิด</button>
+        <button type="button" onClick={() => toMode("outcome")} className={cx(primaryBtnCls, sheetBtn)}>บันทึกผลมติคณะกรรมการ</button>
+      </div>
+    )
   } else if (mode === "view") {
     footer = (
       <div className="grid grid-cols-2 gap-2 md:flex md:items-center md:gap-2">
@@ -422,22 +494,22 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
     )
   } else {
     const step = Number(punish.step)
-    const confirm = mode === "punish"
-      ? { label: step ? `ยืนยัน: ${LADDER.find((s) => s.step === step)?.short ?? `ขั้น ${step}`}` : "ยืนยันลงโทษ", cls: step >= SUSPENSION_STEP ? dangerBtnCls : primaryBtnCls, run: submitPunish }
+    const confirm = mode === "punish" || mode === "outcome"
+      ?{ label: step ? `ยืนยัน: ${LADDER.find((s) => s.step === step)?.short ?? `ขั้น ${step}`}` : "ยืนยันลงโทษ", cls: step >= SUSPENSION_STEP ? dangerBtnCls : primaryBtnCls, run: submitPunish }
       : mode === "escalate"
         ? { label: `ยืนยันส่งต่อ`, cls: primaryBtnCls, run: () => submitReason("escalate") }
         : { label: "ยืนยันยุติเรื่อง", cls: dangerBtnCls, run: () => submitReason("dismiss") }
     footer = (
       <div className="grid grid-cols-2 gap-3 md:flex md:justify-end md:gap-2">
         <button type="button" onClick={() => toMode("view")} disabled={busy} className={cx(neutralBtnCls, sheetBtn)}>ย้อนกลับ</button>
-        <button type="button" onClick={confirm.run} disabled={busy || (mode === "punish" && !step)} className={cx(confirm.cls, sheetBtn)}>
+        <button type="button" onClick={confirm.run} disabled={busy || ((mode === "punish" || mode === "outcome") && !step) || (TERMINATION_STEPS.includes(step) && uploads.busy)} className={cx(confirm.cls, sheetBtn)}>
           {busy ? "กำลังบันทึก…" : confirm.label}
         </button>
       </div>
     )
   }
 
-  const title = mode === "punish" ? "ลงโทษ" : mode === "escalate" ? "ส่งต่อเรื่อง" : mode === "dismiss" ? "ยุติเรื่อง" : (c?.topic || "รายละเอียดเรื่อง")
+  const title = mode === "punish" ? "ลงโทษ" : mode === "outcome" ? "บันทึกผลมติคณะกรรมการ" :mode === "escalate" ? "ส่งต่อเรื่อง" : mode === "dismiss" ? "ยุติเรื่อง" : (c?.topic || "รายละเอียดเรื่อง")
   const subtitle = c ? `${accusedName(c)} · เรื่อง #${c.id}` : undefined
 
   return (
@@ -453,7 +525,7 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
             <Badge tone={st.tone}>{st.label}</Badge>
             {open && <Badge tone="info">ขั้น{stageLabel(c.stage, c.stage_label)}</Badge>}
             {c.topic_is_serious && <SeriousBadge />}
-            {open && !c.can_decide && <span className="text-xs text-gray-500 dark:text-gray-400">ดูอย่างเดียว — ไม่ใช่ขั้นพิจารณาของคุณ</span>}
+            {open && !c.can_decide && !c.can_record_outcome && <span className="text-xs text-gray-500 dark:text-gray-400">ดูอย่างเดียว — ไม่ใช่ขั้นพิจารณาของคุณ</span>}
           </div>
 
           {showTermination && (
@@ -508,6 +580,9 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
                         <p className="mt-0.5 text-xs tabular-nums text-gray-500 dark:text-gray-400">
                           {c.action.doc_no ? `เลขที่ ${c.action.doc_no} · ` : ""}ออกเมื่อ {fmtDate(c.action.issued_on || c.decided_at)}
                         </p>
+                        {c.action.committee_resolution_no && (
+                          <p className="mt-0.5 text-gray-700 dark:text-gray-300">{resolutionText(c.action)}</p>
+                        )}
                         {Number(c.action.step) === SUSPENSION_STEP && c.action.suspension_start && (
                           <p className="mt-0.5 tabular-nums text-red-800 dark:text-red-200">พักงาน {suspensionText(c.action)}</p>
                         )}
@@ -554,7 +629,8 @@ function CaseSheet({ caseId, onClose, onChanged, onOpenTermination }) {
             {c.topic_is_serious && <> <SeriousBadge /></>}
           </p>
 
-          {mode === "punish" && <PunishForm c={c} state={punish} setState={setPunish} settings={settings} />}
+          {mode === "punish" && <PunishForm c={c} state={punish} setState={setPunish} settings={settings} uploads={uploads} />}
+          {mode === "outcome" && <PunishForm c={c} state={punish} setState={setPunish} settings={settings} uploads={uploads} outcome />}
 
           {mode === "escalate" && (
             <ReasonForm id={`${ID_BASE}-reason`} label={`เหตุผลที่ส่งต่อ${stageLabel(nextStage)}`} value={reason}

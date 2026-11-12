@@ -128,6 +128,16 @@ export function suspensionText(a) {
   return days ? `${range} (${days} วัน)` : range
 }
 
+// ─── มติคณะกรรมการ (ขั้น 7/8 — AMC 2026-11-12) ───────────────────────────────
+// คณะกรรมการไม่ใช้ระบบ: HR / ผจก. บันทึกผลมติที่ตัดสินนอกระบบ (เลขที่ + วันที่มติ บังคับสำหรับ 7/8)
+
+/** "มติคณะกรรมการ ครั้งที่ 5/2569 วาระที่ 3 · ลงวันที่ 1 พฤศจิกายน 2569" ("" ถ้าไม่มี) */
+export function resolutionText(a) {
+  if (!a?.committee_resolution_no) return ""
+  const date = a.committee_resolution_date ? ` · ลงวันที่ ${fmtDate(a.committee_resolution_date, { long: true })}` : ""
+  return `มติคณะกรรมการ ${a.committee_resolution_no}${date}`
+}
+
 // ─── ผู้แจ้ง (ความลับ) ──────────────────────────────────────────────────────
 
 /** backend ตัด key reporter_* ออก (ไม่ใช่ null) เมื่อผู้เรียกไม่มีสิทธิ์เห็น — ห้ามแสดงถ้าไม่มี key */
@@ -148,7 +158,7 @@ export function terminationPrefillFor(caseDetail, serverPrefill) {
     employee_id: caseDetail.accused_id,
     exit_type: "dismiss",
     reason: step === 8 ? "ไล่ออก" : "ให้ออก",
-    reference: a.doc_no || null,
+    reference: [a.doc_no, a.committee_resolution_no && `มติคณะกรรมการ ${a.committee_resolution_no}`].filter(Boolean).join(" / ") || null,
     severance_pay: step === 8 ? 0 : null,
     note: a.note || caseDetail.decision_note || "",
   }

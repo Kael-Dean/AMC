@@ -173,6 +173,7 @@ export const PERMISSION_MATRIX = Object.freeze({
   "discipline.view": { no: null, roles: [101, 102, 103, 106, 117, 130] },
   "discipline.decide.asst": { no: null, roles: [101, 102, 103] },
   "discipline.decide.manager": { no: null, roles: [101] },
+  "discipline.record_outcome": { no: null, roles: [101, 117, 130] }, // AMC 2026-11-12 — ผจก. + HR บันทึกผลมติคณะกรรมการ (ขั้น 7/8)
   "salary_cert.view": { no: 94, roles: [101] },
   "salary_cert.decide": { no: 95, roles: [101] },
   "salary_cert.pdf": { no: 96, roles: [117, 130] },
