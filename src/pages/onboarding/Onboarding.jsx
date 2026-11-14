@@ -26,12 +26,17 @@ import { getToken, logoutAndReload } from "../../lib/auth"
 import {
   SECTIONS,
   SECTION_KEYS,
+  completeOnboarding,
   firstOpenSection,
+  getOnboardingState,
+  isConnectionError,
   loadOnboarding,
+  sectionMeta,
+  tourComplete,
   useOnboarding,
 } from "../../lib/onboarding"
 import { clearAllDrafts } from "../../lib/onboardingDraft"
-import { getTourState, resumeTour, startTour } from "../../lib/tourState"
+import { getTourState, resumeTour, startTour, stopTour } from "../../lib/tourState"
 import { cx, focusRingCls } from "../../lib/styles"
 import FamilyStep from "./FamilyStep"
 import { WIZARD_STEP_KEYS as STEP_KEYS } from "./introContent"
@@ -48,11 +53,15 @@ function applyStoredTheme() {
   document.documentElement.classList.toggle("dark", dark)
 }
 
-/** Next section to open after `key` is confirmed (wraps around), or "ready" once unlocked. */
+/**
+ * Next section to open after `key` is confirmed (wraps around), or "ready" once none is left.
+ * Decided from the sections themselves, not `payload.unlocked`: the server can report unlocked
+ * while sections still wait (it was unlocked once, then sections were reopened), and trusting it
+ * sent people to the tour screen after every save with only 3/8 done.
+ */
 function nextAfter(key, payload) {
-  if (payload?.unlocked) return "ready"
   const sections = payload?.sections ?? {}
-  const open = (k) => !sections[k]?.confirmed_at
+  const open = (k) => !sections[k]?.confirmed_at || Boolean(sections[k]?.missing?.length)
   const i = SECTION_KEYS.indexOf(key)
   const order = [...SECTION_KEYS.slice(i + 1), ...SECTION_KEYS.slice(0, i)]
   return order.find(open) ?? "ready"
@@ -230,6 +239,51 @@ export default function Onboarding({ preview = null }) {
     else setReport({ category, field, value })
   }
 
+  // "ข้ามทัวร์": the same two calls as the tour's last stop, straight from the Ready step.
+  const [skipping, setSkipping] = useState(false)
+  const skipTourNow = async () => {
+    if (isPreview) {
+      goStep("done")
+      return
+    }
+    if (skipping) return
+    setSkipping(true)
+    try {
+      await tourComplete()
+      await completeOnboarding()
+      clearAllDrafts()
+      stopTour()
+      toast.success("เริ่มใช้งานบริการตนเองได้แล้ว", { id: "onboarding-complete" })
+    } catch (err) {
+      if (err?.status === 401 || err?.onboardingRequired) return
+      const connection = isConnectionError(err)
+      if (connection || err?.status === 409) {
+        // the request may have landed and only its answer got lost
+        await loadOnboarding({ force: true })
+        if (getOnboardingState().data?.onboarded) {
+          clearAllDrafts()
+          stopTour()
+          return
+        }
+      }
+      const d = err?.data?.detail
+      if (err?.status === 422 && d && typeof d === "object" && Array.isArray(d.sections) && d.sections.length) {
+        toast.warning("ยังมีข้อมูลที่ต้องยืนยันอีกครั้ง", {
+          description: d.sections.map((k) => sectionMeta(k)?.label ?? k).join(", "),
+        })
+        goStep(d.sections[0])
+        return
+      }
+      toast.error("ยังส่งข้อมูลไม่สำเร็จ", {
+        description: connection
+          ? "การเชื่อมต่อกับระบบขัดข้อง ข้อมูลที่กรอกไว้บันทึกแล้ว กดอีกครั้งเมื่อเน็ตกลับมา"
+          : (typeof d === "string" && d) || err?.message || "ลองอีกครั้งในอีกสักครู่",
+      })
+    } finally {
+      setSkipping(false)
+    }
+  }
+
   const startTourNow = () => {
     if (isPreview) {
       preview.onStartTour()
@@ -262,7 +316,14 @@ export default function Onboarding({ preview = null }) {
       />
     )
   } else if (step === "ready") {
-    body = <ReadyStep onStartTour={startTourNow} onReview={() => goStep("welcome")} />
+    body = (
+      <ReadyStep
+        onStartTour={startTourNow}
+        onReview={() => goStep("welcome")}
+        onSkipTour={skipTourNow}
+        skipping={skipping}
+      />
+    )
   } else if (step === "done") {
     body = <DoneStep onHome={goHome} profilePath={isPreview ? preview.exitPath : undefined} />
   } else {
