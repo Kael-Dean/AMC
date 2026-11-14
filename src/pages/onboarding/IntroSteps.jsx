@@ -1,6 +1,6 @@
 // src/pages/onboarding/IntroSteps.jsx
 // Welcome (start / continue), Ready (all 8 confirmed → start the tour) and Done (completed).
-import { Check } from "lucide-react"
+import { Check, LoaderCircle } from "lucide-react"
 import { Link } from "react-router-dom"
 import Celebration from "../../components/onboarding/Celebration"
 import ProgressRing from "../../components/onboarding/ProgressRing"
@@ -93,7 +93,7 @@ export function WelcomeStep({ data, confirmedCount, onStart, onGoStep }) {
   )
 }
 
-export function ReadyStep({ onStartTour, onReview, starting }) {
+export function ReadyStep({ onStartTour, onReview, onSkipTour, starting, skipping = false }) {
   const tour = useTourState()
   return (
     <section aria-labelledby="ob-ready-title" className="mx-auto flex max-w-md flex-col items-center pt-4 text-center md:pt-10">
@@ -113,16 +113,31 @@ export function ReadyStep({ onStartTour, onReview, starting }) {
         <button
           type="button"
           onClick={onStartTour}
-          disabled={starting}
+          disabled={starting || skipping}
           className={cx(primaryBtnCls, bigBtn, "md:min-w-64")}
           data-autofocus
         >
           {tour.started ? "ดูทัวร์ต่อ" : "เริ่มทัวร์เมนู"}
         </button>
-        <button type="button" onClick={onReview} className={cx(neutralBtnCls, bigBtn)}>
+        <button type="button" onClick={onReview} disabled={skipping} className={cx(neutralBtnCls, bigBtn)}>
           ตรวจข้อมูลอีกครั้ง
         </button>
       </div>
+      {onSkipTour && (
+        <button
+          type="button"
+          onClick={onSkipTour}
+          disabled={skipping || starting}
+          aria-busy={skipping || undefined}
+          className={cx(
+            "mt-4 inline-flex min-h-touch cursor-pointer items-center gap-2 rounded-xl px-4 text-[15px] font-medium text-gray-600 underline decoration-gray-300 underline-offset-4 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900 disabled:cursor-wait disabled:opacity-60 md:pointer-fine:min-h-10 dark:text-gray-300 dark:decoration-gray-600 dark:hover:bg-white/[.06] dark:hover:text-gray-100",
+            focusRingCls,
+          )}
+        >
+          {skipping && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
+          {skipping ? "กำลังส่งข้อมูล…" : "ข้ามทัวร์ ส่งข้อมูลและเริ่มใช้งานเลย"}
+        </button>
+      )}
     </section>
   )
 }
