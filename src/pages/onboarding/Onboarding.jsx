@@ -61,7 +61,7 @@ function applyStoredTheme() {
  */
 function nextAfter(key, payload) {
   const sections = payload?.sections ?? {}
-  const open = (k) => !sections[k]?.confirmed_at || Boolean(sections[k]?.missing?.length)
+  const open = (k) => !sections[k]?.confirmed_at
   const i = SECTION_KEYS.indexOf(key)
   const order = [...SECTION_KEYS.slice(i + 1), ...SECTION_KEYS.slice(0, i)]
   return order.find(open) ?? "ready"
@@ -185,13 +185,17 @@ export default function Onboarding({ preview = null }) {
 
   // ── resolve the step ───────────────────────────────────────────────────────
   const requested = params.get("step")
-  const defaultStep = !data ? null : data.onboarded ? "done" : data.unlocked ? "ready" : "welcome"
+  // "ready" (ข้อมูลครบแล้ว) only when every section is really confirmed — `unlocked` alone can be
+  // true while sections still wait, and finishing would 422 on them anyway.
+  const openSection = data ? firstOpenSection(data) : null
+  const allDone = Boolean(data?.unlocked) && SECTION_KEYS.every((k) => data.sections?.[k]?.confirmed_at)
+  const defaultStep = !data ? null : data.onboarded ? "done" : allDone ? "ready" : "welcome"
   let step = STEP_KEYS.includes(requested) ? requested : defaultStep
   // A preview may open any step: there is no real progress for these rules to protect.
   if (data && !isPreview) {
     if (data.onboarded) step = "done"
     else if (step === "done") step = defaultStep
-    else if (step === "ready" && !data.unlocked) step = firstOpenSection(data) ?? "welcome"
+    else if (step === "ready" && !allDone) step = openSection ?? "welcome"
   }
 
   // direction-aware slide (also right for browser back/forward)
