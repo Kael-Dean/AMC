@@ -305,16 +305,6 @@ function PrintDocument({ form, totalDays }) {
         <span className="print-label">น.</span>
       </div>
 
-      {/* ช่วงวันที่ 2 (ถ้ามี) */}
-      {(form.fromDate2 || form.toDate2) && (
-        <div className="print-datetime-row">
-          <span className="print-label">และวันที่</span>
-          <span className="print-val-sm">&nbsp;{fmtDateTh(form.fromDate2)}&nbsp;</span>
-          <span className="print-label">ถึงวันที่</span>
-          <span className="print-val-sm">&nbsp;{fmtDateTh(form.toDate2)}&nbsp;</span>
-        </div>
-      )}
-
       {/* รวมระยะเวลา */}
       <div className="print-line">
         <span className="print-label">รวมระยะเวลา</span>
@@ -452,8 +442,6 @@ export default function LeaveRequest() {
     dayPart: "full",
     fromDate: "",
     toDate: "",
-    fromDate2: "",
-    toDate2: "",
     addressDuringLeave: "",
     contactDuringLeave: "",
     lateReason: "",
@@ -543,8 +531,7 @@ export default function LeaveRequest() {
   const selectedType = leaveTypes.find((t) => t.id === form.leaveTypeId) ?? null
   const calendarDays = countsCalendarDays(selectedType ?? form.leaveTypeName)
   const days1 = workingDays(form.fromDate, form.toDate, holidays, halfDayActive, calendarDays)
-  const days2 = workingDays(form.fromDate2, form.toDate2, holidays, false, calendarDays)
-  const totalDays = days1 + days2
+  const totalDays = days1
   const rawDays1 = diffDays(form.fromDate, form.toDate)
   const excludedDays = rawDays1 > 0 && !calendarDays ? rawDays1 - workingDays(form.fromDate, form.toDate, holidays) : 0
   // เพดานวันลาต่อครั้ง/ปี จากรายการประเภทการลา (เช่น ลาคลอด 98) — ไม่ hard-code ตัวเลข
@@ -555,11 +542,11 @@ export default function LeaveRequest() {
   const set = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
 
-  // ครึ่งวัน = วันเดียวเสมอ → วันสิ้นสุดตามวันเริ่ม และไม่มีช่วงที่ 2
+  // ครึ่งวัน = วันเดียวเสมอ → วันสิ้นสุดตามวันเริ่ม
   const selectDayPart = (dayPart) =>
     setForm((prev) => (dayPart === "full"
       ? { ...prev, dayPart }
-      : { ...prev, dayPart, toDate: prev.fromDate, fromDate2: "", toDate2: "" }))
+      : { ...prev, dayPart, toDate: prev.fromDate }))
 
   // เลือกวันเริ่ม: ครึ่งวันตั้งวันสิ้นสุดให้เท่ากัน; เต็มวันเติมวันสิ้นสุดให้ถ้ายังว่างหรืออยู่ก่อนวันเริ่ม
   const setFromDate = (e) => {
@@ -570,8 +557,6 @@ export default function LeaveRequest() {
       toDate: prev.dayPart !== "full" || !prev.toDate || (v && prev.toDate < v) ? v : prev.toDate,
     }))
   }
-
-  const [showRange2, setShowRange2] = useState(false)
 
   const selectLeaveType = (lt) =>
     setForm((prev) => ({ ...prev, leaveTypeId: lt.id, leaveTypeName: getLeaveTypeName(lt) }))
@@ -587,11 +572,6 @@ export default function LeaveRequest() {
     if (!form.toDate)            errs.toDate      = "กรุณาระบุวันที่สิ้นสุด"
     if (form.fromDate && form.toDate && new Date(form.toDate) < new Date(form.fromDate)) {
       errs.toDate = "วันที่สิ้นสุดต้องไม่อยู่ก่อนวันที่เริ่มต้น"
-    }
-    if (form.fromDate2 || form.toDate2) {
-      if (form.fromDate2 && form.toDate2 && new Date(form.toDate2) < new Date(form.fromDate2)) {
-        errs.toDate2 = "วันที่สิ้นสุดต้องไม่อยู่ก่อนวันที่เริ่มต้น"
-      }
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -633,7 +613,6 @@ export default function LeaveRequest() {
     setSubmitted(false)
     setErrors({})
     setSubmitError("")
-    setShowRange2(false)
     setForm(blankForm())
   }
 
@@ -914,50 +893,6 @@ export default function LeaveRequest() {
                   <ErrMsg field="fromDate" />
                 </Field>
               )}
-
-              {/* อีกช่วงวัน (ไม่ต่อเนื่อง) — ซ่อนไว้จนกว่าจะต้องใช้ */}
-              {form.dayPart === "full" && (showRange2 || form.fromDate2 || form.toDate2 ? (
-                <div className="mt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">และวันที่ (อีกช่วง)</p>
-                    <button
-                      type="button"
-                      onClick={() => { setShowRange2(false); setForm((prev) => ({ ...prev, fromDate2: "", toDate2: "" })) }}
-                      className="min-h-touch md:min-h-0 px-2 text-xs font-medium text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
-                    >
-                      นำออก
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="วันที่เริ่ม">
-                      <input
-                        type="date"
-                        className={inputCls}
-                        value={form.fromDate2}
-                        onChange={set("fromDate2")}
-                      />
-                    </Field>
-                    <Field label="ถึงวันที่">
-                      <input
-                        type="date"
-                        className={`${inputCls} ${errors.toDate2 ? "!border-red-400 dark:!border-red-500 focus:!ring-red-400" : ""}`}
-                        value={form.toDate2}
-                        min={form.fromDate2 || undefined}
-                        onChange={set("toDate2")}
-                      />
-                      <ErrMsg field="toDate2" />
-                    </Field>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowRange2(true)}
-                  className="mt-3 min-h-touch md:min-h-0 text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
-                >
-                  + เพิ่มวันลาอีกช่วง (วันไม่ติดกัน)
-                </button>
-              ))}
 
               {/* Total */}
               {totalDays > 0 && (
