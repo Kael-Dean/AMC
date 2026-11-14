@@ -204,6 +204,14 @@ function fmtDateShort(iso) {
   try { return new Date(iso).toLocaleDateString("th-TH") } catch { return iso }
 }
 
+// ช่วงเวลาลาแบบตายตัว — ผู้ใช้เลือกแค่ เต็มวัน / ครึ่งเช้า / ครึ่งบ่าย ไม่ต้องกรอกเวลาเอง
+const DAY_PARTS = {
+  full:      { label: "เต็มวัน",   hint: "ลาทั้งวัน",       from: null,    to: null },
+  morning:   { label: "ครึ่งเช้า",  hint: "08:30–12:00", from: "08:30", to: "12:00" },
+  afternoon: { label: "ครึ่งบ่าย",  hint: "13:00–16:30", from: "13:00", to: "16:30" },
+}
+const DAY_PART_KEYS = ["full", "morning", "afternoon"]
+
 function fmtTime(t) {
   if (!t) return null
   return t.slice(0, 5)
@@ -289,11 +297,11 @@ function PrintDocument({ form, totalDays }) {
         <span className="print-label">ตั้งแต่วันที่</span>
         <span className="print-val-sm">&nbsp;{fmtDateTh(form.fromDate)}&nbsp;</span>
         <span className="print-label">เวลา</span>
-        <span className="print-val-sm">&nbsp;{form.fromTime || "—"}&nbsp;</span>
+        <span className="print-val-sm">&nbsp;{DAY_PARTS[form.dayPart]?.from || "—"}&nbsp;</span>
         <span className="print-label">น. ถึงวันที่</span>
         <span className="print-val-sm">&nbsp;{fmtDateTh(form.toDate)}&nbsp;</span>
         <span className="print-label">เวลา</span>
-        <span className="print-val-sm">&nbsp;{form.toTime || "—"}&nbsp;</span>
+        <span className="print-val-sm">&nbsp;{DAY_PARTS[form.dayPart]?.to || "—"}&nbsp;</span>
         <span className="print-label">น.</span>
       </div>
 
@@ -441,13 +449,11 @@ export default function LeaveRequest() {
     leaveTypeId: null,
     leaveTypeName: "",
     reason: "",
+    dayPart: "full",
     fromDate: "",
-    fromTime: "",
     toDate: "",
-    toTime: "",
     fromDate2: "",
     toDate2: "",
-    isHalfDay: false,
     addressDuringLeave: "",
     contactDuringLeave: "",
     lateReason: "",
@@ -532,8 +538,8 @@ export default function LeaveRequest() {
   }
 
   // ── derived values ──────────────────────────────────────────────────────
-  const sameDay = Boolean(form.fromDate) && form.fromDate === form.toDate
-  const halfDayActive = form.isHalfDay && sameDay
+  const period = DAY_PARTS[form.dayPart] ?? DAY_PARTS.full
+  const halfDayActive = form.dayPart !== "full" && Boolean(form.fromDate)
   const selectedType = leaveTypes.find((t) => t.id === form.leaveTypeId) ?? null
   const calendarDays = countsCalendarDays(selectedType ?? form.leaveTypeName)
   const days1 = workingDays(form.fromDate, form.toDate, holidays, halfDayActive, calendarDays)
@@ -548,6 +554,24 @@ export default function LeaveRequest() {
   // ── helpers ─────────────────────────────────────────────────────────────
   const set = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
+
+  // ครึ่งวัน = วันเดียวเสมอ → วันสิ้นสุดตามวันเริ่ม และไม่มีช่วงที่ 2
+  const selectDayPart = (dayPart) =>
+    setForm((prev) => (dayPart === "full"
+      ? { ...prev, dayPart }
+      : { ...prev, dayPart, toDate: prev.fromDate, fromDate2: "", toDate2: "" }))
+
+  // เลือกวันเริ่ม: ครึ่งวันตั้งวันสิ้นสุดให้เท่ากัน; เต็มวันเติมวันสิ้นสุดให้ถ้ายังว่างหรืออยู่ก่อนวันเริ่ม
+  const setFromDate = (e) => {
+    const v = e.target.value
+    setForm((prev) => ({
+      ...prev,
+      fromDate: v,
+      toDate: prev.dayPart !== "full" || !prev.toDate || (v && prev.toDate < v) ? v : prev.toDate,
+    }))
+  }
+
+  const [showRange2, setShowRange2] = useState(false)
 
   const selectLeaveType = (lt) =>
     setForm((prev) => ({ ...prev, leaveTypeId: lt.id, leaveTypeName: getLeaveTypeName(lt) }))
@@ -585,8 +609,8 @@ export default function LeaveRequest() {
           leave_type_id:        form.leaveTypeId,
           from_date:            form.fromDate,
           to_date:              form.toDate,
-          from_time:            form.fromTime || null,
-          to_time:              form.toTime   || null,
+          from_time:            period.from,
+          to_time:              period.to,
           comment:              form.reason   || null,
           address_during_leave: form.addressDuringLeave || null,
           contact_during_leave: form.contactDuringLeave || null,
@@ -609,6 +633,7 @@ export default function LeaveRequest() {
     setSubmitted(false)
     setErrors({})
     setSubmitError("")
+    setShowRange2(false)
     setForm(blankForm())
   }
 
@@ -818,103 +843,121 @@ export default function LeaveRequest() {
 
             {/* ─ Section 3: Date & time range ─ */}
             <div className={cardCls}>
-              <SectionTitle>ช่วงวันที่ลา</SectionTitle>
+              <SectionTitle>วันที่ลา</SectionTitle>
 
-              {/* Range 1 */}
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">ช่วงที่ 1 (จำเป็น)</p>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <Field label="ตั้งแต่วันที่" required>
+              {/* ลาแบบไหน — เลือกครั้งเดียว ไม่ต้องกรอกเวลา */}
+              <fieldset className="mb-4">
+                <legend className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                  ลาแบบไหน<span aria-hidden="true" className="text-red-500 ml-0.5">*</span>
+                </legend>
+                <div className="grid grid-cols-3 gap-2">
+                  {DAY_PART_KEYS.map((key) => {
+                    const p = DAY_PARTS[key]
+                    const active = form.dayPart === key
+                    return (
+                      <label
+                        key={key}
+                        className={`relative flex min-h-touch cursor-pointer flex-col items-center justify-center rounded-xl border px-2 py-2.5 text-center transition-colors duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-indigo-400 ${
+                          active
+                            ? "border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-500/15 dark:text-indigo-200"
+                            : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-line-field dark:bg-field dark:text-gray-200 dark:hover:bg-gray-700/40"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="dayPart"
+                          value={key}
+                          checked={active}
+                          onChange={() => selectDayPart(key)}
+                          className="sr-only"
+                        />
+                        <span className="text-sm font-semibold">{p.label}</span>
+                        <span className={`text-xs tabular-nums ${active ? "text-indigo-600 dark:text-indigo-300" : "text-gray-500 dark:text-gray-400"}`}>
+                          {p.hint}
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </fieldset>
+
+              {form.dayPart === "full" ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="ตั้งแต่วันที่" required>
+                    <input
+                      type="date"
+                      className={`${inputCls} ${errors.fromDate ? "!border-red-400 dark:!border-red-500 focus:!ring-red-400" : ""}`}
+                      value={form.fromDate}
+                      onChange={setFromDate}
+                    />
+                    <ErrMsg field="fromDate" />
+                  </Field>
+                  <Field label="ถึงวันที่" required>
+                    <input
+                      type="date"
+                      className={`${inputCls} ${errors.toDate ? "!border-red-400 dark:!border-red-500 focus:!ring-red-400" : ""}`}
+                      value={form.toDate}
+                      min={form.fromDate || undefined}
+                      onChange={set("toDate")}
+                    />
+                    <ErrMsg field="toDate" />
+                  </Field>
+                </div>
+              ) : (
+                <Field label="วันที่ลา" required>
                   <input
                     type="date"
                     className={`${inputCls} ${errors.fromDate ? "!border-red-400 dark:!border-red-500 focus:!ring-red-400" : ""}`}
                     value={form.fromDate}
-                    onChange={set("fromDate")}
+                    onChange={setFromDate}
                   />
                   <ErrMsg field="fromDate" />
                 </Field>
-                <Field label="เวลา (น.)">
-                  <input
-                    type="time"
-                    className={inputCls}
-                    value={form.fromTime}
-                    onChange={set("fromTime")}
-                    placeholder="08:30"
-                  />
-                </Field>
-                <Field label="ถึงวันที่" required>
-                  <input
-                    type="date"
-                    className={`${inputCls} ${errors.toDate ? "!border-red-400 dark:!border-red-500 focus:!ring-red-400" : ""}`}
-                    value={form.toDate}
-                    min={form.fromDate || undefined}
-                    onChange={set("toDate")}
-                  />
-                  <ErrMsg field="toDate" />
-                </Field>
-                <Field label="เวลา (น.)">
-                  <input
-                    type="time"
-                    className={inputCls}
-                    value={form.toTime}
-                    onChange={set("toTime")}
-                    placeholder="17:00"
-                  />
-                </Field>
-              </div>
-
-              {days1 > 0 && (
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-3">
-                  ช่วงที่ 1: <span className="font-bold">{days1}</span> วัน
-                </p>
               )}
 
-              {/* Range 2 — optional */}
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">และวันที่ (ช่วงที่ 2 — ไม่บังคับ)</p>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="วันที่เริ่ม">
-                  <input
-                    type="date"
-                    className={inputCls}
-                    value={form.fromDate2}
-                    onChange={set("fromDate2")}
-                  />
-                </Field>
-                <Field label="ถึงวันที่">
-                  <input
-                    type="date"
-                    className={`${inputCls} ${errors.toDate2 ? "!border-red-400 dark:!border-red-500 focus:!ring-red-400" : ""}`}
-                    value={form.toDate2}
-                    min={form.fromDate2 || undefined}
-                    onChange={set("toDate2")}
-                  />
-                  <ErrMsg field="toDate2" />
-                </Field>
-              </div>
-
-              {days2 > 0 && (
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-2">
-                  ช่วงที่ 2: <span className="font-bold">{fmtDays(days2)}</span> วัน
-                </p>
-              )}
-
-              {/* ลาครึ่งวัน — ใช้ได้เมื่อลาวันเดียว */}
-              <label className={`mt-4 flex items-start gap-3 rounded-xl border px-4 py-3 transition-colors ${sameDay ? "border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30" : "border-gray-100 dark:border-gray-800 opacity-60 cursor-not-allowed"}`}>
-                <input
-                  type="checkbox"
-                  disabled={!sameDay}
-                  checked={halfDayActive}
-                  onChange={(e) => setForm((prev) => ({ ...prev, isHalfDay: e.target.checked }))}
-                  className="mt-0.5 size-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 disabled:cursor-not-allowed"
-                />
-                <span>
-                  <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">ลาครึ่งวัน (0.5 วัน)</span>
-                  <span className="block text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                    {sameDay
-                      ? "ใช้กับการลาวันเดียว หากไม่ติ๊ก ระบบจะนับเป็นครึ่งวันให้เองเมื่อช่วงเวลาที่ระบุไม่เกิน 4 ชั่วโมง"
-                      : "เลือกวันเริ่มและวันสิ้นสุดเป็นวันเดียวกันจึงจะลาครึ่งวันได้"}
-                  </span>
-                </span>
-              </label>
+              {/* อีกช่วงวัน (ไม่ต่อเนื่อง) — ซ่อนไว้จนกว่าจะต้องใช้ */}
+              {form.dayPart === "full" && (showRange2 || form.fromDate2 || form.toDate2 ? (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">และวันที่ (อีกช่วง)</p>
+                    <button
+                      type="button"
+                      onClick={() => { setShowRange2(false); setForm((prev) => ({ ...prev, fromDate2: "", toDate2: "" })) }}
+                      className="min-h-touch md:min-h-0 px-2 text-xs font-medium text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                    >
+                      นำออก
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="วันที่เริ่ม">
+                      <input
+                        type="date"
+                        className={inputCls}
+                        value={form.fromDate2}
+                        onChange={set("fromDate2")}
+                      />
+                    </Field>
+                    <Field label="ถึงวันที่">
+                      <input
+                        type="date"
+                        className={`${inputCls} ${errors.toDate2 ? "!border-red-400 dark:!border-red-500 focus:!ring-red-400" : ""}`}
+                        value={form.toDate2}
+                        min={form.fromDate2 || undefined}
+                        onChange={set("toDate2")}
+                      />
+                      <ErrMsg field="toDate2" />
+                    </Field>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowRange2(true)}
+                  className="mt-3 min-h-touch md:min-h-0 text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                >
+                  + เพิ่มวันลาอีกช่วง (วันไม่ติดกัน)
+                </button>
+              ))}
 
               {/* Total */}
               {totalDays > 0 && (
